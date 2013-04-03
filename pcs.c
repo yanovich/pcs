@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <errno.h>
+#include <syslog.h>
 
 int get_serial_raw_data(unsigned int slot, const char *cmd, int size,
 	       	char *data)
@@ -357,18 +358,65 @@ int load_site_status(struct site_status *site_status)
 	return 0;
 };
 
+struct fuzzy_result {
+	unsigned	mass;
+	int		value;
+};
+
+unsigned Dh(int a, int b, int c, int x)
+{
+	if (x < a || x > c || a > b || b > c)
+		return 0;
+	if (x == b)
+		return 0x10000;
+	if (a <= x && x < b)
+		return (0x10000 * (x - a)) / (b - a);
+	else
+		return (0x10000 * (c - x)) / (c - b);
+}
+
+void Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
+{
+	unsigned mass;
+	int value;
+
+	if (a > b || b > c)
+		return;
+	mass =  h * (c - a) / 2;
+	value = (c + a) / 2 + ((h / 6 ) * (2 * b - c - a));
+	value -= result->value;
+	result->mass += mass;
+	result->value = value * mass / result->mass;
+}
+
+unsigned Sh(int a, int b, int c, int x)
+{
+	if (x < a || x > c || a > b || b > c)
+		return 0;
+	if (x >= b)
+		return 0x10000;
+
+	return (0x10000 * (x - a)) / (b - a);
+}
+
+unsigned Zh(int a, int b, int c, int x)
+{
+	if (x < a || x > c || a > b || b > c)
+		return 0;
+	if (x <= b)
+		return 0x10000;
+
+	return (0x10000 * (c - x)) / (c - b);
+}
+
 void
 run(void)
 {
-	char buff[24];
-	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
 	struct site_status site_status = {0};
 
-	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
 	load_site_status(&site_status);
-	printf("%s T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %4u, P12 %4u, "
-			"V11 %2i, V12 %2i\n", buff, site_status.t,
+	syslog(LOG_INFO, "T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
+			"V11 %2i, V12 %2i\n", site_status.t,
 		       	site_status.t11, site_status.t12, site_status.t21,
 		       	site_status.p11, site_status.p12, site_status.v11,
 		       	site_status.v21);
@@ -377,9 +425,10 @@ run(void)
 int
 main(int argc, char **argv)
 {
+	openlog("pcs", 0, LOG_DAEMON);
 	while (1) {
 		run();
-		sleep(1);
+		sleep(5);
 	}
 	return 0;
 }
