@@ -296,6 +296,9 @@ struct site_status {
 	unsigned int	p12;
 	int		v11;
 	int		v21;
+	int		t11_sp;
+	int		t12_sp;
+	int		t21_sp;
 };
 
 int load_site_status(struct site_status *site_status)
@@ -379,14 +382,16 @@ void Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
 {
 	unsigned mass;
 	int value;
+	int tmp1, tmp2;
 
 	if (a > b || b > c)
 		return;
-	mass =  h * (c - a) / 2;
-	value = (c + a) / 2 + ((h / 6 ) * (2 * b - c - a));
+	mass =  (h * (unsigned) (c - a)) / 0x20000;
+	value = (c + a) / 2 + ((((int) h) * (2 * b - c - a)) / (int) 0x60000);
 	value -= result->value;
 	result->mass += mass;
-	result->value = value * mass / result->mass;
+	if (result->mass != 0)
+		result->value += (value * (int) mass) / (int) result->mass;
 }
 
 unsigned Sh(int a, int b, int c, int x)
@@ -409,17 +414,58 @@ unsigned Zh(int a, int b, int c, int x)
 	return (0x10000 * (c - x)) / (c - b);
 }
 
+int calculate_action(struct site_status *site_status)
+{
+	int e21 = site_status->t21 - 590;
+	struct fuzzy_result res = {0};
+	unsigned h;
+
+	h =  Dh( -10,   0,   30, e21);
+	Dm( -300,   0,  300, h, &res);
+	printf("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh(   0,  30,   80, e21);
+	Dm( -200, -100, 0, h, &res);
+	printf("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh(  30,  80,  180, e21);
+	Dm( -700, -400, -100, h, &res);
+	printf("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Sh(  80, 180, 1000, e21);
+	Dm(-5000, -5000, -400, h, &res);
+	printf("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh( -30, -10,    0, e21);
+	Dm(    0, 100,  200, h, &res);
+	printf("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh( -50, -30,  -10, e21);
+	Dm(  100, 400, 700, h, &res);
+	printf("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Zh(-1000,-50,  -30, e21);
+	Dm(  400, 5000, 5000, h, &res);
+	printf("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	site_status->t21_sp = e21;
+	return 0;
+};
+
 void
 run(void)
 {
 	struct site_status site_status = {0};
 
 	load_site_status(&site_status);
-	syslog(LOG_INFO, "T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
+	syslog(LOG_INFO, "T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
 			"V11 %2i, V12 %2i\n", site_status.t,
 		       	site_status.t11, site_status.t12, site_status.t21,
 		       	site_status.p11, site_status.p12, site_status.v11,
 		       	site_status.v21);
+	printf("T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
+			"V11 %2i, V12 %2i\n", site_status.t,
+		       	site_status.t11, site_status.t12, site_status.t21,
+		       	site_status.p11, site_status.p12, site_status.v11,
+		       	site_status.v21);
+	calculate_action(&site_status);
+	printf("setp:  T11 %3i, T12 %3i, T21 %3i"
+			"\n",
+		       	site_status.t11_sp, site_status.t12_sp,
+		       	site_status.t21_sp);
 }
 
 int
