@@ -457,7 +457,7 @@ unsigned Zh(int a, int b, int c, int x)
 int
 calculate_v11(struct site_status *curr, struct site_status *prev)
 {
-	int t11, t12, e11, e12, d11;
+	int t11, t12, e11, e12, d11 = 0;
 	struct fuzzy_result res = {0};
 	unsigned h;
 
@@ -465,11 +465,13 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 	t11 = 950 - ((curr->t + 280) * 450) / 400;
 	e12 = curr->t12 - t12;
 	curr->e12 = e12;
-	if (e12 > 0)
+	if (e12 > 0) {
 		t11 -= e12;
+		d11 = prev->e12 - e12;
+	}
 	e11 = curr->t11 - t11;
 	curr->e11 = e11;
-	d11 = e11 - prev->e11;
+	d11 += e11 - prev->e11;
 
 	h =  Zh(-1000,-50,  -30, e11);
 	Dm(  400, 5000, 5000, h, &res);
