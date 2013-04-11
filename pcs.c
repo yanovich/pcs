@@ -454,7 +454,56 @@ unsigned Zh(int a, int b, int c, int x)
 	return (0x10000 * (c - x)) / (c - b);
 }
 
-int calculate_action(struct site_status *curr, struct site_status *prev)
+int
+calculate_v11(struct site_status *curr, struct site_status *prev)
+{
+	int t11, t12, e11, e12, d11;
+	struct fuzzy_result res = {0};
+	unsigned h;
+
+	t12 = 700 - ((curr->t + 280) * 250) / 400;
+	t11 = 950 - ((curr->t + 280) * 450) / 400;
+	e12 = curr->t12 - t12;
+	curr->e12 = e12;
+	if (e12 > 0)
+		t11 -= e12;
+	e11 = curr->t11 - t11;
+	curr->e11 = e11;
+	d11 = e11 - prev->e11;
+
+	h =  Zh(-1000,-50,  -30, e11);
+	Dm(  400, 5000, 5000, h, &res);
+	printf("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh( -50, -30,  -10, e11);
+	Dm(  100, 400, 700, h, &res);
+	printf("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh( -30, -10,    0, e11);
+	Dm(    0, 100,  200, h, &res);
+	printf("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh( -10,   0,   30, e11);
+	Dm( -300,   0,  300, h, &res);
+	printf("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh(   0,  30,   80, e11);
+	Dm( -200, -100, 0, h, &res);
+	printf("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Dh(  30,  80,  180, e11);
+	Dm( -700, -400, -100, h, &res);
+	printf("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Sh(  80, 180, 1000, e11);
+	Dm(-5000, -5000, -400, h, &res);
+	printf("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Zh(-1000, -10,   -1, d11);
+	Dm(  100, 400, 700, h, &res);
+	printf("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	h =  Sh(     1, 10, 1000, d11);
+	Dm( -700, -400, -100, h, &res);
+	printf("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	curr->v11 = res.value;
+	return 0;
+}
+
+int
+calculate_v21(struct site_status *curr, struct site_status *prev)
 {
 	int e21 = curr->t21 - 570;
 	int d21 = e21 - prev->e21;
@@ -492,7 +541,35 @@ int calculate_action(struct site_status *curr, struct site_status *prev)
 	printf("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	curr->v21 = res.value;
 	return 0;
-};
+}
+
+unsigned
+execute_v11(struct site_status *curr)
+{
+	unsigned usec;
+	if (-50 < curr->v11 && curr->v11 < 50)
+		return 0;
+
+	curr->do0 &= ~0x30;
+	if (curr->v11 < 0) {
+		usec = curr->v11 * -1000;
+		curr->do0 |=  0x10;
+	} else {
+		usec = curr->v11 *  1000;
+		curr->do0 |=  0x20;
+	}
+	if (usec > 5000000)
+		usec = 5000000;
+
+	set_parallel_output_status(1, curr->do0);
+
+	usleep(usec);
+
+	curr->do0 &= ~0x30;
+	set_parallel_output_status(1, curr->do0);
+
+	return usec;
+}
 
 unsigned
 execute_v21(struct site_status *curr)
@@ -519,14 +596,14 @@ execute_v21(struct site_status *curr)
 	curr->do0 &= ~0xc0;
 	set_parallel_output_status(1, curr->do0);
 
-	return 0;
+	return usec;
 }
 
 void
 log_status(struct site_status *site_status)
 {
 	syslog(LOG_INFO, "T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
-			"V11 %2i, V21 %2i\n", site_status->t,
+			"V1 %3i, V2 %3i\n", site_status->t,
 		       	site_status->t11, site_status->t12, site_status->t21,
 		       	site_status->p11, site_status->p12, site_status->v11,
 		       	site_status->v21);
@@ -561,9 +638,11 @@ main(int argc, char **argv)
 			prev = &s1;
 		}
 		load_site_status(curr);
-		calculate_action(curr, prev);
+		calculate_v11(curr, prev);
+		calculate_v21(curr, prev);
 		log_status(curr);
 		t = 10000000;
+		t -= execute_v11(curr);;
 		t -= execute_v21(curr);;
 		usleep(t);
 	}
