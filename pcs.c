@@ -9,6 +9,15 @@
 #include <errno.h>
 #include <syslog.h>
 
+#ifdef DEBUG
+#define debug(format, ...) 	printf(format, ...)
+#else
+#define debug(format, arg...)	\
+while (0) {			\
+	printf(format, ##arg);	\
+}
+#endif
+
 int get_serial_raw_data(unsigned int slot, const char *cmd, int size,
 	       	char *data)
 {
@@ -475,31 +484,31 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 
 	h =  Zh(-1000,-50,  -30, e11);
 	Dm(  400, 5000, 5000, h, &res);
-	printf("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -50, -30,  -10, e11);
 	Dm(  100, 400, 700, h, &res);
-	printf("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -30, -10,    0, e11);
 	Dm(    0, 100,  200, h, &res);
-	printf("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -10,   0,   30, e11);
 	Dm( -300,   0,  300, h, &res);
-	printf("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(   0,  30,   80, e11);
 	Dm( -200, -100, 0, h, &res);
-	printf("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(  30,  80,  180, e11);
 	Dm( -700, -400, -100, h, &res);
-	printf("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(  80, 180, 1000, e11);
 	Dm(-5000, -5000, -400, h, &res);
-	printf("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Zh(-1000, -10,   -1, d11);
 	Dm(  100, 400, 700, h, &res);
-	printf("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(     1, 10, 1000, d11);
 	Dm( -700, -400, -100, h, &res);
-	printf("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	curr->v11 = res.value;
 	return 0;
 }
@@ -516,31 +525,31 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 
 	h =  Zh(-1000,-50,  -30, e21);
 	Dm(  400, 5000, 5000, h, &res);
-	printf("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -50, -30,  -10, e21);
 	Dm(  100, 400, 700, h, &res);
-	printf("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -30, -10,    0, e21);
 	Dm(    0, 100,  200, h, &res);
-	printf("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -10,   0,   30, e21);
 	Dm( -300,   0,  300, h, &res);
-	printf("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(   0,  30,   80, e21);
 	Dm( -200, -100, 0, h, &res);
-	printf("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(  30,  80,  180, e21);
 	Dm( -700, -400, -100, h, &res);
-	printf("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(  80, 180, 1000, e21);
 	Dm(-5000, -5000, -400, h, &res);
-	printf("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Zh(-1000, -10,   -1, d21);
 	Dm(  100, 400, 700, h, &res);
-	printf("D21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("D21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(     1, 10, 1000, d21);
 	Dm( -700, -400, -100, h, &res);
-	printf("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	curr->v21 = res.value;
 	return 0;
 }
@@ -609,12 +618,12 @@ log_status(struct site_status *site_status)
 		       	site_status->t11, site_status->t12, site_status->t21,
 		       	site_status->p11, site_status->p12, site_status->v11,
 		       	site_status->v21);
-	printf("T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
+	debug("T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
 			"V11 %2i, V21 %2i\n", site_status->t,
 		       	site_status->t11, site_status->t12, site_status->t21,
 		       	site_status->p11, site_status->p12, site_status->v11,
 		       	site_status->v21);
-	printf("error: T11 %3i, T12 %3i, T21 %3i"
+	debug("error: T11 %3i, T12 %3i, T21 %3i"
 			"\n",
 		       	site_status->e11, site_status->e12,
 		       	site_status->e21);
