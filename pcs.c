@@ -463,24 +463,34 @@ unsigned Zh(int a, int b, int c, int x)
 	return (0x10000 * (c - x)) / (c - b);
 }
 
-int
+void
+calculate_e1(struct site_status *curr)
+{
+	int t11, t12;
+
+	if (curr->t > 160) {
+		t12 = curr->t12;
+		t11 = 300;
+	} else {
+		t12 = 700 - ((curr->t + 280) * 250) / 400;
+		t11 = 950 - ((curr->t + 280) * 450) / 400;
+	}
+	curr->e12 = curr->t12 - t12;
+	if (curr->e12 > 0)
+		t11 -= curr->e12;
+
+	curr->e11 = curr->t11 - t11;
+}
+
+void
 calculate_v11(struct site_status *curr, struct site_status *prev)
 {
-	int t11, t12, e11, e12, d11 = 0;
+	int e11 = curr->e11, d11 = e11 - prev->e11;
 	struct fuzzy_result res = {0};
 	unsigned h;
 
-	t12 = 700 - ((curr->t + 280) * 250) / 400;
-	t11 = 950 - ((curr->t + 280) * 450) / 400;
-	e12 = curr->t12 - t12;
-	curr->e12 = e12;
-	if (e12 > 0) {
-		t11 -= e12;
-		d11 = prev->e12 - e12;
-	}
-	e11 = curr->t11 - t11;
-	curr->e11 = e11;
-	d11 += e11 - prev->e11;
+	if (curr->e12 > 0)
+		d11 -= curr->e12 - prev->e12;
 
 	h =  Zh(-1000,-50,  -30, e11);
 	Dm(  400, 5000, 5000, h, &res);
@@ -509,19 +519,23 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 	h =  Sh(     1, 10, 1000, d11);
 	Dm( -700, -400, -100, h, &res);
 	debug("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+
 	curr->v11 = res.value;
-	return 0;
 }
 
-int
+void
+calculate_e2(struct site_status *curr)
+{
+	curr->e21 = curr->t21 - 570;
+}
+
+void
 calculate_v21(struct site_status *curr, struct site_status *prev)
 {
-	int e21 = curr->t21 - 570;
+	int e21 = curr->e21;
 	int d21 = e21 - prev->e21;
 	struct fuzzy_result res = {0};
 	unsigned h;
-
-	curr->e21 = e21;
 
 	h =  Zh(-1000,-50,  -30, e21);
 	Dm(  400, 5000, 5000, h, &res);
@@ -550,8 +564,8 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 	h =  Sh(     1, 10, 1000, d21);
 	Dm( -700, -400, -100, h, &res);
 	debug("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+
 	curr->v21 = res.value;
-	return 0;
 }
 
 unsigned
@@ -639,6 +653,8 @@ main(int argc, char **argv)
 
 	openlog("pcs", 0, LOG_DAEMON);
 	load_site_status(&s2);
+	calculate_e1(&s2);
+	calculate_e2(&s2);
 	while (1) {
 		c = c ^ 1;
 		if (c) {
@@ -649,7 +665,9 @@ main(int argc, char **argv)
 			prev = &s1;
 		}
 		load_site_status(curr);
+		calculate_e1(curr);
 		calculate_v11(curr, prev);
+		calculate_e2(curr);
 		calculate_v21(curr, prev);
 		log_status(curr);
 		t = 10000000;
