@@ -7,18 +7,14 @@ GPLv2+. See LICENCE file for details.
 
 == INSTALL ==
 <code>
-autoreconf -fvi
-
-./configure
-
-make
-
-sudo make install
-
+ autoreconf -fvi
+ ./configure
+ make
+ sudo make install
 </code>
 
 == USAGE ==
 
 <code>
-/etc/init.d/pcs start|stop|restart
+ /etc/init.d/pcs start|stop|restart
 </code>
