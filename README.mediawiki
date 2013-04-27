@@ -6,15 +6,11 @@ processes. There is NO WARRANTY. See LICENCE file for details.
 GPLv2+. See LICENCE file for details.
 
 == INSTALL ==
-<code>
  autoreconf -fvi
  ./configure
  make
  sudo make install
-</code>
 
 == USAGE ==
 
-<code>
  /etc/init.d/pcs start|stop|restart
-</code>
