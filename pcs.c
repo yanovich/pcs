@@ -18,7 +18,8 @@ while (0) {			\
 }
 #endif
 
-int get_serial_raw_data(unsigned int slot, const char *cmd, int size,
+static int
+get_serial_raw_data(unsigned int slot, const char *cmd, int size,
 	       	char *data)
 {
 	int fd, active_port_fd, err;
@@ -158,7 +159,8 @@ close_fd:
 	return err;
 }
 
-int get_parallel_output_status(unsigned int slot, unsigned *status)
+static int
+get_parallel_output_status(unsigned int slot, unsigned *status)
 {
 	int fd, err;
 	struct termios options;
@@ -198,7 +200,8 @@ close_fd:
 	return err;
 }
 
-int set_parallel_output_status(unsigned int slot, unsigned  status)
+static int
+set_parallel_output_status(unsigned int slot, unsigned  status)
 {
 	int fd, err;
 	struct termios options;
@@ -243,7 +246,8 @@ close_fd:
 	return err;
 }
 
-int ni1000(int ohm)
+static int
+ni1000(int ohm)
 {
 	const int o[] = {7909, 8308, 8717, 9135 , 9562 , 10000 ,
 	       	10448 , 10907 , 11140 , 11376 , 11857 , 12350 , 12854 ,
@@ -274,14 +278,16 @@ int ni1000(int ohm)
 	} while (1);
 }
 
-int b016(int apm)
+static int
+b016(int apm)
 {
 	if (apm < 3937 || apm > 19685)
 		return 0x80000000;
 	return (1600 * (apm - 3937)) / (19685 - 3937);
 }
 
-int parse_amps(const char *data, int size, int *press)
+static int
+parse_amps(const char *data, int size, int *press)
 {
 	int i = 0, j, point = 0, val = 0;
 	const char *p = data;
@@ -311,7 +317,8 @@ int parse_amps(const char *data, int size, int *press)
 	}
 }
 
-int parse_ohms(const char *data, int size, int *temp)
+static int
+parse_ohms(const char *data, int size, int *temp)
 {
 	int i = 0, j, point = 0, val = 0;
 	const char *p = data;
@@ -356,7 +363,8 @@ struct site_status {
 	int		e21;
 };
 
-int load_site_status(struct site_status *site_status)
+static int
+load_site_status(struct site_status *site_status)
 {
 	int err;
 	char data[256];
@@ -415,7 +423,8 @@ struct fuzzy_result {
 	int		value;
 };
 
-unsigned Dh(int a, int b, int c, int x)
+static unsigned
+Dh(int a, int b, int c, int x)
 {
 	if (x < a || x > c || a > b || b > c)
 		return 0;
@@ -427,7 +436,8 @@ unsigned Dh(int a, int b, int c, int x)
 		return (0x10000 * (c - x)) / (c - b);
 }
 
-void Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
+static void
+Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
 {
 	unsigned mass;
 	int value;
@@ -443,7 +453,8 @@ void Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
 		result->value += (value * (int) mass) / (int) result->mass;
 }
 
-unsigned Sh(int a, int b, int c, int x)
+static unsigned
+Sh(int a, int b, int c, int x)
 {
 	if (x < a || x > c || a > b || b > c)
 		return 0;
@@ -453,7 +464,8 @@ unsigned Sh(int a, int b, int c, int x)
 	return (0x10000 * (x - a)) / (b - a);
 }
 
-unsigned Zh(int a, int b, int c, int x)
+static unsigned
+Zh(int a, int b, int c, int x)
 {
 	if (x < a || x > c || a > b || b > c)
 		return 0;
@@ -463,7 +475,7 @@ unsigned Zh(int a, int b, int c, int x)
 	return (0x10000 * (c - x)) / (c - b);
 }
 
-void
+static void
 calculate_e1(struct site_status *curr)
 {
 	int t11, t12;
@@ -482,7 +494,7 @@ calculate_e1(struct site_status *curr)
 	curr->e11 = curr->t11 - t11;
 }
 
-void
+static void
 calculate_v11(struct site_status *curr, struct site_status *prev)
 {
 	int e11 = curr->e11, d11 = e11 - prev->e11;
@@ -523,13 +535,13 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 	curr->v11 = res.value;
 }
 
-void
+static void
 calculate_e2(struct site_status *curr)
 {
 	curr->e21 = curr->t21 - 570;
 }
 
-void
+static void
 calculate_v21(struct site_status *curr, struct site_status *prev)
 {
 	int e21 = curr->e21;
@@ -568,7 +580,7 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 	curr->v21 = res.value;
 }
 
-unsigned
+static unsigned
 execute_v11(struct site_status *curr)
 {
 	unsigned usec;
@@ -596,7 +608,7 @@ execute_v11(struct site_status *curr)
 	return usec;
 }
 
-unsigned
+static unsigned
 execute_v21(struct site_status *curr)
 {
 	unsigned usec;
@@ -624,7 +636,7 @@ execute_v21(struct site_status *curr)
 	return usec;
 }
 
-void
+static void
 log_status(struct site_status *site_status)
 {
 	syslog(LOG_INFO, "T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
