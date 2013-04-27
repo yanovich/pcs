@@ -397,7 +397,7 @@ int load_site_status(struct site_status *site_status)
 	site_status->p12 = press[0];
 	site_status->p11 = press[1];
 
-	err = get_parallel_output_status(1, &output);
+	err = get_parallel_output_status(2, &output);
 	if (0 != err) {
 		printf("%s: status data\n", __FILE__);
 		return -1;
@@ -586,12 +586,12 @@ execute_v11(struct site_status *curr)
 	if (usec > 5000000)
 		usec = 5000000;
 
-	set_parallel_output_status(1, curr->do0);
+	set_parallel_output_status(2, curr->do0);
 
 	usleep(usec);
 
 	curr->do0 &= ~0x30;
-	set_parallel_output_status(1, curr->do0);
+	set_parallel_output_status(2, curr->do0);
 
 	return usec;
 }
@@ -614,12 +614,12 @@ execute_v21(struct site_status *curr)
 	if (usec > 5000000)
 		usec = 5000000;
 
-	set_parallel_output_status(1, curr->do0);
+	set_parallel_output_status(2, curr->do0);
 
 	usleep(usec);
 
 	curr->do0 &= ~0xc0;
-	set_parallel_output_status(1, curr->do0);
+	set_parallel_output_status(2, curr->do0);
 
 	return usec;
 }
