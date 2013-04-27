@@ -8,9 +8,13 @@ GPLv2+. See LICENCE file for details.
 == INSTALL ==
 <code>
 autoreconf -fvi
+
 ./configure
+
 make
+
 sudo make install
+
 </code>
 
 == USAGE ==
