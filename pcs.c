@@ -706,6 +706,7 @@ main(int argc, char **argv)
 {
 	FILE *f;
 
+	daemon(0, 0);
 	openlog("pcs", 0, LOG_DAEMON);
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
