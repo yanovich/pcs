@@ -8,6 +8,9 @@
 #include <termios.h>
 #include <errno.h>
 #include <syslog.h>
+#include <signal.h>
+
+#include "pathnames.h"
 
 #ifdef DEBUG
 #define debug(format, ...) 	printf(format, ...)
@@ -17,6 +20,16 @@ while (0) {			\
 	printf(format, ##arg);	\
 }
 #endif
+
+const char *pid_file = PCS_PID_FILE_PATH;
+
+int received_sigterm = 0;
+
+static void
+sigterm_handler(int sig)
+{
+	  received_sigterm = 1;
+}
 
 static int
 get_serial_raw_data(unsigned int slot, const char *cmd, int size,
@@ -666,7 +679,7 @@ process_loop(void)
 	load_site_status(&s2);
 	calculate_e1(&s2);
 	calculate_e2(&s2);
-	while (1) {
+	while (!received_sigterm) {
 		c = c ^ 1;
 		if (c) {
 			curr = &s1;
@@ -691,7 +704,20 @@ process_loop(void)
 int
 main(int argc, char **argv)
 {
+	FILE *f;
+
 	openlog("pcs", 0, LOG_DAEMON);
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGQUIT, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
+	f = fopen(pid_file, "w");
+	if (f != NULL) {
+		fprintf(f, "%ld\n", getpid());
+		fclose(f);
+	}
+
 	process_loop();
+
+	unlink(pid_file);
 	return 0;
 }

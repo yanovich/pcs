@@ -8,6 +8,7 @@ AC_CONFIG_HEADERS([config.h:config-h.in])
 AM_INIT_AUTOMAKE([1.11 foreign silent-rules])
 
 AC_PROG_CC
+AC_PROG_MKDIR_P
 
 AC_CHECK_HEADERS(\
 		 unistd.h \
