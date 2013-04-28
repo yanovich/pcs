@@ -9,7 +9,9 @@
 #include <errno.h>
 #include <syslog.h>
 #include <signal.h>
+#include <stdlib.h>
 
+#include "config.h"
 #include "pathnames.h"
 
 #ifdef DEBUG
@@ -22,13 +24,15 @@ while (0) {			\
 #endif
 
 const char *pid_file = PCS_PID_FILE_PATH;
+const char *config_file_name;
 
 int received_sigterm = 0;
+int no_detach_flag = 0;
 
 static void
 sigterm_handler(int sig)
 {
-	  received_sigterm = 1;
+	  received_sigterm = sig;
 }
 
 static int
@@ -701,12 +705,41 @@ process_loop(void)
 	}
 }
 
+static void
+usage(void)
+{
+	fprintf(stderr, "%s, verion %s\n",
+			PACKAGE_NAME, PACKAGE_VERSION);
+	fprintf(stderr,
+"usage: pcs [-D] [-f config_file]\n"
+	);
+	exit(1);
+}
+
 int
-main(int argc, char **argv)
+main(int ac, char **av)
 {
 	FILE *f;
+	int opt;
 
-	daemon(0, 0);
+	while ((opt = getopt(ac, av, "f:D")) != -1) {
+		switch (opt) {
+                case 'f': 
+			config_file_name = optarg;
+			break;
+		case 'D':
+			no_detach_flag = 1;
+			break;
+		case '?':
+		default:
+			usage();
+			break;
+		}
+	}
+
+	if (!no_detach_flag)
+		daemon(0, 0);
+
 	openlog("pcs", 0, LOG_DAEMON);
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);

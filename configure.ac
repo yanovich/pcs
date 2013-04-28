@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 AC_INIT([pcs], [0.0], [ynvich@gmail.com])
 AC_CONFIG_HEADERS([config.h:config-h.in])
 
-AM_INIT_AUTOMAKE([1.11 foreign silent-rules])
+AM_INIT_AUTOMAKE([1.11 foreign])
 
 AC_PROG_CC
 AC_PROG_MKDIR_P
