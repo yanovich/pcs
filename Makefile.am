@@ -6,7 +6,11 @@ pcs_SOURCES = \
 		 pcs.c
 
 test_SOURCES = \
-		 test.c
+		 cleanup.c \
+		 fatal.c \
+		 log.c \
+		 xmalloc.c \
+		 servconf.c
 
 piddir = $(localstatedir)/run
 

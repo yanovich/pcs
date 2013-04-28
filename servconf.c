@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <errno.h>
 #include <yaml.h>
 
-int parse(yaml_event_t *event)
+#include <log.h>
+
+#include "includes.h"
+
+static int
+parse(yaml_event_t *event)
 {
 	int done = (event->type == YAML_STREAM_END_EVENT);
 	switch (event->type) {
@@ -31,15 +37,16 @@ int parse(yaml_event_t *event)
 	return done;
 }
 
-int main()
+void
+load_server_config(const char *filename, struct server_config *conf)
 {
 	yaml_parser_t parser;
 	yaml_event_t event;
-	FILE *f = fopen("test.conf", "rb");
+	FILE *f = fopen(filename, "r");
 	int done;
 
 	if (NULL == f)
-		return 1;
+		fatal("failed to open %s (%s)\n", filename, strerror(errno));
 
 	yaml_parser_initialize(&parser);
 
@@ -47,17 +54,19 @@ int main()
 
 	while (!done) {
 		if (!yaml_parser_parse(&parser, &event))
-			goto error1;
+			fatal("failed to parse %s\n", filename);
 
 		done = parse(&event);
 	}
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	return 0;
+}
 
-error1:
-	yaml_parser_delete(&parser);
-	fclose(f);
-	return 1;
+int
+main()
+{
+	log_init(PACKAGE_NAME, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_DAEMON, 1);
+	load_server_config("test.conf", NULL);
+	return 0;
 }
