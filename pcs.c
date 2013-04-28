@@ -655,15 +655,14 @@ log_status(struct site_status *site_status)
 		       	site_status->e21);
 }
 
-int
-main(int argc, char **argv)
+static void
+process_loop(void)
 {
 	unsigned c = 0;
 	unsigned t;
 	struct site_status s1 = {0}, s2 = {0};
 	struct site_status *curr, *prev;
 
-	openlog("pcs", 0, LOG_DAEMON);
 	load_site_status(&s2);
 	calculate_e1(&s2);
 	calculate_e2(&s2);
@@ -687,5 +686,12 @@ main(int argc, char **argv)
 		t -= execute_v21(curr);;
 		usleep(t);
 	}
+}
+
+int
+main(int argc, char **argv)
+{
+	openlog("pcs", 0, LOG_DAEMON);
+	process_loop();
 	return 0;
 }
