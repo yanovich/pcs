@@ -66,7 +66,7 @@ load_server_config(const char *filename, struct server_config *conf)
 int
 main()
 {
-	log_init(PACKAGE_NAME, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_DAEMON, 1);
+	log_init(PACKAGE_NAME, LOG_NOTICE, LOG_DAEMON, 1);
 	load_server_config("test.conf", NULL);
 	return 0;
 }

@@ -708,8 +708,7 @@ process_loop(void)
 static void
 usage(void)
 {
-	fprintf(stderr, "%s, version %s\n",
-			PACKAGE_NAME, PACKAGE_VERSION);
+	fprintf(stderr, "%s, version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 	fprintf(stderr,
 "usage: pcs [-D] [-f config_file]\n"
 	);
@@ -752,6 +751,7 @@ main(int ac, char **av)
 
 	process_loop();
 
+	closelog();
 	unlink(pid_file);
 	return 0;
 }

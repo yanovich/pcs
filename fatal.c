@@ -40,7 +40,7 @@ fatal(const char *fmt,...)
 	va_list args;
 
 	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_FATAL, fmt, args);
+	do_log(LOG_CRIT, fmt, args);
 	va_end(args);
 	cleanup_exit(255);
 }
