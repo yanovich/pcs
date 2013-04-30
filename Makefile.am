@@ -9,14 +9,11 @@ libpcs_a_SOURCES		 = \
 				   log.c \
 				   xmalloc.c
 
-bin_PROGRAMS			 = pcs test
-pcs_SOURCES			 = \
-				   pcs.c
-pcs_LDADD			 = libpcs.a
+LDADD				 = libpcs.a
 
+bin_PROGRAMS			 = pcs test icp-raw
 test_SOURCES			 = \
 				   servconf.c
-test_LDADD			 = libpcs.a
 
 piddir				 = $(localstatedir)/run
 
