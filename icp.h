@@ -19,3 +19,9 @@
 
 int
 icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data);
+
+int
+icp_module_count(void);
+
+int
+icp_get_parallel_name(unsigned int slot, int size, char *data);

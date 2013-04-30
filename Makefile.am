@@ -11,7 +11,7 @@ libpcs_a_SOURCES		 = \
 
 LDADD				 = libpcs.a
 
-bin_PROGRAMS			 = pcs test icp-raw
+bin_PROGRAMS			 = pcs test icp-raw lsicpdas
 test_SOURCES			 = \
 				   servconf.c
 

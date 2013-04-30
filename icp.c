@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "pathnames.h"
 #include "log.h"
 
 int
@@ -161,8 +162,65 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 	}
 
 	data[i] = 0;
+	err = i;
+	debug("read: [%s]\n", data);
 close_fd:
 	close(fd);
 	return err;
 }
 
+int
+icp_module_count(void)
+{
+	int fd;
+	char buff[256];
+	size_t sz;
+
+	fd = open(ICP_SLOT_COUNT_FILE, O_RDONLY);
+	if (-1 == fd) {
+		error("%s: %s\n", ICP_SLOT_COUNT_FILE, strerror(errno));
+		return -1;
+	}
+	sz = read(fd, buff, 255);
+	close(fd);
+	if (0 == sz || 255 <= sz) {
+		error("%s:%u: %s\n", __FILE__, __LINE__, strerror(errno));
+		return -1;
+	}
+
+	return atoi(buff);
+}
+
+int
+icp_get_parallel_name(unsigned int slot, int size, char *data)
+{
+	int fd, err;
+	char buff[256];
+	size_t sz;
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+		       	"/sys/bus/icpdas/devices/slot%02u/model", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	fd = open(buff, O_RDONLY);
+	if (-1 == fd)
+		return -1;
+
+	sz = read(fd, data, size);
+	close(fd);
+	if(0 >= sz) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		return -1;
+	}
+	data[sz - 1] = 0;
+
+	return 0;
+}
