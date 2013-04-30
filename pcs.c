@@ -25,22 +25,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <syslog.h>
 #include <signal.h>
 #include <stdlib.h>
 
 #include "config.h"
 #include "pathnames.h"
 #include "icp.h"
-
-#ifdef DEBUG
-#define debug(format, ...) 	printf(format, ...)
-#else
-#define debug(format, arg...)	\
-while (0) {			\
-	printf(format, ##arg);	\
-}
-#endif
+#include "log.h"
 
 const char *pid_file = PCS_PID_FILE_PATH;
 const char *config_file_name;
@@ -267,16 +258,16 @@ load_site_status(struct site_status *site_status)
 
 	err = icp_serial_exchange(3, "#00", 256, &data[0]);
 	if (0 > err) {
-		printf("%s: temp data read failure\n", __FILE__);
+		error("%s: temp data read failure\n", __FILE__);
 		return err;
 	}
 	if ('>' != data[0]) {
-		printf("%s: bad temp data: %s\n", __FILE__, data);
+		error("%s: bad temp data: %s\n", __FILE__, data);
 		return -1;
 	}
 	err = parse_ohms(&data[1], sizeof(temp), temp);
 	if (7 != err) {
-		printf("%s: bad temp data: %s\n", __FILE__, data);
+		error("%s: bad temp data: %s\n", __FILE__, data);
 		return -1;
 	}
 	site_status->t		= temp[4];
@@ -286,13 +277,13 @@ load_site_status(struct site_status *site_status)
 
 	err = icp_serial_exchange(4, "#00", 256, &data[0]);
 	if (0 > err) {
-		printf("%s: pressure data read failure\n", __FILE__);
+		error("%s: pressure data read failure\n", __FILE__);
 		return err;
 	}
 
 	err = parse_amps(&data[1], sizeof(press), press);
 	if (8 != err) {
-		printf("%s: bad temp data: %s(%i)\n", __FILE__, data, err);
+		error("%s: bad temp data: %s(%i)\n", __FILE__, data, err);
 		return -1;
 	}
 	site_status->p12 = press[0];
@@ -300,7 +291,7 @@ load_site_status(struct site_status *site_status)
 
 	err = get_parallel_output_status(2, &output);
 	if (0 != err) {
-		printf("%s: status data\n", __FILE__);
+		error("%s: status data\n", __FILE__);
 		return -1;
 	}
 
@@ -621,7 +612,7 @@ main(int ac, char **av)
 	if (!no_detach_flag)
 		daemon(0, 0);
 
-	openlog("pcs", 0, LOG_DAEMON);
+	log_init("pcs", LOG_INFO, LOG_DAEMON, no_detach_flag);
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
@@ -633,7 +624,8 @@ main(int ac, char **av)
 
 	process_loop();
 
-	closelog();
+	if (!no_detach_flag)
+		closelog();
 	unlink(pid_file);
 	return 0;
 }
