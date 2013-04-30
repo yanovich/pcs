@@ -1,6 +1,4 @@
-/* $OpenBSD: includes.h,v 1.54 2006/07/22 20:48:23 stevesk Exp $ */
-
-/*
+/* include.h -- project-wide definitions
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved

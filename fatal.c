@@ -1,5 +1,4 @@
-/* $OpenBSD: fatal.c,v 1.7 2006/08/03 03:34:42 deraadt Exp $ */
-/*
+/* fatal.c -- report fatal message, never return
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,16 +22,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "includes.h"
-
-#include <sys/types.h>
-
-#include <stdarg.h>
-#include <stdio.h>
-
 #include "log.h"
-
-/* Fatal messages.  This function never returns. */
 
 void
 fatal(const char *fmt,...)

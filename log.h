@@ -1,6 +1,4 @@
-/* $OpenBSD: log.h,v 1.18 2011/06/17 21:44:30 djm Exp $ */
-
-/*
+/* log.h -- log formatted messages of varying severity
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -16,6 +14,7 @@
 #define SSH_LOG_H
 
 #include <syslog.h>
+#include <stdarg.h>
 
 void     log_init(char *, int, int, int);
 
