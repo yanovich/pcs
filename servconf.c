@@ -6,6 +6,9 @@
 
 #include "includes.h"
 
+struct server_config {
+};
+
 static int
 parse(yaml_event_t *event)
 {
