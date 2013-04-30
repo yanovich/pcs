@@ -40,26 +40,26 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 	}
 	err = snprintf(&buff[0], sizeof(buff) - 1, "%u", slot);
 	if (err >= sizeof(buff)) {
-		printf("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		return -1;
 	}
 	fd = open("/dev/ttySA1", O_RDWR | O_NOCTTY);
 	if (-1 == fd) {
-		printf("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		return -1;
 	}
 	active_port_fd = open("/sys/bus/icpdas/devices/backplane/active_slot",
 			O_RDWR);
 	if (-1 == active_port_fd) {
-		printf("%u %s\n", __LINE__, strerror(errno));
+		error("%u %s\n", __LINE__, strerror(errno));
 		err = -1;
 		goto close_fd;
 	}
 	err = write(active_port_fd, buff, 2);
 	if (err <= 0) {
-		printf("%u %s\n", __LINE__, strerror(errno));
+		error("%u %s\n", __LINE__, strerror(errno));
 		goto close_fd;
 	}
 	close(active_port_fd);
@@ -119,21 +119,21 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 
 	err = tcsetattr(fd, TCSAFLUSH, &options);
 	if(0 != err) {
-		printf("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		goto close_fd;
 	}
 
 	err = write(fd, cmd, strlen(cmd));
 	if(0 > err) {
-		printf("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		goto close_fd;
 	}
 
 	err = write(fd, "\r", 1);
 	if(0 > err) {
-		printf("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		goto close_fd;
 	}
@@ -141,11 +141,11 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 	while (1) {
 		err = read(fd, buff, 1);
 		if(0 > err) {
-			printf("%s %u: %s (%i)\n", __FILE__, __LINE__,
+			error("%s %u: %s (%i)\n", __FILE__, __LINE__,
 				       	strerror(errno), errno);
 			goto close_fd;
 		} else if (0 == err) {
-			printf("%s %u: no data\n", __FILE__, __LINE__);
+			error("%s %u: no data\n", __FILE__, __LINE__);
 			err = -1;
 			goto close_fd;
 		}
@@ -153,7 +153,7 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 			break;
 		data[i++] = buff[0];
 		if (i == size) {
-			printf("%s %u: too much data %i\n", __FILE__, __LINE__,
+			error("%s %u: too much data %i\n", __FILE__, __LINE__,
 					i);
 			err = -1;
 			goto close_fd;
