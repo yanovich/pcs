@@ -523,20 +523,11 @@ execute_v21(struct site_status *curr)
 static void
 log_status(struct site_status *site_status)
 {
-	syslog(LOG_INFO, "T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
+	logit("T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
 			"V1 %3i, V2 %3i\n", site_status->t,
 		       	site_status->t11, site_status->t12, site_status->t21,
 		       	site_status->p11, site_status->p12, site_status->v11,
 		       	site_status->v21);
-	debug("T %3i, T11 %2i, T12 %2i, T21 %2i, P11 %3u, P12 %3u, "
-			"V11 %2i, V21 %2i\n", site_status->t,
-		       	site_status->t11, site_status->t12, site_status->t21,
-		       	site_status->p11, site_status->p12, site_status->v11,
-		       	site_status->v21);
-	debug("error: T11 %3i, T12 %3i, T21 %3i"
-			"\n",
-		       	site_status->e11, site_status->e12,
-		       	site_status->e21);
 }
 
 static void

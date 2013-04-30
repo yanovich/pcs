@@ -168,9 +168,9 @@ do_log(int level, const char *fmt, va_list args)
 	}
 
 	if (log_on_stderr) {
-		fprintf(stderr, fmt, args);
+		vfprintf(stderr, fmt, args);
 	} else {
-		syslog(level, fmt, args);
+		vsyslog(level, fmt, args);
 	}
 
 	errno = saved_errno;
