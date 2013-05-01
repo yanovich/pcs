@@ -447,6 +447,45 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 }
 
 static void
+calculate_m11(struct site_status *curr, struct site_status *prev)
+{
+	debug("DO 0x%08x, M11_INT %i\n", curr->do0, curr->m11_int);
+	curr->m11_fail = prev->m11_fail;
+	curr->do0 |=  0x00000004;
+	if (curr->t > 160) {
+		curr->do0 &= ~0x0000000b;
+		curr->m11_int = 0;
+		return;
+	}
+
+	if (curr->t > 140 && curr->do0 & 0x3 == 0)
+		return;
+
+	curr->m11_int = prev->m11_int + 1;
+
+	if (!curr->m11_fail && curr->m11_int > 10
+			&& (curr->p11 - curr->p12 < 40)
+			&& (prev->p11 - prev->p12 < 40)) {
+		curr->m11_fail = curr->do0 & 0x3;
+		curr->do0 |= 0x3;
+		curr->m11_int = 0;
+	}
+
+	curr->do0 |= 0x00000008;
+	if (curr->m11_fail)
+		return;
+
+	if ((curr->do0 & 0x00000003) == 0) {
+		curr->do0 |= 1 << (curr->t % 2);
+		curr->m11_int = 0;
+	} else if (curr->m11_int > 7 * 24 * 60 * 6) {
+		curr->do0 = curr->do0 ^ 0x3;
+		curr->m11_int = 0;
+	}
+	debug("DO 0x%08x, M11_INT %i\n", curr->do0, curr->m11_int);
+}
+
+static void
 calculate_e2(struct site_status *curr)
 {
 	curr->e21 = curr->t21 - 570;
@@ -592,6 +631,7 @@ process_loop(void)
 		calculate_v11(curr, prev);
 		calculate_e2(curr);
 		calculate_v21(curr, prev);
+		calculate_m11(curr, prev);
 		log_status(curr);
 		t = 10000000;
 		t -= execute_v11(curr);;
