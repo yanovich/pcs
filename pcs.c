@@ -615,15 +615,21 @@ main(int ac, char **av)
 {
 	FILE *f;
 	int opt;
+	int log_level = LOG_NOTICE;
 
-	while ((opt = getopt(ac, av, "f:D")) != -1) {
+	while ((opt = getopt(ac, av, "f:dDt")) != -1) {
 		switch (opt) {
                 case 'f': 
 			config_file_name = optarg;
 			break;
+		case 'd':
+			log_level = LOG_DEBUG;
+			break;
 		case 'D':
 			no_detach_flag = 1;
 			break;
+		case 't':
+			return 0;
 		case '?':
 		default:
 			usage();
@@ -634,7 +640,7 @@ main(int ac, char **av)
 	if (!no_detach_flag)
 		daemon(0, 0);
 
-	log_init("pcs", LOG_INFO, LOG_DAEMON, no_detach_flag);
+	log_init("pcs", log_level, LOG_DAEMON, no_detach_flag);
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
