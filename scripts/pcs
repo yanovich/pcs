@@ -1,0 +1,136 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		pcs
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		
+# Short-Description:	process control service
+### END INIT INFO
+
+set -e
+
+# /etc/init.d/pcs: start and stop the process control service
+SERVICE=/bin/pcs
+
+test -x $SERVICE || exit 0
+
+
+if test -f /etc/default/pcs; then
+    . /etc/default/pcs
+fi
+
+. /lib/lsb/init-functions
+
+if [ -n "$2" ]; then
+    PCS_OPTS="$PCS_OPTS $2"
+fi
+
+check_for_no_start() {
+    # forget it if we're trying to start, and /etc/pcs_not_to_be_run exists
+    if [ -e /etc/pcs_not_to_be_run ]; then 
+	if [ "$1" = log_end_msg ]; then
+	    log_end_msg 0 || true
+	fi
+	log_action_msg "process control service not in use (/etc/pcs_not_to_be_run)" || true
+	exit 0
+    fi
+}
+
+check_config() {
+    $SERVICE $PCS_OPTS -t || exit 1
+}
+
+do_modprobe() {
+    if [ -x /sbin/modprobe -a -f /proc/modules ]
+    then
+	modprobe -q "$1" || true
+    fi
+}
+
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting process control service" "pcs"
+	do_modprobe lp8x4x_bus
+	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/pcs.pid --exec $SERVICE -- $PCS_OPTS; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+  stop)
+	log_daemon_msg "Stopping process control service" "pcs"
+	if start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/pcs.pid; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+
+  reload|force-reload)
+	check_for_no_start
+	check_config
+	log_daemon_msg "Reloading process control service's configuration" "pcs"
+	if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile /var/run/pcs.pid --exec /usr/sbin/pcs; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+
+  restart)
+	check_config
+	log_daemon_msg "Restarting process control service" "pcs"
+	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/pcs.pid
+	check_for_no_start log_end_msg
+	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/pcs.pid --exec $SERVICE -- $PCS_OPTS; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+
+  try-restart)
+	check_config
+	log_daemon_msg "Restarting process control service" "pcs"
+	set +e
+	start-stop-daemon --stop --quiet --retry 30 --pidfile /var/run/pcs.pid
+	RET="$?"
+	set -e
+	case $RET in
+	    0)
+		# old daemon stopped
+		check_for_no_start log_end_msg
+		if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/pcs.pid --exec $SERVICE -- $PCS_OPTS; then
+		    log_end_msg 0
+		else
+		    log_end_msg 1
+		fi
+		;;
+	    1)
+		# daemon not running
+		log_progress_msg "(not running)"
+		log_end_msg 0
+		;;
+	    *)
+		# failed to stop
+		log_progress_msg "(failed to stop)"
+		log_end_msg 1
+		;;
+	esac
+	;;
+
+  status)
+	status_of_proc -p /var/run/pcs.pid $SERVICE pcs && exit 0 || exit $?
+	;;
+
+  *)
+	log_action_msg "Usage: /etc/init.d/pcs {start|stop|reload|force-reload|restart|try-restart|status}"
+	exit 1
+esac
+
+exit 0
