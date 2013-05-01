@@ -146,6 +146,7 @@ load_server_config(const char *filename, struct server_config *conf)
 	yaml_parser_set_input_file(&parser, f);
 
 	while (!done) {
+		struct config_node *n;
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
 

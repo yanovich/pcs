@@ -32,6 +32,7 @@
 #include "pathnames.h"
 #include "icp.h"
 #include "log.h"
+#include "list.h"
 
 const char *pid_file = PCS_PID_FILE_PATH;
 const char *config_file_name;
@@ -232,6 +233,112 @@ parse_ohms(const char *data, int size, int *temp)
 	}
 }
 
+typedef enum {
+	ANALOG_OUTPUT,
+	DIGITAL_OUTPUT
+} action_type;
+
+struct action {
+	struct list_head		action_entry;
+	action_type			type;
+	union {
+		struct {
+			unsigned	value;
+			unsigned	mask;
+			unsigned	delay;
+		}			digital;
+		struct {
+			unsigned	value;
+			unsigned	index;
+		}			analog;
+	}				data;
+};
+
+LIST_HEAD(action_list);
+
+int
+compare_actions(struct action *a1, struct action *a2)
+{
+	if (a1->type > a2->type)
+		return 1;
+	if (a1->type < a2->type)
+		return -1;
+	switch (a1->type) {
+	case ANALOG_OUTPUT:
+		if (a1->data.analog.index > a2->data.analog.index)
+			return 1;
+		if (a1->data.analog.index > a2->data.analog.index)
+			return -1;
+		return 0;
+	case DIGITAL_OUTPUT:
+		if (a1->data.digital.delay > a2->data.digital.delay)
+			return 1;
+		if (a1->data.digital.delay < a2->data.digital.delay)
+			return -1;
+		return 0;
+	default:
+		return 0;
+	}
+}
+
+void
+queue_action(struct action *action)
+{
+	struct action *a;
+	int c;
+	unsigned value;
+
+	switch (action->type) {
+	case DIGITAL_OUTPUT:
+		debug("queueing action %08x %08x (%u)\n",
+			       	action->data.digital.value,
+				action->data.digital.mask,
+				action->data.digital.delay);
+		value = action->data.digital.value;
+		value &= ~action->data.digital.mask;
+		if (action->data.digital.mask == 0)
+		       return;
+		if (value != 0) {
+			error("invalid action %08x %08x (%u)\n",
+					action->data.digital.value,
+					action->data.digital.mask,
+					action->data.digital.delay);
+			return;
+		}
+	}
+	list_for_each_entry(a, &action_list, action_entry) {
+		c = compare_actions(a, action);
+		if (c == 1)
+			continue;
+		if (c == -1) {
+			list_add_tail(&action->action_entry, &a->action_entry);
+			return;
+		}
+		switch (action->type) {
+		case ANALOG_OUTPUT:
+			error("duplicate analog output %u\n",
+					action->data.analog.index);
+			return;
+		case DIGITAL_OUTPUT:
+			if ((a->data.digital.mask & action->data.digital.mask)
+					!= 0) {
+				error("overlapping masks %08x %08x\n",
+						a->data.digital.mask,
+						action->data.digital.mask);
+				return;
+			}
+			a->data.digital.mask |= action->data.digital.mask;
+			a->data.digital.value |= action->data.digital.value;
+			return;
+		default:
+			error("unknown action type %u", action->type);
+			return;
+		}
+	}
+	if (&a->action_entry == &action_list)
+		list_add(&action->action_entry, &action_list);
+}
+
 struct site_status {
 	int		t;
 	int		t11;
@@ -252,6 +359,37 @@ struct site_status {
 	int		m11_int;
 	int		m11_fail;
 };
+
+unsigned
+execute_actions(struct site_status *s)
+{
+	struct action *a, *n;
+	unsigned t = 0;
+	list_for_each_entry_safe(a, n, &action_list, action_entry) {
+		switch (a->type) {
+			case ANALOG_OUTPUT:
+				continue;
+			case DIGITAL_OUTPUT:
+				debug("executing action %08x %08x (%u)\n",
+						a->data.digital.value,
+						a->data.digital.mask,
+						a->data.digital.delay);
+				if (a->data.digital.delay) {
+					usleep(a->data.digital.delay);
+					t += a->data.digital.delay;
+				}
+				s->do0 &= ~a->data.digital.mask;
+				s->do0 |=  a->data.digital.value;
+				set_parallel_output_status(2, s->do0);
+				list_del(&a->action_entry);
+				xfree(a);
+				continue;
+			default:
+				continue;
+		}
+	}
+	return t;
+}
 
 static int
 load_site_status(struct site_status *site_status)
@@ -449,17 +587,31 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 static void
 calculate_m11(struct site_status *curr, struct site_status *prev)
 {
-	debug("DO 0x%08x, M11_INT %i\n", curr->do0, curr->m11_int);
+	struct action *action = (struct action*) xmalloc(sizeof(*action));
+	action->type = DIGITAL_OUTPUT;
+	action->data.digital.delay = 0;
+	action->data.digital.value = 0x00000000;
+	action->data.digital.mask = 0x00000000;
+
 	curr->m11_fail = prev->m11_fail;
-	curr->do0 |=  0x00000004;
+	//curr->do0 |=  0x00000004;
+	if ((curr->do0 & 0x00000004) == 0) {
+		action->data.digital.value |= 0x00000004;
+		action->data.digital.mask |= 0x00000004;
+	}
 	if (curr->t > 160) {
-		curr->do0 &= ~0x0000000b;
+		//curr->do0 &= ~0x0000000b;
+		if ((curr->do0 & 0x0000000b) != 0)
+			action->data.digital.mask |= 0x0000000b;
+		queue_action(action);
 		curr->m11_int = 0;
 		return;
 	}
 
-	if (curr->t > 140 && curr->do0 & 0x3 == 0)
+	if (curr->t > 140 && curr->do0 & 0x3 == 0) {
+		queue_action(action);
 		return;
+	}
 
 	curr->m11_int = prev->m11_int + 1;
 
@@ -467,22 +619,34 @@ calculate_m11(struct site_status *curr, struct site_status *prev)
 			&& (curr->p11 - curr->p12 < 40)
 			&& (prev->p11 - prev->p12 < 40)) {
 		curr->m11_fail = curr->do0 & 0x3;
-		curr->do0 |= 0x3;
+		//curr->do0 |= 0x3;
+		action->data.digital.value |= 0x00000003;
+		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
 	}
 
-	curr->do0 |= 0x00000008;
-	if (curr->m11_fail)
+	//curr->do0 |= 0x00000008;
+	if ((curr->do0 & 0x00000008) == 0) {
+		action->data.digital.value |= 0x00000008;
+		action->data.digital.mask |= 0x00000008;
+	}
+	if (curr->m11_fail) {
+		queue_action(action);
 		return;
+	}
 
 	if ((curr->do0 & 0x00000003) == 0) {
-		curr->do0 |= 1 << (curr->t % 2);
+		//curr->do0 |= 1 << (curr->t % 2);
+		action->data.digital.value |= 1 << (curr->t % 2);
+		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
 	} else if (curr->m11_int > 7 * 24 * 60 * 6) {
-		curr->do0 = curr->do0 ^ 0x3;
+		//curr->do0 = curr->do0 ^ 0x3;
+		action->data.digital.value |= (curr->do0 ^ 0x3) & 0x3;
+		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
 	}
-	debug("DO 0x%08x, M11_INT %i\n", curr->do0, curr->m11_int);
+	queue_action(action);
 }
 
 static void
@@ -636,6 +800,7 @@ process_loop(void)
 		t = 10000000;
 		t -= execute_v11(curr);;
 		t -= execute_v21(curr);;
+		t -= execute_actions(curr);
 		usleep(t);
 	}
 }

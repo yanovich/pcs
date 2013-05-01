@@ -21,6 +21,7 @@ void     log_init(char *, int, int, int);
 void     fatal(const char *, ...) __attribute__((noreturn))
     __attribute__((format(printf, 1, 2)));
 void     error(const char *, ...) __attribute__((format(printf, 1, 2)));
+void     warn(const char *, ...) __attribute__((format(printf, 1, 2)));
 void     logit(const char *, ...) __attribute__((format(printf, 1, 2)));
 void     verbose(const char *, ...) __attribute__((format(printf, 1, 2)));
 void     debug(const char *, ...) __attribute__((format(printf, 1, 2)));

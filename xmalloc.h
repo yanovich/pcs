@@ -22,3 +22,7 @@ char	*xstrdup(const char *);
 int	 xasprintf(char **, const char *, ...)
                 __attribute__((__format__ (printf, 2, 3)))
                 __attribute__((__nonnull__ (2)));
+
+#define XMALLOC(type, num)                                  \
+	((type *) xmalloc ((num) * sizeof(type)))
+

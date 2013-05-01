@@ -64,6 +64,17 @@ error(const char *fmt,...)
 	va_end(args);
 }
 
+/* Warning messages that should be logged. */
+void
+warn(const char *fmt,...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	do_log(LOG_WARNING, fmt, args);
+	va_end(args);
+}
+
 /* Log this message (information that usually should go to the log). */
 void
 logit(const char *fmt,...)
