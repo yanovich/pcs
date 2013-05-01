@@ -245,6 +245,12 @@ struct site_status {
 	int		e11;
 	int		e12;
 	int		e21;
+	int		v11_sum;
+	int		v21_sum;
+	int		v11_pos;
+	int		v21_pos;
+	int		m11_int;
+	int		m11_fail;
 };
 
 static int
@@ -390,33 +396,54 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 
 	h =  Zh(-1000,-50,  -30, e11);
 	Dm(  400, 5000, 5000, h, &res);
-	debug("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -50, -30,  -10, e11);
 	Dm(  100, 400, 700, h, &res);
-	debug("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -30, -10,    0, e11);
 	Dm(    0, 100,  200, h, &res);
-	debug("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -10,   0,   30, e11);
 	Dm( -300,   0,  300, h, &res);
-	debug("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(   0,  30,   80, e11);
 	Dm( -200, -100, 0, h, &res);
-	debug("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(  30,  80,  180, e11);
 	Dm( -700, -400, -100, h, &res);
-	debug("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(  80, 180, 1000, e11);
 	Dm(-5000, -5000, -400, h, &res);
-	debug("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Zh(-1000, -10,   -1, d11);
 	Dm(  100, 400, 700, h, &res);
-	debug("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(     1, 10, 1000, d11);
 	Dm( -700, -400, -100, h, &res);
-	debug("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 
-	curr->v11 = res.value;
+	debug("V11_POS %i %i, V11_SUM %i %i\n", prev->v11_pos, curr->v11_pos,
+		       prev->v11_sum, curr->v11_sum);	
+	if (prev->v11_pos >=0) {
+		curr->v11_pos = prev->v11_pos + res.value;
+		if (curr->v11_pos < 0)
+			curr->v11_pos = 0;
+		else if (curr->v11_sum > 47000)
+			curr->v11_pos = 47000;
+		curr->v11 = curr->v11_pos - prev->v11_pos;
+		if (-50 < curr->v11 && curr->v11 < 50) 
+			curr->v11_pos = prev->v11_pos;
+	} else {
+		curr->v11 = res.value;
+		curr->v11_sum = prev->v11_sum;
+		if (-50 >= curr->v11 || curr->v11 >= 50) {
+			curr->v11_sum += res.value;
+			if (curr->v11_sum <= -47000)
+				curr->v11_pos = 0;
+			else if (47000 <= curr->v11_sum)
+				curr->v11_pos = 47000;
+		}
+	}
 }
 
 static void
@@ -435,31 +462,31 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 
 	h =  Zh(-1000,-50,  -30, e21);
 	Dm(  400, 5000, 5000, h, &res);
-	debug("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -50, -30,  -10, e21);
 	Dm(  100, 400, 700, h, &res);
-	debug("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -30, -10,    0, e21);
 	Dm(    0, 100,  200, h, &res);
-	debug("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh( -10,   0,   30, e21);
 	Dm( -300,   0,  300, h, &res);
-	debug("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(   0,  30,   80, e21);
 	Dm( -200, -100, 0, h, &res);
-	debug("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Dh(  30,  80,  180, e21);
 	Dm( -700, -400, -100, h, &res);
-	debug("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(  80, 180, 1000, e21);
 	Dm(-5000, -5000, -400, h, &res);
-	debug("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Zh(-1000, -10,   -1, d21);
 	Dm(  100, 400, 700, h, &res);
-	debug("D21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("D21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(     1, 10, 1000, d21);
 	Dm( -700, -400, -100, h, &res);
-	debug("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
+	debug2("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 
 	curr->v21 = res.value;
 }
@@ -542,6 +569,10 @@ process_loop(void)
 	while (load_site_status(&s2) != 0)
 		sleep (1);
 
+	s1.v11_pos = -1;
+	s1.v21_pos = -1;
+	s2.v11_pos = -1;
+	s2.v21_pos = -1;
 	calculate_e1(&s2);
 	calculate_e2(&s2);
 	while (!received_sigterm) {
