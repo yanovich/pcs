@@ -607,7 +607,7 @@ calculate_m11(struct site_status *curr, struct site_status *prev)
 		return;
 	}
 
-	if (curr->t > 140 && curr->do0 & 0x3 == 0) {
+	if (curr->t > 140 && (curr->do0 & 0x3) == 0) {
 		queue_action(action);
 		return;
 	}
