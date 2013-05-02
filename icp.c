@@ -28,6 +28,7 @@
 
 #include "pathnames.h"
 #include "log.h"
+#include "icp.h"
 
 int
 icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
@@ -225,4 +226,86 @@ icp_get_parallel_name(unsigned int slot, int size, char *data)
 	data[sz - 1] = 0;
 
 	return 0;
+}
+
+int
+get_parallel_output_status(unsigned int slot, unsigned *status)
+{
+	int fd, err;
+	char buff[256];
+	char *p;
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+		       	"/sys/bus/icpdas/devices/slot%02u/output_status", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+
+	err = read(fd, buff, 256);
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+	*status = strtoul(buff, &p, 16);
+close_fd:
+	close(fd);
+	return err;
+}
+
+int
+set_parallel_output_status(unsigned int slot, unsigned  status)
+{
+	int fd, err;
+	char buff[256];
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+		       	"/sys/bus/icpdas/devices/slot%02u/output_status", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+
+	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%08x", status);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	err = write(fd, buff, strlen(buff));
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+close_fd:
+	close(fd);
+	return err;
 }

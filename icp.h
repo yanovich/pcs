@@ -25,3 +25,9 @@ icp_module_count(void);
 
 int
 icp_get_parallel_name(unsigned int slot, int size, char *data);
+
+int
+get_parallel_output_status(unsigned int slot, unsigned *status);
+
+int
+set_parallel_output_status(unsigned int slot, unsigned  status);
