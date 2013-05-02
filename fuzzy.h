@@ -17,6 +17,36 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include "list.h"
+
+struct fuzzy_clause {
+	struct list_head	fuzzy_entry;
+	int			var;
+	int			h_f;
+	int			h_a;
+	int			h_b;
+	int			h_c;
+	int			m_f;
+	int			m_a;
+	int			m_b;
+	int			m_c;
+};
+
+static inline void
+fuzzy_clause_init(struct fuzzy_clause *fcl, int var, int h_f, int h_a, int h_b,
+	       	int h_c, int m_f, int m_a, int m_b, int m_c)
+{
+	fcl->var = var;
+	fcl->h_f = h_f;
+	fcl->h_a = h_a;
+	fcl->h_b = h_b;
+	fcl->h_c = h_c;
+	fcl->m_f = m_f;
+	fcl->m_a = m_a;
+	fcl->m_b = m_b;
+	fcl->m_c = m_c;
+}
+
 struct fuzzy_result {
 	unsigned	mass;
 	int		value;
@@ -34,3 +64,5 @@ Sh(int a, int b, int c, int x);
 unsigned
 Zh(int a, int b, int c, int x);
 
+int
+process_fuzzy(struct list_head *fuzzy, int *vars);

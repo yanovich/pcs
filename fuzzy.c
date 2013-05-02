@@ -17,6 +17,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <stdlib.h>
+
 #include "fuzzy.h"
 
 unsigned
@@ -71,3 +73,20 @@ Zh(int a, int b, int c, int x)
 	return (0x10000 * (c - x)) / (c - b);
 }
 
+unsigned (*ha[])(int, int, int, int) = {Dh, Sh, Zh};
+#define HEIGHT_FUNCS	(sizeof(h)/sizeof(void*))
+void (*ma[])(int, int, int, unsigned, struct fuzzy_result *) = {Dm};
+#define MASS_FUNCS	(sizeof(m)/sizeof(void*))
+
+int
+process_fuzzy(struct list_head *fuzzy, int *vars)
+{
+	struct fuzzy_clause *f;
+	struct fuzzy_result r = {0};
+	unsigned h;
+	list_for_each_entry(f, fuzzy, fuzzy_entry) {
+		h = ha[f->h_f](f->h_a, f->h_b, f->h_c, vars[f->var]);
+		ma[f->m_f](f->m_a, f->m_b, f->m_c, h, &r);
+	}
+	return r.value;
+}

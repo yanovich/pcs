@@ -441,13 +441,83 @@ execute_actions(struct site_status *s)
 	return t;
 }
 
+struct process_class {
+	int	(*run)(struct site_status *, struct site_status *, void *);
+	int	(*free)(void*);
+}; 
+
 struct process {
-	int		(*run)(struct site_status*, struct site_status*, void*);
+	struct process_class	*class;
 	struct list_head	process_entry;
-	void		*process_config;
+	void			*config;
 };
 
 LIST_HEAD(process_list);
+
+struct hot_water_config {
+	struct list_head	fuzzy;
+};
+
+int
+hot_water_run(struct site_status *curr, struct site_status *prev, void *conf)
+{
+	struct hot_water_config *hwc = conf;
+	int vars[2];
+	int p0;
+	vars[0] = curr->t21 - 570;
+	vars[1] = curr->t21 - prev->t21;
+
+	debug("running hot water\n");
+	curr->v21 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+	return 0;
+}
+
+struct process_class hot_water_class = {
+	.run = hot_water_run,
+};
+
+static void
+load_site_config(void)
+{
+	struct process *hwp = (void *) xmalloc (sizeof(*hwp));
+	struct hot_water_config *hwc = (void *) xmalloc (sizeof(*hwc));
+	struct fuzzy_clause *fcl;
+
+	debug("loading config\n");
+	INIT_LIST_HEAD(&hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 2, -1500, -50,  -30, 0,   400,  7000, 7000);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 0,   -50, -30,  -10, 0,   100,   400,  700);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 0,   -30, -10,    0, 0,     0,   100,  200);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 0,   -10,   0,   30, 0,  -300,     0,  300);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 0,     0,  30,   80, 0,  -200,  -100,    0);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 0,    30,  80,  180, 0,  -700,  -400, -100);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 0, 1,    80, 180, 1500, 0, -7000, -7000, -400);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 1, 2, -1000, -10,   -1, 0,   100,   400,  700);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 1, 1,     1,  10, 1000, 0,  -700,  -400, -100);
+	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+
+	hwp->config = (void *) hwc;
+	hwp->class = &hot_water_class;
+	list_add_tail(&hwp->process_entry, &process_list);
+	debug("loaded config\n");
+}
 
 static int
 load_site_status(struct site_status *site_status)
@@ -686,7 +756,12 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 	Dm( -700, -400, -100, h, &res);
 	debug2("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 
-	curr->v21 = res.value;
+	if (curr->v21 != res.value) {
+		warn("bad fuzzy result %i %i\n", curr->v21, res.value);
+		curr->v21 = res.value;
+		return;
+	}
+	debug("hot water fuzzy result matched\n");
 }
 
 static unsigned
@@ -794,7 +869,7 @@ process_loop(void)
 			sleep (1);
 
 		list_for_each_entry(p, &process_list, process_entry) {
-			p->run(curr, prev, p->process_config);
+			p->class->run(curr, prev, p->config);
 		}
 		calculate_e1(curr);
 		calculate_v11(curr, prev);
@@ -847,6 +922,8 @@ main(int ac, char **av)
 		}
 	}
 
+	log_init("pcs", log_level, LOG_DAEMON, 1);
+	load_site_config();
 	if (!no_detach_flag)
 		daemon(0, 0);
 
