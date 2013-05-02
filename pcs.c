@@ -22,6 +22,7 @@
 #include <time.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -245,7 +246,7 @@ struct action {
 		struct {
 			unsigned	value;
 			unsigned	mask;
-			unsigned	delay;
+			long		delay;
 		}			digital;
 		struct {
 			unsigned	value;
@@ -275,6 +276,16 @@ compare_actions(struct action *a1, struct action *a2)
 			return 1;
 		if (a1->data.digital.delay < a2->data.digital.delay)
 			return -1;
+		debug("equal action1 %08x %08x %08x (%u)\n",
+				a1,
+			       	a1->data.digital.value,
+				a1->data.digital.mask,
+				a1->data.digital.delay);
+		debug("equal action2 %08x %08x %08x (%u)\n",
+				a2,
+			       	a2->data.digital.value,
+				a2->data.digital.mask,
+				a2->data.digital.delay);
 		return 0;
 	default:
 		return 0;
@@ -284,13 +295,13 @@ compare_actions(struct action *a1, struct action *a2)
 void
 queue_action(struct action *action)
 {
-	struct action *a;
+	struct action *a, *n;
 	int c;
 	unsigned value;
 
 	switch (action->type) {
 	case DIGITAL_OUTPUT:
-		debug("queueing action %08x %08x (%u)\n",
+		debug("checking action %08x %08x (%u)\n",
 			       	action->data.digital.value,
 				action->data.digital.mask,
 				action->data.digital.delay);
@@ -306,37 +317,43 @@ queue_action(struct action *action)
 			return;
 		}
 	}
+	n = (void *) xmalloc(sizeof(*n));
+	n = memcpy(n, action, sizeof(*n));
+	debug("queueing action %08x %08x (%u)\n",
+			action->data.digital.value,
+			action->data.digital.mask,
+			action->data.digital.delay);
 	list_for_each_entry(a, &action_list, action_entry) {
-		c = compare_actions(a, action);
+		c = compare_actions(n, a);
 		if (c == 1)
 			continue;
 		if (c == -1) {
-			list_add_tail(&action->action_entry, &a->action_entry);
+			list_add_tail(&n->action_entry, &a->action_entry);
 			return;
 		}
-		switch (action->type) {
+		switch (n->type) {
 		case ANALOG_OUTPUT:
 			error("duplicate analog output %u\n",
-					action->data.analog.index);
+					n->data.analog.index);
 			return;
 		case DIGITAL_OUTPUT:
-			if ((a->data.digital.mask & action->data.digital.mask)
+			if ((a->data.digital.mask & n->data.digital.mask)
 					!= 0) {
 				error("overlapping masks %08x %08x\n",
 						a->data.digital.mask,
-						action->data.digital.mask);
+						n->data.digital.mask);
 				return;
 			}
-			a->data.digital.mask |= action->data.digital.mask;
-			a->data.digital.value |= action->data.digital.value;
+			a->data.digital.mask |= n->data.digital.mask;
+			a->data.digital.value |= n->data.digital.value;
 			return;
 		default:
-			error("unknown action type %u", action->type);
+			error("unknown action type %u", n->type);
 			return;
 		}
 	}
 	if (&a->action_entry == &action_list)
-		list_add(&action->action_entry, &action_list);
+		list_add_tail(&n->action_entry, &action_list);
 }
 
 struct site_status {
@@ -360,34 +377,66 @@ struct site_status {
 	int		m11_fail;
 };
 
+long
+do_sleep(struct timeval *base, struct timeval *now, long offset)
+{
+	long delay;
+	if (offset > 100000000) {
+		error("offset %u is to high\n", offset);
+		return -1;
+	}
+	debug("delay: %li, %li.%06li %li.%06li\n", offset,
+			now->tv_sec, now->tv_usec, base->tv_sec, base->tv_usec);
+	delay = offset - now->tv_usec + base->tv_usec
+	       	- 1000000 * (now->tv_sec - base->tv_sec);
+	debug("delaying %li of %li usec\n", delay, offset);
+	if (0 >= delay && delay >= 100000000)
+		return 0;
+	usleep(delay);
+	return offset;
+}
+
 unsigned
 execute_actions(struct site_status *s)
 {
 	struct action *a, *n;
-	unsigned t = 0;
+	struct timeval start, now;
+	long t = 0;
 	list_for_each_entry_safe(a, n, &action_list, action_entry) {
 		switch (a->type) {
-			case ANALOG_OUTPUT:
-				continue;
-			case DIGITAL_OUTPUT:
-				debug("executing action %08x %08x (%u)\n",
-						a->data.digital.value,
-						a->data.digital.mask,
-						a->data.digital.delay);
-				if (a->data.digital.delay) {
-					usleep(a->data.digital.delay);
-					t += a->data.digital.delay;
-				}
-				s->do0 &= ~a->data.digital.mask;
-				s->do0 |=  a->data.digital.value;
-				set_parallel_output_status(2, s->do0);
-				list_del(&a->action_entry);
-				xfree(a);
-				continue;
-			default:
-				continue;
+		case ANALOG_OUTPUT:
+			continue;
+		case DIGITAL_OUTPUT:
+			gettimeofday(&now, NULL);
+			if (!a->data.digital.delay) {
+				debug("base:  %li.%06li\n",
+					       	start.tv_sec,
+						start.tv_usec);
+				memcpy(&start, &now, sizeof(start));
+				debug("base:  %li.%06li\n",
+					       	start.tv_sec,
+						start.tv_usec);
+			} else {
+				t += do_sleep(&start, &now,
+					       	a->data.digital.delay);
+			}
+			debug("[%li.%06li] executing action %08x %08x (%u)\n",
+					now.tv_sec,
+					now.tv_usec,
+					a->data.digital.value,
+					a->data.digital.mask,
+					a->data.digital.delay);
+			s->do0 &= ~a->data.digital.mask;
+			s->do0 |=  a->data.digital.value;
+			set_parallel_output_status(2, s->do0);
+			list_del(&a->action_entry);
+			xfree(a);
+			continue;
+		default:
+			continue;
 		}
 	}
+	debug("done executing\n");
 	return t;
 }
 
@@ -551,7 +600,7 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 	Dm( -700, -400, -100, h, &res);
 	debug2("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Sh(  80, 180, 1000, e11);
-	Dm(-5000, -5000, -400, h, &res);
+	Dm(-7000, -7000, -400, h, &res);
 	debug2("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 	h =  Zh(-1000, -10,   -1, d11);
 	Dm(  100, 400, 700, h, &res);
@@ -587,20 +636,18 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 static void
 calculate_m11(struct site_status *curr, struct site_status *prev)
 {
-	struct action *action = (struct action*) xmalloc(sizeof(*action));
+	struct action *action = (void*) xmalloc(sizeof(*action));
 	action->type = DIGITAL_OUTPUT;
 	action->data.digital.delay = 0;
 	action->data.digital.value = 0x00000000;
 	action->data.digital.mask = 0x00000000;
 
 	curr->m11_fail = prev->m11_fail;
-	//curr->do0 |=  0x00000004;
 	if ((curr->do0 & 0x00000004) == 0) {
 		action->data.digital.value |= 0x00000004;
 		action->data.digital.mask |= 0x00000004;
 	}
 	if (curr->t > 160) {
-		//curr->do0 &= ~0x0000000b;
 		if ((curr->do0 & 0x0000000b) != 0)
 			action->data.digital.mask |= 0x0000000b;
 		queue_action(action);
@@ -619,13 +666,11 @@ calculate_m11(struct site_status *curr, struct site_status *prev)
 			&& (curr->p11 - curr->p12 < 40)
 			&& (prev->p11 - prev->p12 < 40)) {
 		curr->m11_fail = curr->do0 & 0x3;
-		//curr->do0 |= 0x3;
 		action->data.digital.value |= 0x00000003;
 		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
 	}
 
-	//curr->do0 |= 0x00000008;
 	if ((curr->do0 & 0x00000008) == 0) {
 		action->data.digital.value |= 0x00000008;
 		action->data.digital.mask |= 0x00000008;
@@ -636,12 +681,10 @@ calculate_m11(struct site_status *curr, struct site_status *prev)
 	}
 
 	if ((curr->do0 & 0x00000003) == 0) {
-		//curr->do0 |= 1 << (curr->t % 2);
 		action->data.digital.value |= 1 << (curr->t % 2);
 		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
 	} else if (curr->m11_int > 7 * 24 * 60 * 6) {
-		//curr->do0 = curr->do0 ^ 0x3;
 		action->data.digital.value |= (curr->do0 ^ 0x3) & 0x3;
 		action->data.digital.mask |= 0x00000003;
 		curr->m11_int = 0;
@@ -697,57 +740,63 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 static unsigned
 execute_v11(struct site_status *curr)
 {
-	unsigned usec;
+	struct action action = {0};
+	long usec;
+
+	action.type = DIGITAL_OUTPUT;
+
 	if (-50 < curr->v11 && curr->v11 < 50)
 		return 0;
 
-	curr->do0 &= ~0x30;
+	action.data.digital.mask |= 0x00000030;
 	if (curr->v11 < 0) {
 		usec = curr->v11 * -1000;
-		curr->do0 |=  0x10;
+		action.data.digital.value = 0x00000010;
 	} else {
-		usec = curr->v11 *  1000;
-		curr->do0 |=  0x20;
+		usec = curr->v11 * 1000;
+		action.data.digital.value = 0x00000020;
 	}
 	if (usec > 5000000)
 		usec = 5000000;
 
-	set_parallel_output_status(2, curr->do0);
+	queue_action(&action);
 
-	usleep(usec);
+	action.data.digital.delay = usec;
+	action.data.digital.value = 0x00000000;
+	queue_action(&action);
 
-	curr->do0 &= ~0x30;
-	set_parallel_output_status(2, curr->do0);
-
-	return usec;
+	return 0;
 }
 
 static unsigned
 execute_v21(struct site_status *curr)
 {
-	unsigned usec;
+	struct action action = {0};
+	long usec;
+
+	action.type = DIGITAL_OUTPUT;
+
 	if (-50 < curr->v21 && curr->v21 < 50)
 		return 0;
 
-	curr->do0 &= ~0xc0;
+	action.data.digital.mask |= 0x000000C0;
 	if (curr->v21 < 0) {
 		usec = curr->v21 * -1000;
-		curr->do0 |=  0x80;
+		action.data.digital.value = 0x00000080;
 	} else {
-		usec = curr->v21 *  1000;
-		curr->do0 |=  0x40;
+		usec = curr->v21 * 1000;
+		action.data.digital.value = 0x00000040;
 	}
 	if (usec > 5000000)
 		usec = 5000000;
 
-	set_parallel_output_status(2, curr->do0);
+	queue_action(&action);
 
-	usleep(usec);
+	action.data.digital.delay = usec;
+	action.data.digital.value = 0x00000000;
+	queue_action(&action);
 
-	curr->do0 &= ~0xc0;
-	set_parallel_output_status(2, curr->do0);
-
-	return usec;
+	return 0;
 }
 
 static void
