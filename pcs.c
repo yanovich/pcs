@@ -440,6 +440,14 @@ execute_actions(struct site_status *s)
 	return t;
 }
 
+struct process {
+	int		(*run)(struct site_status*, struct site_status*, void*);
+	struct list_head	process_entry;
+	void		*process_config;
+};
+
+LIST_HEAD(process_list);
+
 static int
 load_site_status(struct site_status *site_status)
 {
@@ -816,6 +824,7 @@ process_loop(void)
 	unsigned t;
 	struct site_status s1 = {0}, s2 = {0};
 	struct site_status *curr, *prev;
+	struct process *p;
 	int err;
 
 	while (load_site_status(&s2) != 0)
@@ -840,6 +849,9 @@ process_loop(void)
 		while (load_site_status(curr) != 0)
 			sleep (1);
 
+		list_for_each_entry(p, &process_list, process_entry) {
+			p->run(curr, prev, p->process_config);
+		}
 		calculate_e1(curr);
 		calculate_v11(curr, prev);
 		calculate_e2(curr);
