@@ -5,6 +5,7 @@ noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
 				   cleanup.c \
 				   fatal.c \
+				   fuzzy.c \
 				   icp.c \
 				   log.c \
 				   xmalloc.c

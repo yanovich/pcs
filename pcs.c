@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "pathnames.h"
+#include "fuzzy.h"
 #include "icp.h"
 #include "log.h"
 #include "list.h"
@@ -502,63 +503,6 @@ load_site_status(struct site_status *site_status)
 
 	return 0;
 };
-
-struct fuzzy_result {
-	unsigned	mass;
-	int		value;
-};
-
-static unsigned
-Dh(int a, int b, int c, int x)
-{
-	if (x < a || x > c || a > b || b > c)
-		return 0;
-	if (x == b)
-		return 0x10000;
-	if (a <= x && x < b)
-		return (0x10000 * (x - a)) / (b - a);
-	else
-		return (0x10000 * (c - x)) / (c - b);
-}
-
-static void
-Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
-{
-	unsigned mass;
-	int value;
-	int tmp1, tmp2;
-
-	if (a > b || b > c)
-		return;
-	mass =  (h * (unsigned) (c - a)) / 0x20000;
-	value = (c + a) / 2 + ((((int) h) * (2 * b - c - a)) / (int) 0x60000);
-	value -= result->value;
-	result->mass += mass;
-	if (result->mass != 0)
-		result->value += (value * (int) mass) / (int) result->mass;
-}
-
-static unsigned
-Sh(int a, int b, int c, int x)
-{
-	if (x < a || x > c || a > b || b > c)
-		return 0;
-	if (x >= b)
-		return 0x10000;
-
-	return (0x10000 * (x - a)) / (b - a);
-}
-
-static unsigned
-Zh(int a, int b, int c, int x)
-{
-	if (x < a || x > c || a > b || b > c)
-		return 0;
-	if (x <= b)
-		return 0x10000;
-
-	return (0x10000 * (c - x)) / (c - b);
-}
 
 static void
 calculate_e1(struct site_status *curr)
