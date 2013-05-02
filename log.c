@@ -51,6 +51,18 @@ static int log_level = LOG_NOTICE;
 static int log_on_stderr = 1;
 static char *argv0;
 
+/* Report fatal message, never return */
+void
+fatal(const char *fmt,...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	do_log(LOG_CRIT, fmt, args);
+	va_end(args);
+	_exit(255);
+}
+
 /* Error messages that should be logged. */
 void
 error(const char *fmt,...)
