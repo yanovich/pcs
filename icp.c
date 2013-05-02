@@ -23,6 +23,8 @@
 #include <termios.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "pathnames.h"
 #include "log.h"

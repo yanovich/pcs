@@ -79,19 +79,3 @@ xfree(void *ptr)
 		fatal("xfree: NULL pointer given as argument");
 	free(ptr);
 }
-
-int
-xasprintf(char **ret, const char *fmt, ...)
-{
-	va_list ap;
-	int i;
-
-	va_start(ap, fmt);
-	i = vasprintf(ret, fmt, ap);
-	va_end(ap);
-
-	if (i < 0 || *ret == NULL)
-		fatal("xasprintf: could not allocate memory");
-
-	return (i);
-}

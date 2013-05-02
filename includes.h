@@ -15,6 +15,7 @@
 #define INCLUDES_H
 
 #include "config.h"
+#include "xmalloc.h"
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ULONG_MAX

@@ -24,9 +24,15 @@ parse(yaml_event_t *event, struct config_node *top)
 	struct config_node *node;
 	int i;
 
-	debug("%x %i %i %i\n", top, top->level, top->subnode, top->type);
-	debug2("%x %x %x\n", top->node_entry.prev, &top->node_entry, top->node_entry.next);
+	debug("%p %i %i %i\n", top, top->level, top->subnode, top->type);
+	debug2("%p %p %p\n", top->node_entry.prev, &top->node_entry, top->node_entry.next);
 	switch (event->type) {
+	case YAML_NO_EVENT:
+		break;
+	case YAML_STREAM_START_EVENT:
+		break;
+	case YAML_STREAM_END_EVENT:
+		break;
 	case YAML_DOCUMENT_START_EVENT:
 		if (top->level != 0)
 			fatal("Unexpected '---'\n");
@@ -36,6 +42,8 @@ parse(yaml_event_t *event, struct config_node *top)
 		if (top->level != 0)
 			fatal("Unexpected '...'\n");
 		printf("\n...\n");
+		break;
+	case YAML_ALIAS_EVENT:
 		break;
 	case YAML_SCALAR_EVENT:
 		if (top->subnode && (top->type == YAML_SEQUENCE_START_EVENT
@@ -132,7 +140,7 @@ load_server_config(const char *filename, struct server_config *conf)
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
 	struct config_node bottom;
-	int done;
+	int done = 0;
 
 	INIT_LIST_HEAD(&bottom.node_entry);
 	bottom.level = 0;
@@ -146,7 +154,6 @@ load_server_config(const char *filename, struct server_config *conf)
 	yaml_parser_set_input_file(&parser, f);
 
 	while (!done) {
-		struct config_node *n;
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
 

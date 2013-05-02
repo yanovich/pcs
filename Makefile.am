@@ -18,6 +18,8 @@ test_SOURCES			 = \
 
 piddir				 = $(localstatedir)/run
 
+AM_CFLAGS			 = -Wall
+
 AM_CPPFLAGS			 = -I /usr/include
 AM_CPPFLAGS			+= -DSYSCONFDIR='"$(sysconfdir)"'
 AM_CPPFLAGS			+= -DPIDDIR='"$(piddir)"'

@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "config.h"
+#include "includes.h"
 #include "pathnames.h"
 #include "fuzzy.h"
 #include "icp.h"
@@ -54,7 +54,6 @@ get_parallel_output_status(unsigned int slot, unsigned *status)
 	int fd, err;
 	char buff[256];
 	char *p;
-	int i = 0;
 
 	if (slot == 0 || slot > 8) {
 		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
@@ -93,8 +92,6 @@ set_parallel_output_status(unsigned int slot, unsigned  status)
 {
 	int fd, err;
 	char buff[256];
-	char *p;
-	int i = 0;
 
 	if (slot == 0 || slot > 8) {
 		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
@@ -176,7 +173,7 @@ b016(int apm)
 static int
 parse_amps(const char *data, int size, int *press)
 {
-	int i = 0, j, point = 0, val = 0;
+	int i = 0, point = 0, val = 0;
 	const char *p = data;
 
 	if (*p != '+')
@@ -207,7 +204,7 @@ parse_amps(const char *data, int size, int *press)
 static int
 parse_ohms(const char *data, int size, int *temp)
 {
-	int i = 0, j, point = 0, val = 0;
+	int i = 0, point = 0, val = 0;
 	const char *p = data;
 
 	if (*p != '+')
@@ -277,12 +274,12 @@ compare_actions(struct action *a1, struct action *a2)
 			return 1;
 		if (a1->data.digital.delay < a2->data.digital.delay)
 			return -1;
-		debug("equal action1 %08x %08x %08x (%u)\n",
+		debug("equal action1 %p %08x %08x (%li)\n",
 				a1,
 			       	a1->data.digital.value,
 				a1->data.digital.mask,
 				a1->data.digital.delay);
-		debug("equal action2 %08x %08x %08x (%u)\n",
+		debug("equal action2 %p %08x %08x (%li)\n",
 				a2,
 			       	a2->data.digital.value,
 				a2->data.digital.mask,
@@ -301,8 +298,10 @@ queue_action(struct action *action)
 	unsigned value;
 
 	switch (action->type) {
+	case ANALOG_OUTPUT:
+		break;
 	case DIGITAL_OUTPUT:
-		debug("checking action %08x %08x (%u)\n",
+		debug("checking action %08x %08x (%li)\n",
 			       	action->data.digital.value,
 				action->data.digital.mask,
 				action->data.digital.delay);
@@ -311,7 +310,7 @@ queue_action(struct action *action)
 		if (action->data.digital.mask == 0)
 		       return;
 		if (value != 0) {
-			error("invalid action %08x %08x (%u)\n",
+			error("invalid action %08x %08x (%li)\n",
 					action->data.digital.value,
 					action->data.digital.mask,
 					action->data.digital.delay);
@@ -320,7 +319,7 @@ queue_action(struct action *action)
 	}
 	n = (void *) xmalloc(sizeof(*n));
 	n = memcpy(n, action, sizeof(*n));
-	debug("queueing action %08x %08x (%u)\n",
+	debug("queueing action %08x %08x (%li)\n",
 			action->data.digital.value,
 			action->data.digital.mask,
 			action->data.digital.delay);
@@ -383,7 +382,7 @@ do_sleep(struct timeval *base, struct timeval *now, long offset)
 {
 	long delay;
 	if (offset > 100000000) {
-		error("offset %u is to high\n", offset);
+		error("offset %li is to high\n", offset);
 		return -1;
 	}
 	debug("delay: %li, %li.%06li %li.%06li\n", offset,
@@ -421,7 +420,7 @@ execute_actions(struct site_status *s)
 				t += do_sleep(&start, &now,
 					       	a->data.digital.delay);
 			}
-			debug("[%li.%06li] executing action %08x %08x (%u)\n",
+			debug("[%li.%06li] executing action %08x %08x (%li)\n",
 					now.tv_sec,
 					now.tv_usec,
 					a->data.digital.value,
@@ -463,7 +462,6 @@ hot_water_run(struct site_status *curr, struct site_status *prev, void *conf)
 {
 	struct hot_water_config *hwc = conf;
 	int vars[2];
-	int p0;
 	vars[0] = curr->t21 - 570;
 	vars[1] = curr->t21 - prev->t21;
 
@@ -767,7 +765,7 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 static unsigned
 execute_v11(struct site_status *curr)
 {
-	struct action action = {0};
+	struct action action = {{0}};
 	long usec;
 
 	action.type = DIGITAL_OUTPUT;
@@ -798,7 +796,7 @@ execute_v11(struct site_status *curr)
 static unsigned
 execute_v21(struct site_status *curr)
 {
-	struct action action = {0};
+	struct action action = {{0}};
 	long usec;
 
 	action.type = DIGITAL_OUTPUT;
@@ -844,7 +842,6 @@ process_loop(void)
 	struct site_status s1 = {0}, s2 = {0};
 	struct site_status *curr, *prev;
 	struct process *p;
-	int err;
 
 	while (load_site_status(&s2) != 0)
 		sleep (1);
@@ -933,7 +930,7 @@ main(int ac, char **av)
 	signal(SIGINT, sigterm_handler);
 	f = fopen(pid_file, "w");
 	if (f != NULL) {
-		fprintf(f, "%ld\n", getpid());
+		fprintf(f, "%lu\n", (long unsigned) getpid());
 		fclose(f);
 	}
 

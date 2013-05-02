@@ -31,7 +31,6 @@
 
 int main(int argc, char *argv[])
 {
-	int err;
 	char buff[MAX_RESPONSE];
 	int slot_count, slot;
 

@@ -39,7 +39,6 @@ Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
 {
 	unsigned mass;
 	int value;
-	int tmp1, tmp2;
 
 	if (a > b || b > c)
 		return;

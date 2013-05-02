@@ -49,7 +49,6 @@
 
 static int log_level = LOG_NOTICE;
 static int log_on_stderr = 1;
-static int log_facility = LOG_DAEMON;
 static char *argv0;
 
 /* Error messages that should be logged. */
