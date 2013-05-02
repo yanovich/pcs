@@ -274,6 +274,9 @@ execute_actions(struct site_status *s)
 	struct timeval start, now;
 	long t = 0;
 	list_for_each_entry_safe(a, n, &action_list, action_entry) {
+		if (received_sigterm)
+			return 0;
+
 		switch (a->type) {
 		case ANALOG_OUTPUT:
 			continue;
@@ -686,6 +689,8 @@ process_loop(void)
 		t -= execute_v11(curr);;
 		t -= execute_v21(curr);;
 		t -= execute_actions(curr);
+		if (received_sigterm)
+			return;
 		usleep(t);
 	}
 }
