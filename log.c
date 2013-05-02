@@ -1,5 +1,4 @@
-/* $OpenBSD: log.c,v 1.42 2011/06/17 21:44:30 djm Exp $ */
-/*
+/* log.c -- log formatted messages of varying severity
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -9,8 +8,8 @@
  * software must be clearly marked as such, and if the derived work is
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
- */
-/*
+ *
+ *
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
