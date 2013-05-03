@@ -4,6 +4,7 @@ AM_MAKEFLAGS			 = --no-print-directory
 noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
 				   fuzzy.c \
+				   heating.c \
 				   hot_water.c \
 				   icp.c \
 				   log.c \

@@ -34,6 +34,7 @@
 #include "list.h"
 #include "process.h"
 #include "hot_water.h"
+#include "heating.h"
 
 int received_sigterm = 0;
 
@@ -321,6 +322,7 @@ load_site_config(void)
 {
 	debug("loading config\n");
 	load_hot_water(&process_list);
+	load_heating(&process_list);
 	debug("loaded config\n");
 }
 
@@ -436,6 +438,11 @@ calculate_v11(struct site_status *curr, struct site_status *prev)
 	Dm( -700, -400, -100, h, &res);
 	debug2("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
 
+	if (curr->v11 != res.value) {
+		warn("bad fuzzy result %i %i\n", curr->v11, res.value);
+	} else {
+		debug("heating fuzzy result matched\n");
+	}
 	debug("V11_POS %i %i, V11_SUM %i %i\n", prev->v11_pos, curr->v11_pos,
 		       prev->v11_sum, curr->v11_sum);	
 	if (prev->v11_pos >=0) {
