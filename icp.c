@@ -309,3 +309,29 @@ close_fd:
 	close(fd);
 	return err;
 }
+
+#define MAX_RESPONSE 256
+#define REQUEST_NAME	"$00M"
+
+void
+icp_list_modules(void (*callback)(unsigned int, const char *))
+{
+	char buff[MAX_RESPONSE];
+	int slot_count, slot;
+
+	slot_count = icp_module_count();
+	if (slot_count < 0)
+		return;
+
+	for (slot = 1; slot <= slot_count; slot++) {
+		char *name = buff;
+		if (icp_get_parallel_name(slot, MAX_RESPONSE - 1, name) != 0) {
+			if (icp_serial_exchange(slot, REQUEST_NAME,
+					       	MAX_RESPONSE - 1, name) < 3)
+				name = NULL;
+			else
+				name = &buff[3];
+		}
+		callback(slot, name);
+	}
+}

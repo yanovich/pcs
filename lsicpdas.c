@@ -26,31 +26,16 @@
 #include "log.h"
 #include "icp.h"
 
-#define MAX_RESPONSE 256
-#define REQUEST_NAME	"$00M"
+void print_module(unsigned int slot, const char *name)
+{
+	printf("slot%i..%s\n", slot, name ? name : "empty");
+}
 
 int main(int argc, char *argv[])
 {
-	char buff[MAX_RESPONSE];
-	int slot_count, slot;
-
 	log_init("lsicpdas", LOG_NOTICE, LOG_DAEMON, 1);
 
-	slot_count = icp_module_count();
-	if (slot_count < 0)
-		return 1;
-
-	for (slot = 1; slot <= slot_count; slot++) {
-		char *name = buff;
-		if (icp_get_parallel_name(slot, MAX_RESPONSE - 1, name) != 0) {
-			if (icp_serial_exchange(slot, REQUEST_NAME,
-					       	MAX_RESPONSE - 1, name) < 3)
-				strcpy(name, "empty");
-			else
-				name = &buff[3];
-		}
-		printf("slot%i..%s\n", slot, name);
-	}
+	icp_list_modules(print_module);
 
 	return 0;
 }

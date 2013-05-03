@@ -17,6 +17,9 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifndef ICP_H
+#define ICP_H
+
 int
 icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data);
 
@@ -31,3 +34,8 @@ get_parallel_output_status(unsigned int slot, unsigned *status);
 
 int
 set_parallel_output_status(unsigned int slot, unsigned  status);
+
+void
+icp_list_modules(void (*callback)(unsigned int, const char *));
+
+#endif /* ICP_H */
