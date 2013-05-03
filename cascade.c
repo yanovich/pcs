@@ -106,7 +106,7 @@ cascade_log(struct site_status *curr, void *conf, char *buff,
 {
 	int m1 = get_DO(0, 1);
 	int m2 = get_DO(0, 2);
-	int m3 = get_DO(0, 2);
+	int m3 = get_DO(0, 3);
 	int m4 = get_DO(0, 4);
 	int b = 0;
 
