@@ -35,8 +35,8 @@ struct valve_data {
 	int			min;
 	int			max;
 	int			total;
-	int			close;
-	int			open;
+	struct address		close;
+	struct address		open;
 	int			abs;
 	int			pos;
 };
@@ -45,9 +45,8 @@ static void
 adjust_2way_valve(int amount, void *data)
 {
 	struct valve_data *d = data;
-	struct action action = {{0}};
-	long usec;
 
+	debug("amount %5i pos %6i\n", amount, d->pos);
 	if (-d->min < amount && amount < d->min)
 		return;
 
@@ -78,28 +77,19 @@ adjust_2way_valve(int amount, void *data)
 	}
 	amount -= d->pos;
 
-	action.type = DIGITAL_OUTPUT;
-
 	d->pos += amount;
 	debug("amount %5i pos %6i\n", amount, d->pos);
 
 	if (-d->min < amount && amount < d->min)
 		return;
 
-	action.data.digital.mask |= 0x00000030;
 	if (amount < 0) {
-		usec = amount * -1000;
-		action.data.digital.value = 0x00000010;
+		set_DO(d->close.mod, d->close.i, 1, 0);
+		set_DO(d->close.mod, d->close.i, 0, amount * -1000);
 	} else {
-		usec = amount * 1000;
-		action.data.digital.value = 0x00000020;
+		set_DO(d->close.mod, d->open.i, 1, 0);
+		set_DO(d->close.mod, d->open.i, 0, amount *  1000);
 	}
-
-	queue_action(&action);
-
-	action.data.digital.delay = usec;
-	action.data.digital.value = 0x00000000;
-	queue_action(&action);
 }
 
 struct valve_ops valve_ops = {
@@ -107,7 +97,7 @@ struct valve_ops valve_ops = {
 };
 
 struct valve *
-load_2way_valve(int min, int max, int total, int close, int open)
+load_2way_valve(int min, int max, int total, int mc, int c, int mo, int o)
 {
 	struct valve *valve = (void *) xmalloc(sizeof(*valve));
 	struct valve_data *d = (void *) xmalloc(sizeof(*d));
@@ -117,8 +107,10 @@ load_2way_valve(int min, int max, int total, int close, int open)
 	d->abs = 0;
 	d->min = min;
 	d->max = max;
-	d->close = close;
-	d->open = open;
+	d->close.mod = mc;
+	d->close.i = c;
+	d->open.mod = mo;
+	d->open.i = o;
 	d->total = total;
 
 	return valve;

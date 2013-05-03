@@ -42,61 +42,61 @@ static void
 cascade_run(struct site_status *curr, void *conf)
 {
 	struct cascade_config *c = conf;
-	struct action *action = (void*) xmalloc(sizeof(*action));
+	int m1 = get_DO(0, 1);
+	int m2 = get_DO(0, 2);
+	int m4 = get_DO(0, 4);
 
 	debug("running cascade\n");
-	action->type = DIGITAL_OUTPUT;
-	action->data.digital.delay = 0;
-	action->data.digital.value = 0x00000000;
-	action->data.digital.mask = 0x00000000;
 
-	if ((curr->do0 & 0x00000004) == 0) {
-		action->data.digital.value |= 0x00000004;
-		action->data.digital.mask |= 0x00000004;
-	}
+	if (get_DO(0, 3) == 0)
+		set_DO(0, 3, 1, 0);
 	if (curr->t > 160) {
-		if ((curr->do0 & 0x0000000b) != 0)
-			action->data.digital.mask |= 0x0000000b;
-		queue_action(action);
+		if (m1)
+			set_DO(0, 1, 0, 0);
+		if (m2)
+			set_DO(0, 2, 0, 0);
+		if (m4)
+			set_DO(0, 4, 0, 0);
 		c->m11_int = 0;
 		return;
 	}
 
-	if (curr->t > 140 && (curr->do0 & 0x3) == 0) {
-		queue_action(action);
+	if (curr->t > 140)
+		return;
+
+	if (!m4)
+		set_DO(0, 4, 1, 0);
+
+	if (!m1 && !m2) {
+		if (curr->t % 2)
+			set_DO(0, 1, 1, 0);
+		else
+			set_DO(0, 2, 1, 0);
+		c->m11_int = 0;
+		return;
+	}
+
+	if (c->m11_fail > 1) {
+		if (!m1)
+			set_DO(0, 1, 1, 0);
+		if (!m2)
+			set_DO(0, 2, 1, 0);
+		c->m11_int = 0;
 		return;
 	}
 
 	c->m11_int++;
-
-	if ((curr->do0 & 0x00000008) == 0) {
-		action->data.digital.value |= 0x00000008;
-		action->data.digital.mask |= 0x00000008;
-	}
 
 	if (c->m11_int > 10 && (curr->p11 - curr->p12) < 40)
 		c->m11_fail++;
 	else
 		c->m11_fail = 0;
 
-	if (c->m11_fail > 1) {
-		action->data.digital.value |= 0x00000003;
-		action->data.digital.mask |= 0x00000003;
-		c->m11_int = 0;
-		queue_action(action);
-		return;
-	}
-
-	if ((curr->do0 & 0x00000003) == 0) {
-		action->data.digital.value |= 1 << (curr->t % 2);
-		action->data.digital.mask |= 0x00000003;
-		c->m11_int = 0;
-	} else if (c->m11_int > 7 * 24 * 60 * 6) {
-		action->data.digital.value |= (curr->do0 ^ 0x3) & 0x3;
-		action->data.digital.mask |= 0x00000003;
+	if (c->m11_int > 7 * 24 * 60 * 6) {
+		set_DO(0, 1, !m1, 0);
+		set_DO(0, 2, !m2, 0);
 		c->m11_int = 0;
 	}
-	queue_action(action);
 	return;
 }
 

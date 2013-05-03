@@ -21,42 +21,22 @@
 #define PCS_PROCESS_H
 
 
-typedef enum {
-	ANALOG_OUTPUT,
-	DIGITAL_OUTPUT
-} action_type;
-
-struct action {
-	struct list_head		action_entry;
-	action_type			type;
-	union {
-		struct {
-			unsigned	value;
-			unsigned	mask;
-			long		delay;
-		}			digital;
-		struct {
-			unsigned	value;
-			unsigned	index;
-		}			analog;
-	}				data;
+struct address {
+	int		mod;
+	int		i;
 };
-
-void
-queue_action(struct action *action);
 
 unsigned int
 get_DO(int mod, int index);
 
 void
-set_DO(int mod, int index, int value);
+set_DO(int mod, int index, int value, int delay);
 
 struct DO_mod {
 	int		(*read)(struct DO_mod *mod);
 	int		(*write)(struct DO_mod *mod);
 	unsigned int	number;
-	unsigned int	curr;
-	unsigned int	read_state;
+	unsigned int	state;
 	int		block;
 	int		slot;
 };

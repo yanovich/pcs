@@ -149,6 +149,28 @@ parse_ohms(const char *data, int size, int *temp)
 
 LIST_HEAD(action_list);
 
+typedef enum {
+	ANALOG_OUTPUT,
+	DIGITAL_OUTPUT
+} action_type;
+
+struct action {
+	action_type			type;
+	struct list_head		action_entry;
+	int				module;
+	union {
+		struct {
+			long		delay;
+			unsigned	value;
+			unsigned	mask;
+		}			digital;
+		struct {
+			unsigned	value;
+			unsigned	index;
+		}			analog;
+	}				data;
+};
+
 static int
 compare_actions(struct action *a1, struct action *a2)
 {
@@ -158,6 +180,10 @@ compare_actions(struct action *a1, struct action *a2)
 		return -1;
 	switch (a1->type) {
 	case ANALOG_OUTPUT:
+		if (a1->module > a2->module)
+			return 1;
+		if (a1->module < a2->module)
+			return -1;
 		if (a1->data.analog.index > a2->data.analog.index)
 			return 1;
 		if (a1->data.analog.index > a2->data.analog.index)
@@ -167,6 +193,10 @@ compare_actions(struct action *a1, struct action *a2)
 		if (a1->data.digital.delay > a2->data.digital.delay)
 			return 1;
 		if (a1->data.digital.delay < a2->data.digital.delay)
+			return -1;
+		if (a1->module > a2->module)
+			return 1;
+		if (a1->module < a2->module)
 			return -1;
 		debug("equal action1 %p %08x %08x (%li)\n",
 				a1,
@@ -184,7 +214,7 @@ compare_actions(struct action *a1, struct action *a2)
 	}
 }
 
-void
+static void
 queue_action(struct action *action)
 {
 	struct action *a, *n;
@@ -382,24 +412,36 @@ load_site_status(struct site_status *site_status)
 	return 0;
 }
 
+static struct site_status status = {0};
+
 unsigned int
-get_DO(int slot, int index)
+get_DO(int mod, int index)
 {
-	return 0;
+	/* return (status.DO_mod[mod].state & 1 << (index - 1)) != 0; */
+	return (status.do0 & 1 << (index - 1)) != 0;
 }
 
 void
-set_DO(int slot, int index, int value)
+set_DO(int mod, int index, int value, int delay)
 {
+	struct action action = {0};
+	action.type = DIGITAL_OUTPUT;
+	action.module = mod;
+	action.data.digital.delay = delay;
+	action.data.digital.mask |= 1 << (index - 1);
+	if (value)
+		action.data.digital.value |= 1 << (index - 1);
+	queue_action(&action);
 }
 
 static unsigned
 execute_v21(struct site_status *curr)
 {
-	struct action action = {{0}};
+	struct action action = {0};
 	long usec;
 
 	action.type = DIGITAL_OUTPUT;
+	action.module = 0;
 
 	if (-50 < curr->v21 && curr->v21 < 50)
 		return 0;
@@ -433,8 +475,6 @@ log_status(struct site_status *site_status)
 		       	site_status->p11, site_status->p12, 0,
 			site_status->v21);
 }
-
-static struct site_status status = {0};
 
 void
 process_loop(void)
