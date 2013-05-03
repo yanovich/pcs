@@ -30,12 +30,14 @@
 #include "log.h"
 #include "list.h"
 #include "process.h"
+#include "valve.h"
 #include "hot_water.h"
 
 struct hot_water_config {
 	struct list_head	fuzzy;
 	int			first_run;
 	int			t21_prev;
+	struct valve		*valve;
 };
 
 static void
@@ -43,6 +45,7 @@ hot_water_run(struct site_status *curr, void *conf)
 {
 	struct hot_water_config *hwc = conf;
 	int vars[2];
+	int v21;
 
 	debug("running hot water\n");
 	if (hwc->first_run) {
@@ -53,7 +56,11 @@ hot_water_run(struct site_status *curr, void *conf)
 	vars[1] = curr->t21 - hwc->t21_prev;
 	hwc->t21_prev = curr->t21;
 
-	curr->v21 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+	v21 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+	if (!hwc->valve || !hwc->valve->ops || !hwc->valve->ops->adjust)
+		fatal("bad valve\n");
+	
+	hwc->valve->ops->adjust(v21, hwc->valve->data);
 	return;
 }
 
@@ -98,6 +105,7 @@ load_hot_water(struct list_head *list)
 	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
 
 	hwc->first_run = 1;
+	hwc->valve = load_2way_valve(50, 5000, 47000, 0, 8, 0, 7);
 	hwp->config = (void *) hwc;
 	hwp->ops = &hot_water_ops;
 	list_add_tail(&hwp->process_entry, list);

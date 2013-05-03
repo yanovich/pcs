@@ -407,7 +407,6 @@ load_site_status(struct site_status *site_status)
 	}
 
 	site_status->do0 = output;
-	site_status->v21 = 0;
 
 	return 0;
 }
@@ -434,38 +433,6 @@ set_DO(int mod, int index, int value, int delay)
 	queue_action(&action);
 }
 
-static unsigned
-execute_v21(struct site_status *curr)
-{
-	struct action action = {0};
-	long usec;
-
-	action.type = DIGITAL_OUTPUT;
-	action.module = 0;
-
-	if (-50 < curr->v21 && curr->v21 < 50)
-		return 0;
-
-	action.data.digital.mask |= 0x000000C0;
-	if (curr->v21 < 0) {
-		usec = curr->v21 * -1000;
-		action.data.digital.value = 0x00000080;
-	} else {
-		usec = curr->v21 * 1000;
-		action.data.digital.value = 0x00000040;
-	}
-	if (usec > 5000000)
-		usec = 5000000;
-
-	queue_action(&action);
-
-	action.data.digital.delay = usec;
-	action.data.digital.value = 0x00000000;
-	queue_action(&action);
-
-	return 0;
-}
-
 void
 log_status(struct site_status *site_status)
 {
@@ -473,7 +440,7 @@ log_status(struct site_status *site_status)
 			"V1 %4i V2 %4i\n", site_status->t,
 		       	site_status->t11, site_status->t12, site_status->t21,
 		       	site_status->p11, site_status->p12, 0,
-			site_status->v21);
+			0);
 }
 
 void
@@ -500,7 +467,6 @@ process_loop(void)
 		}
 		log_status(curr);
 		t = 10000000;
-		t -= execute_v21(curr);;
 		t -= execute_actions(curr);
 		if (received_sigterm)
 			return;

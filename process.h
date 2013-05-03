@@ -49,8 +49,6 @@ struct site_status {
 	unsigned int	p11;
 	unsigned int	p12;
 	unsigned int	do0;
-	int		v21;
-	int		e21;
 	struct DO_mod	DO_mod[256];
 };
 
