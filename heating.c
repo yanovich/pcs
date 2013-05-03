@@ -39,8 +39,6 @@ struct heating_config {
 	int			e11_prev;
 	int			e12_prev;
 	struct valve		*valve;
-	int			v11_abs;
-	int			v11_pos;
 };
 
 static void
@@ -126,8 +124,6 @@ load_heating(struct list_head *list)
 
 	hwc->first_run = 1;
 	hwc->valve = load_2way_valve(50, 5000, 47000, 0, 5, 0, 6);
-	hwc->v11_abs = 0;
-	hwc->v11_pos = 0;
 	hwp->config = (void *) hwc;
 	hwp->ops = &heating_ops;
 	list_add_tail(&hwp->process_entry, list);
