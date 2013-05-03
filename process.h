@@ -45,17 +45,10 @@ struct action {
 void
 queue_action(struct action *action);
 
+unsigned int
+get_DO(int block, int slot, int index);
+
 struct site_status {
-	int		DO_count;
-	unsigned char	*DO;
-	int		DI_count;
-	unsigned char	*DI;
-	int		AO_count;
-	unsigned	*AO;
-	int		TR_count;
-	unsigned	*TR;
-	int		AI_count;
-	unsigned	*AI;
 	int		t;
 	int		t11;
 	int		t12;

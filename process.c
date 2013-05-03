@@ -380,6 +380,11 @@ load_site_status(struct site_status *site_status)
 	return 0;
 }
 
+unsigned int
+get_DO(int block, int slot, int index)
+{
+	return 0;
+}
 
 static void
 calculate_m11(struct site_status *curr, struct site_status *prev)
