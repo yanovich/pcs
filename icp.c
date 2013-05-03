@@ -28,6 +28,7 @@
 
 #include "pathnames.h"
 #include "log.h"
+#include "modules.h"
 #include "icp.h"
 
 int
@@ -228,10 +229,11 @@ icp_get_parallel_name(unsigned int slot, int size, char *data)
 	return 0;
 }
 
-int
-get_parallel_output_status(unsigned int slot, unsigned *status)
+static int
+get_parallel_output_status(struct DO_mod *module)
 {
 	int fd, err;
+	unsigned int slot = module->slot;
 	char buff[256];
 	char *p;
 
@@ -261,16 +263,17 @@ get_parallel_output_status(unsigned int slot, unsigned *status)
 	}
 
 	err = 0;
-	*status = strtoul(buff, &p, 16);
+	module->state = strtoul(buff, &p, 16);
 close_fd:
 	close(fd);
 	return err;
 }
 
-int
-set_parallel_output_status(unsigned int slot, unsigned  status)
+static int
+set_parallel_output_status(struct DO_mod *module)
 {
 	int fd, err;
+	unsigned int slot = module->slot;
 	char buff[256];
 
 	if (slot == 0 || slot > 8) {
@@ -291,7 +294,7 @@ set_parallel_output_status(unsigned int slot, unsigned  status)
 		return -1;
 	}
 
-	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%08x", status);
+	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%08x", module->state);
 	if (err >= sizeof(buff)) {
 		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
@@ -334,4 +337,47 @@ icp_list_modules(void (*callback)(unsigned int, const char *))
 		}
 		callback(slot, name);
 	}
+}
+
+static struct DO_mod DO32 = {
+	.read = get_parallel_output_status,
+	.write = set_parallel_output_status,
+	.count = 32,
+};
+
+struct module_config {
+	const char 		*name;
+	int			type;
+	void			*config;
+};
+
+struct module_config mods[] = {
+	{
+		.name = "8041",
+		.type = DO_MODULE,
+		.config = &DO32,
+	},
+	{
+	}
+};
+
+void *
+icp_init_module(const char *name, int n, int *type, int *more)
+{
+	struct module_config *c = NULL;
+	int i;
+
+	for (i = 0; i < (sizeof(mods) / sizeof(*c) - 1); i++) {
+		if (strcmp(name, mods[i].name))
+			continue;
+		if (n--)
+			continue;
+		c = &mods[i];
+		*type = mods[i].type;
+		if (mods[i + 1].name && !strcmp(name, mods[i + 1].name))
+			*more = 1;
+		else
+			*more = 0;
+	}
+	return c->config;
 }

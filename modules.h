@@ -1,4 +1,4 @@
-/* icp.h -- exchange data with ICP DAS I-8(7) modules
+/* modules.h -- configure modules
  * Copyright (C) 2013 Sergey Yanovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -17,26 +17,17 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef ICP_H
-#define ICP_H
 
-enum {
-	DO_MODULE
+#ifndef PCS_MODULES_H
+#define PCS_MODULES_H
+
+struct DO_mod {
+	int		(*read)(struct DO_mod *mod);
+	int		(*write)(struct DO_mod *mod);
+	unsigned int	count;
+	unsigned int	state;
+	int		block;
+	int		slot;
 };
 
-int
-icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data);
-
-int
-icp_module_count(void);
-
-int
-icp_get_parallel_name(unsigned int slot, int size, char *data);
-
-void
-icp_list_modules(void (*callback)(unsigned int, const char *));
-
-void *
-icp_init_module(const char *name, int n, int *type, int *more);
-
-#endif /* ICP_H */
+#endif /* PCS_MODULES_H */

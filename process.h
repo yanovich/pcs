@@ -20,6 +20,7 @@
 #ifndef PCS_PROCESS_H
 #define PCS_PROCESS_H
 
+#include "modules.h"
 
 struct address {
 	int		mod;
@@ -32,15 +33,6 @@ get_DO(int mod, int index);
 void
 set_DO(int mod, int index, int value, int delay);
 
-struct DO_mod {
-	int		(*read)(struct DO_mod *mod);
-	int		(*write)(struct DO_mod *mod);
-	unsigned int	number;
-	unsigned int	state;
-	int		block;
-	int		slot;
-};
-
 struct site_status {
 	int		t;
 	int		t11;
@@ -48,7 +40,6 @@ struct site_status {
 	int		t21;
 	unsigned int	p11;
 	unsigned int	p12;
-	unsigned int	do0;
 	struct DO_mod	DO_mod[256];
 	long		interval;
 };

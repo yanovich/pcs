@@ -157,7 +157,7 @@ typedef enum {
 struct action {
 	action_type			type;
 	struct list_head		action_entry;
-	int				module;
+	int				mod;
 	union {
 		struct {
 			long		delay;
@@ -168,7 +168,7 @@ struct action {
 			unsigned	value;
 			unsigned	index;
 		}			analog;
-	}				data;
+	};
 };
 
 static int
@@ -180,34 +180,34 @@ compare_actions(struct action *a1, struct action *a2)
 		return -1;
 	switch (a1->type) {
 	case ANALOG_OUTPUT:
-		if (a1->module > a2->module)
+		if (a1->mod > a2->mod)
 			return 1;
-		if (a1->module < a2->module)
+		if (a1->mod < a2->mod)
 			return -1;
-		if (a1->data.analog.index > a2->data.analog.index)
+		if (a1->analog.index > a2->analog.index)
 			return 1;
-		if (a1->data.analog.index > a2->data.analog.index)
+		if (a1->analog.index > a2->analog.index)
 			return -1;
 		return 0;
 	case DIGITAL_OUTPUT:
-		if (a1->data.digital.delay > a2->data.digital.delay)
+		if (a1->digital.delay > a2->digital.delay)
 			return 1;
-		if (a1->data.digital.delay < a2->data.digital.delay)
+		if (a1->digital.delay < a2->digital.delay)
 			return -1;
-		if (a1->module > a2->module)
+		if (a1->mod > a2->mod)
 			return 1;
-		if (a1->module < a2->module)
+		if (a1->mod < a2->mod)
 			return -1;
 		debug("equal action1 %p %08x %08x (%li)\n",
 				a1,
-			       	a1->data.digital.value,
-				a1->data.digital.mask,
-				a1->data.digital.delay);
+			       	a1->digital.value,
+				a1->digital.mask,
+				a1->digital.delay);
 		debug("equal action2 %p %08x %08x (%li)\n",
 				a2,
-			       	a2->data.digital.value,
-				a2->data.digital.mask,
-				a2->data.digital.delay);
+			       	a2->digital.value,
+				a2->digital.mask,
+				a2->digital.delay);
 		return 0;
 	default:
 		return 0;
@@ -226,27 +226,27 @@ queue_action(struct action *action)
 		break;
 	case DIGITAL_OUTPUT:
 		debug("checking action %08x %08x (%li)\n",
-			       	action->data.digital.value,
-				action->data.digital.mask,
-				action->data.digital.delay);
-		value = action->data.digital.value;
-		value &= ~action->data.digital.mask;
-		if (action->data.digital.mask == 0)
+			       	action->digital.value,
+				action->digital.mask,
+				action->digital.delay);
+		value = action->digital.value;
+		value &= ~action->digital.mask;
+		if (action->digital.mask == 0)
 		       return;
 		if (value != 0) {
 			error("invalid action %08x %08x (%li)\n",
-					action->data.digital.value,
-					action->data.digital.mask,
-					action->data.digital.delay);
+					action->digital.value,
+					action->digital.mask,
+					action->digital.delay);
 			return;
 		}
 	}
 	n = (void *) xmalloc(sizeof(*n));
 	n = memcpy(n, action, sizeof(*n));
 	debug("queueing action %08x %08x (%li)\n",
-			action->data.digital.value,
-			action->data.digital.mask,
-			action->data.digital.delay);
+			action->digital.value,
+			action->digital.mask,
+			action->digital.delay);
 	list_for_each_entry(a, &action_list, action_entry) {
 		c = compare_actions(n, a);
 		if (c == 1)
@@ -258,18 +258,18 @@ queue_action(struct action *action)
 		switch (n->type) {
 		case ANALOG_OUTPUT:
 			error("duplicate analog output %u\n",
-					n->data.analog.index);
+					n->analog.index);
 			return;
 		case DIGITAL_OUTPUT:
-			if ((a->data.digital.mask & n->data.digital.mask)
+			if ((a->digital.mask & n->digital.mask)
 					!= 0) {
 				error("overlapping masks %08x %08x\n",
-						a->data.digital.mask,
-						n->data.digital.mask);
+						a->digital.mask,
+						n->digital.mask);
 				return;
 			}
-			a->data.digital.mask |= n->data.digital.mask;
-			a->data.digital.value |= n->data.digital.value;
+			a->digital.mask |= n->digital.mask;
+			a->digital.value |= n->digital.value;
 			return;
 		default:
 			error("unknown action type %u", n->type);
@@ -300,6 +300,8 @@ do_sleep(struct timeval *base, struct timeval *now, long offset)
 	return offset;
 }
 
+static struct site_status status = {0};
+
 unsigned
 execute_actions(struct site_status *s)
 {
@@ -315,21 +317,21 @@ execute_actions(struct site_status *s)
 			continue;
 		case DIGITAL_OUTPUT:
 			gettimeofday(&now, NULL);
-			if (!a->data.digital.delay) {
+			if (!a->digital.delay) {
 				memcpy(&start, &now, sizeof(start));
 			} else {
 				t += do_sleep(&start, &now,
-					       	a->data.digital.delay);
+					       	a->digital.delay);
 			}
 			debug("[%li.%06li] executing action %08x %08x (%li)\n",
 					now.tv_sec,
 					now.tv_usec,
-					a->data.digital.value,
-					a->data.digital.mask,
-					a->data.digital.delay);
-			s->do0 &= ~a->data.digital.mask;
-			s->do0 |=  a->data.digital.value;
-			set_parallel_output_status(2, s->do0);
+					a->digital.value,
+					a->digital.mask,
+					a->digital.delay);
+			status.DO_mod[a->mod].state &= ~a->digital.mask;
+			status.DO_mod[a->mod].state |=  a->digital.value;
+			status.DO_mod[a->mod].write(&status.DO_mod[a->mod]);
 			list_del(&a->action_entry);
 			xfree(a);
 			continue;
@@ -343,12 +345,14 @@ execute_actions(struct site_status *s)
 
 LIST_HEAD(process_list);
 
-static struct site_status status = {0};
-
 void
 load_site_config(void)
 {
 	debug("loading config\n");
+	int type, more;
+	status.DO_mod[0] = *(struct DO_mod *)
+	       	icp_init_module("8041", 0, &type, &more);
+	status.DO_mod[0].slot = 2;
 	load_heating(&process_list);
 	load_hot_water(&process_list);
 	load_cascade(&process_list);
@@ -360,10 +364,10 @@ int
 load_site_status(struct site_status *site_status)
 {
 	int err;
+	int i;
 	char data[256];
 	int temp[7] = {0};
 	int press[8] = {0};
-	unsigned output;
 
 	err = icp_serial_exchange(3, "#00", 256, &data[0]);
 	if (0 > err) {
@@ -398,13 +402,13 @@ load_site_status(struct site_status *site_status)
 	site_status->p12 = press[0];
 	site_status->p11 = press[1];
 
-	err = get_parallel_output_status(2, &output);
-	if (0 != err) {
-		error("%s: status data\n", __FILE__);
-		return -1;
+	for (i = 0; status.DO_mod[i].count > 0; i++) {
+		err = status.DO_mod[i].read(&status.DO_mod[i]);
+		if (0 != err) {
+			error("%s: status data\n", __FILE__);
+			return -1;
+		}
 	}
-
-	site_status->do0 = output;
 
 	return 0;
 }
@@ -412,8 +416,7 @@ load_site_status(struct site_status *site_status)
 unsigned int
 get_DO(int mod, int index)
 {
-	/* return (status.DO_mod[mod].state & 1 << (index - 1)) != 0; */
-	return (status.do0 & 1 << (index - 1)) != 0;
+	return (status.DO_mod[mod].state & 1 << (index - 1)) != 0;
 }
 
 void
@@ -421,11 +424,11 @@ set_DO(int mod, int index, int value, int delay)
 {
 	struct action action = {0};
 	action.type = DIGITAL_OUTPUT;
-	action.module = mod;
-	action.data.digital.delay = delay;
-	action.data.digital.mask |= 1 << (index - 1);
+	action.mod = mod;
+	action.digital.delay = delay;
+	action.digital.mask |= 1 << (index - 1);
 	if (value)
-		action.data.digital.value |= 1 << (index - 1);
+		action.digital.value |= 1 << (index - 1);
 	queue_action(&action);
 }
 
