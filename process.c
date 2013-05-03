@@ -468,6 +468,6 @@ process_loop(void)
 		if (received_sigterm)
 			return;
 		do_sleep(&start, &now, curr->interval);
-		start.tv_sec += 10;
+		start.tv_sec += curr->interval / 1000000;
 	}
 }
