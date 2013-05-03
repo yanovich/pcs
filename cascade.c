@@ -100,8 +100,35 @@ cascade_run(struct site_status *curr, void *conf)
 	return;
 }
 
+static int
+cascade_log(struct site_status *curr, void *conf, char *buff,
+		const int sz, int c)
+{
+	int m1 = get_DO(0, 1);
+	int m2 = get_DO(0, 2);
+	int m3 = get_DO(0, 2);
+	int m4 = get_DO(0, 4);
+	int b = 0;
+
+	if (c == sz)
+		return 0;
+	if (c) {
+		buff[c] = ',';
+		b++;
+	}
+	return snprintf(&buff[c + b], sz - c - b,
+		       	"P11 %3i P12 %3i %c%c%c%c",
+		       	curr->p11, curr->p12,
+		       	m1 ? 'M' : '_',
+		       	m2 ? 'M' : '_',
+		       	m3 ? 'M' : '_',
+		       	m4 ? 'M' : '_'
+			);
+}
+
 struct process_ops cascade_ops = {
 	.run = cascade_run,
+	.log = cascade_log,
 };
 
 void

@@ -443,11 +443,6 @@ log_status(struct site_status *curr)
 		c += p->ops->log(curr, p->config, buff, sz, c);
 	}
 	logit("%s\n", buff);
-	logit("T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
-			"V1 %4i V2 %4i\n", curr->t,
-		       	curr->t11, curr->t12, curr->t21,
-		       	curr->p11, curr->p12, 0,
-			0);
 }
 
 void
