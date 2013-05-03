@@ -389,65 +389,6 @@ get_DO(int block, int slot, int index)
 }
 
 static void
-calculate_m11(struct site_status *curr, struct site_status *prev)
-{
-	struct action *action = (void*) xmalloc(sizeof(*action));
-	action->type = DIGITAL_OUTPUT;
-	action->data.digital.delay = 0;
-	action->data.digital.value = 0x00000000;
-	action->data.digital.mask = 0x00000000;
-
-	curr->m11_fail = prev->m11_fail;
-	if ((curr->do0 & 0x00000004) == 0) {
-		action->data.digital.value |= 0x00000004;
-		action->data.digital.mask |= 0x00000004;
-	}
-	if (curr->t > 160) {
-		if ((curr->do0 & 0x0000000b) != 0)
-			action->data.digital.mask |= 0x0000000b;
-		queue_action(action);
-		curr->m11_int = 0;
-		return;
-	}
-
-	if (curr->t > 140 && (curr->do0 & 0x3) == 0) {
-		queue_action(action);
-		return;
-	}
-
-	curr->m11_int = prev->m11_int + 1;
-
-	if (!curr->m11_fail && curr->m11_int > 10
-			&& (curr->p11 - curr->p12 < 40)
-			&& (prev->p11 - prev->p12 < 40)) {
-		curr->m11_fail = curr->do0 & 0x3;
-		action->data.digital.value |= 0x00000003;
-		action->data.digital.mask |= 0x00000003;
-		curr->m11_int = 0;
-	}
-
-	if ((curr->do0 & 0x00000008) == 0) {
-		action->data.digital.value |= 0x00000008;
-		action->data.digital.mask |= 0x00000008;
-	}
-	if (curr->m11_fail) {
-		queue_action(action);
-		return;
-	}
-
-	if ((curr->do0 & 0x00000003) == 0) {
-		action->data.digital.value |= 1 << (curr->t % 2);
-		action->data.digital.mask |= 0x00000003;
-		curr->m11_int = 0;
-	} else if (curr->m11_int > 7 * 24 * 60 * 6) {
-		action->data.digital.value |= (curr->do0 ^ 0x3) & 0x3;
-		action->data.digital.mask |= 0x00000003;
-		curr->m11_int = 0;
-	}
-	queue_action(action);
-}
-
-static void
 calculate_e2(struct site_status *curr)
 {
 	curr->e21 = curr->t21 - 570;
@@ -577,7 +518,6 @@ process_loop(void)
 		}
 		calculate_e2(curr);
 		calculate_v21(curr, prev);
-		calculate_m11(curr, prev);
 		log_status(curr);
 		t = 10000000;
 		t -= execute_v21(curr);;

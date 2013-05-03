@@ -34,14 +34,69 @@
 
 struct cascade_config {
 	int			first_run;
+	int			m11_fail;
+	int			m11_int;
 };
 
 static void
 cascade_run(struct site_status *curr, void *conf)
 {
 	struct cascade_config *c = conf;
+	struct action *action = (void*) xmalloc(sizeof(*action));
+
 	debug("running cascade\n");
-	(void) c;
+	action->type = DIGITAL_OUTPUT;
+	action->data.digital.delay = 0;
+	action->data.digital.value = 0x00000000;
+	action->data.digital.mask = 0x00000000;
+
+	if ((curr->do0 & 0x00000004) == 0) {
+		action->data.digital.value |= 0x00000004;
+		action->data.digital.mask |= 0x00000004;
+	}
+	if (curr->t > 160) {
+		if ((curr->do0 & 0x0000000b) != 0)
+			action->data.digital.mask |= 0x0000000b;
+		queue_action(action);
+		c->m11_int = 0;
+		return;
+	}
+
+	if (curr->t > 140 && (curr->do0 & 0x3) == 0) {
+		queue_action(action);
+		return;
+	}
+
+	c->m11_int++;
+
+	if ((curr->do0 & 0x00000008) == 0) {
+		action->data.digital.value |= 0x00000008;
+		action->data.digital.mask |= 0x00000008;
+	}
+
+	if (c->m11_int > 10 && (curr->p11 - curr->p12) < 40)
+		c->m11_fail++;
+	else
+		c->m11_fail = 0;
+
+	if (c->m11_fail > 1) {
+		action->data.digital.value |= 0x00000003;
+		action->data.digital.mask |= 0x00000003;
+		c->m11_int = 0;
+		queue_action(action);
+		return;
+	}
+
+	if ((curr->do0 & 0x00000003) == 0) {
+		action->data.digital.value |= 1 << (curr->t % 2);
+		action->data.digital.mask |= 0x00000003;
+		c->m11_int = 0;
+	} else if (c->m11_int > 7 * 24 * 60 * 6) {
+		action->data.digital.value |= (curr->do0 ^ 0x3) & 0x3;
+		action->data.digital.mask |= 0x00000003;
+		c->m11_int = 0;
+	}
+	queue_action(action);
 	return;
 }
 
@@ -56,6 +111,8 @@ load_cascade(struct list_head *list)
 	struct cascade_config *c = (void *) xmalloc (sizeof(*c));
 
 	c->first_run = 1;
+	c->m11_fail = 0;
+	c->m11_int = 0;
 	p->config = (void *) c;
 	p->ops = &cascade_ops;
 	list_add_tail(&p->process_entry, list);

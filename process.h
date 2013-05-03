@@ -58,8 +58,6 @@ struct site_status {
 	unsigned int	do0;
 	int		v21;
 	int		e21;
-	int		m11_int;
-	int		m11_fail;
 };
 
 struct process_ops {
