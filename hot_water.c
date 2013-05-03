@@ -64,8 +64,30 @@ hot_water_run(struct site_status *curr, void *conf)
 	return;
 }
 
+static int
+hot_water_log(struct site_status *curr, void *conf, char *buff,
+		const int sz, int c)
+{
+	struct hot_water_config *hwc = conf;
+	int b = 0;
+
+	if (c == sz)
+		return 0;
+	if (c) {
+		buff[c] = ',';
+		b++;
+	}
+	b += snprintf(&buff[c + b], sz - c - b, "T21 %3i ", curr->t21);
+	if (hwc->valve && hwc->valve->ops && hwc->valve->ops->log)
+		b += hwc->valve->ops->log(hwc->valve->data, &buff[c + b],
+			       	sz, c + b);
+
+	return b;
+}
+
 struct process_ops hot_water_ops = {
 	.run = hot_water_run,
+	.log = hot_water_log,
 };
 
 void

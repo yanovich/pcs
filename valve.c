@@ -92,8 +92,21 @@ adjust_2way_valve(int amount, void *data)
 	}
 }
 
+static int
+log_2way_valve(void *data, char *buff, const int sz, int c)
+{
+	struct valve_data *d = data;
+
+	if (c == sz)
+		return 0;
+
+	return snprintf(buff, sz - c, "%c %4i",
+			d->abs ? 'A' : 'R', d->pos/100);
+}
+
 struct valve_ops valve_ops = {
 	.adjust = adjust_2way_valve,
+	.log = log_2way_valve,
 };
 
 struct valve *
@@ -112,6 +125,7 @@ load_2way_valve(int min, int max, int total, int mc, int c, int mo, int o)
 	d->open.mod = mo;
 	d->open.i = o;
 	d->total = total;
+	d->pos = 0;
 
 	return valve;
 }

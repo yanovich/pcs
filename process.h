@@ -55,6 +55,7 @@ struct site_status {
 
 struct process_ops {
 	void	(*run)(struct site_status *, void *);
+	int	(*log)(struct site_status *, void *, char *, const int, int);
 	int	(*free)(void*);
 }; 
 

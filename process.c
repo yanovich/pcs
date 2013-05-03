@@ -430,12 +430,23 @@ set_DO(int mod, int index, int value, int delay)
 }
 
 void
-log_status(struct site_status *site_status)
+log_status(struct site_status *curr)
 {
+	const int sz = 128;
+	int c = 0;
+	char buff[sz];
+	struct process *p;
+	buff[0] = 0;
+	list_for_each_entry(p, &process_list, process_entry) {
+		if (!p->ops->log)
+			continue;
+		c += p->ops->log(curr, p->config, buff, sz, c);
+	}
+	logit("%s\n", buff);
 	logit("T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
-			"V1 %4i V2 %4i\n", site_status->t,
-		       	site_status->t11, site_status->t12, site_status->t21,
-		       	site_status->p11, site_status->p12, 0,
+			"V1 %4i V2 %4i\n", curr->t,
+		       	curr->t11, curr->t12, curr->t21,
+		       	curr->p11, curr->p12, 0,
 			0);
 }
 

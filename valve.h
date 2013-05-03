@@ -23,6 +23,7 @@
 
 struct valve_ops {
 	void			(*adjust)(int amount, void *data);
+	int			(*log)(void *data, char *, const int, int);
 };
 
 struct valve {

@@ -82,8 +82,31 @@ heating_run(struct site_status *curr, void *conf)
 	return;
 }
 
+static int
+heating_log(struct site_status *curr, void *conf, char *buff,
+		const int sz, int c)
+{
+	struct heating_config *hwc = conf;
+	int b = 0;
+
+	if (c == sz)
+		return 0;
+	if (c) {
+		buff[c] = ',';
+		b++;
+	}
+	b += snprintf(&buff[c + b], sz - c - b, "T %3i T11 %3i T12 %3i ",
+			curr->t, curr->t11, curr->t12);
+	if (hwc->valve && hwc->valve->ops && hwc->valve->ops->log)
+		b += hwc->valve->ops->log(hwc->valve->data, &buff[c + b],
+			       	sz, c + b);
+
+	return b;
+}
+
 struct process_ops heating_ops = {
 	.run = heating_run,
+	.log = heating_log,
 };
 
 void
