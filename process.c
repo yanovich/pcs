@@ -393,56 +393,6 @@ set_DO(int slot, int index, int value)
 {
 }
 
-static void
-calculate_e2(struct site_status *curr)
-{
-	curr->e21 = curr->t21 - 570;
-}
-
-static void
-calculate_v21(struct site_status *curr, struct site_status *prev)
-{
-	int e21 = curr->e21;
-	int d21 = e21 - prev->e21;
-	struct fuzzy_result res = {0};
-	unsigned h;
-
-	h =  Zh(-1000,-50,  -30, e21);
-	Dm(  400, 5000, 5000, h, &res);
-	debug2("T21 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -50, -30,  -10, e21);
-	Dm(  100, 400, 700, h, &res);
-	debug2("T21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -30, -10,    0, e21);
-	Dm(    0, 100,  200, h, &res);
-	debug2("T21 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -10,   0,   30, e21);
-	Dm( -300,   0,  300, h, &res);
-	debug2("T21 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh(   0,  30,   80, e21);
-	Dm( -200, -100, 0, h, &res);
-	debug2("T21 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh(  30,  80,  180, e21);
-	Dm( -700, -400, -100, h, &res);
-	debug2("T21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Sh(  80, 180, 1000, e21);
-	Dm(-5000, -5000, -400, h, &res);
-	debug2("T21 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Zh(-1000, -10,   -1, d21);
-	Dm(  100, 400, 700, h, &res);
-	debug2("D21 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Sh(     1, 10, 1000, d21);
-	Dm( -700, -400, -100, h, &res);
-	debug2("D21 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-
-	if (curr->v21 != res.value) {
-		warn("bad fuzzy result %i %i\n", curr->v21, res.value);
-		curr->v21 = res.value;
-		return;
-	}
-	debug("hot water fuzzy result matched\n");
-}
-
 static unsigned
 execute_v21(struct site_status *curr)
 {
@@ -484,33 +434,20 @@ log_status(struct site_status *site_status)
 			site_status->v21);
 }
 
+static struct site_status status = {0};
+
 void
 process_loop(void)
 {
-	unsigned c = 0;
 	unsigned t;
-	struct site_status s1 = {0}, s2 = {0};
-	struct site_status *curr, *prev;
+	struct site_status *curr = &status;
 	struct process *p;
 
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
 
-	while (load_site_status(&s2) != 0)
-		sleep (1);
-
-	calculate_e2(&s2);
 	while (!received_sigterm) {
-		c = c ^ 1;
-		if (c) {
-			curr = &s1;
-			prev = &s2;
-		} else {
-			curr = &s2;
-			prev = &s1;
-		}
-
 		while (load_site_status(curr) != 0)
 			sleep (1);
 
@@ -521,8 +458,6 @@ process_loop(void)
 			}
 			p->ops->run(curr, p->config);
 		}
-		calculate_e2(curr);
-		calculate_v21(curr, prev);
 		log_status(curr);
 		t = 10000000;
 		t -= execute_v21(curr);;
