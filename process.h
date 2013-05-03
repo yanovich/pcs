@@ -46,7 +46,20 @@ void
 queue_action(struct action *action);
 
 unsigned int
-get_DO(int block, int slot, int index);
+get_DO(int mod, int index);
+
+void
+set_DO(int mod, int index, int value);
+
+struct DO_mod {
+	int		(*read)(struct DO_mod *mod);
+	int		(*write)(struct DO_mod *mod);
+	unsigned int	number;
+	unsigned int	curr;
+	unsigned int	read_state;
+	int		block;
+	int		slot;
+};
 
 struct site_status {
 	int		t;
@@ -58,6 +71,7 @@ struct site_status {
 	unsigned int	do0;
 	int		v21;
 	int		e21;
+	struct DO_mod	DO_mod[256];
 };
 
 struct process_ops {

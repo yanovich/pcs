@@ -383,9 +383,14 @@ load_site_status(struct site_status *site_status)
 }
 
 unsigned int
-get_DO(int block, int slot, int index)
+get_DO(int slot, int index)
 {
 	return 0;
+}
+
+void
+set_DO(int slot, int index, int value)
+{
 }
 
 static void
