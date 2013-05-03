@@ -562,11 +562,11 @@ process_loop(void)
 			sleep (1);
 
 		list_for_each_entry(p, &process_list, process_entry) {
-			if (! p->class->run) {
+			if (! p->ops->run) {
 				error("process without run\n");
 				continue;
 			}
-			p->class->run(curr, p->config);
+			p->ops->run(curr, p->config);
 		}
 		calculate_e2(curr);
 		calculate_v21(curr, prev);

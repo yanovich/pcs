@@ -57,7 +57,7 @@ hot_water_run(struct site_status *curr, void *conf)
 	return 0;
 }
 
-struct process_class hot_water_class = {
+struct process_ops hot_water_ops = {
 	.run = hot_water_run,
 };
 
@@ -99,6 +99,6 @@ load_hot_water(struct list_head *list)
 
 	hwc->first_run = 1;
 	hwp->config = (void *) hwc;
-	hwp->class = &hot_water_class;
+	hwp->ops = &hot_water_ops;
 	list_add_tail(&hwp->process_entry, list);
 }

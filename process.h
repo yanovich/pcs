@@ -69,13 +69,13 @@ struct site_status {
 	int		m11_fail;
 };
 
-struct process_class {
+struct process_ops {
 	int	(*run)(struct site_status *, void *);
 	int	(*free)(void*);
 }; 
 
 struct process {
-	struct process_class	*class;
+	struct process_ops	*ops;
 	struct list_head	process_entry;
 	void			*config;
 };

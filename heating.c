@@ -127,7 +127,7 @@ heating_run(struct site_status *curr, void *conf)
 	return 0;
 }
 
-struct process_class heating_class = {
+struct process_ops heating_ops = {
 	.run = heating_run,
 };
 
@@ -171,6 +171,6 @@ load_heating(struct list_head *list)
 	hwc->v11_abs = 0;
 	hwc->v11_pos = 0;
 	hwp->config = (void *) hwc;
-	hwp->class = &heating_class;
+	hwp->ops = &heating_ops;
 	list_add_tail(&hwp->process_entry, list);
 }
