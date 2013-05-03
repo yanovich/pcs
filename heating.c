@@ -37,6 +37,8 @@ struct heating_config {
 	int			first_run;
 	int			e11_prev;
 	int			e12_prev;
+	int			v11_abs;
+	int			v11_pos;
 };
 
 static int
@@ -44,7 +46,9 @@ heating_run(struct site_status *curr, void *conf)
 {
 	struct heating_config *hwc = conf;
 	int vars[2];
-	int t11, t12, e12;
+	int t11, t12, e12, v11;
+	struct action action = {{0}};
+	long usec;
 
 	if (curr->t > 160) {
 		t12 = curr->t12;
@@ -71,7 +75,55 @@ heating_run(struct site_status *curr, void *conf)
 
 	debug("running heating\n");
 
-	curr->v11 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+	v11 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+
+	debug("v11 %5i v11_pos %6i\n", v11, hwc->v11_pos);
+	v11 += hwc->v11_pos;
+	if (hwc->v11_abs == 1) {
+		if (v11 < 0) {
+			v11 = 0;
+		}
+		else if (v11 > 47000) {
+			hwc->v11_pos = 46000;
+		}
+	} else {
+		if (v11 < -47000) {
+			hwc->v11_pos = 1000;
+			v11 = 0;
+			hwc->v11_abs = 1;
+		}
+		else if (v11 > 47000) {
+			v11 = 47000;
+			hwc->v11_pos = 46000;
+			hwc->v11_abs = 1;
+		}
+	}
+	v11 -= hwc->v11_pos;
+
+	action.type = DIGITAL_OUTPUT;
+
+	if (-50 < v11 && v11 < 50)
+		return 0;
+
+	hwc->v11_pos += v11;
+
+	action.data.digital.mask |= 0x00000030;
+	if (v11 < 0) {
+		usec = v11 * -1000;
+		action.data.digital.value = 0x00000010;
+	} else {
+		usec = v11 * 1000;
+		action.data.digital.value = 0x00000020;
+	}
+	if (usec > 5000000)
+		usec = 5000000;
+
+	queue_action(&action);
+
+	action.data.digital.delay = usec;
+	action.data.digital.value = 0x00000000;
+	queue_action(&action);
+
 	return 0;
 }
 
@@ -116,6 +168,8 @@ load_heating(struct list_head *list)
 	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
 
 	hwc->first_run = 1;
+	hwc->v11_abs = 0;
+	hwc->v11_pos = 0;
 	hwp->config = (void *) hwc;
 	hwp->class = &heating_class;
 	list_add_tail(&hwp->process_entry, list);

@@ -42,6 +42,9 @@ struct action {
 	}				data;
 };
 
+void
+queue_action(struct action *action);
+
 struct site_status {
 	int		DO_count;
 	unsigned char	*DO;
@@ -60,15 +63,8 @@ struct site_status {
 	unsigned int	p11;
 	unsigned int	p12;
 	unsigned int	do0;
-	int		v11;
 	int		v21;
-	int		e11;
-	int		e12;
 	int		e21;
-	int		v11_sum;
-	int		v21_sum;
-	int		v11_pos;
-	int		v21_pos;
 	int		m11_int;
 	int		m11_fail;
 };

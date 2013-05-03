@@ -375,97 +375,11 @@ load_site_status(struct site_status *site_status)
 	}
 
 	site_status->do0 = output;
-	site_status->v11 = 0;
 	site_status->v21 = 0;
 
 	return 0;
 }
 
-static void
-calculate_e1(struct site_status *curr)
-{
-	int t11, t12;
-
-	if (curr->t > 160) {
-		t12 = curr->t12;
-		t11 = 300;
-	} else {
-		t12 = 700 - ((curr->t + 280) * 250) / 400;
-		t11 = 950 - ((curr->t + 280) * 450) / 400;
-	}
-	curr->e12 = curr->t12 - t12;
-	if (curr->e12 > 0)
-		t11 -= curr->e12;
-
-	curr->e11 = curr->t11 - t11;
-}
-
-static void
-calculate_v11(struct site_status *curr, struct site_status *prev)
-{
-	int e11 = curr->e11, d11 = e11 - prev->e11;
-	struct fuzzy_result res = {0};
-	unsigned h;
-
-	if (curr->e12 > 0)
-		d11 -= curr->e12 - prev->e12;
-
-	h =  Zh(-1000,-50,  -30, e11);
-	Dm(  400, 5000, 5000, h, &res);
-	debug2("T11 IS   BN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -50, -30,  -10, e11);
-	Dm(  100, 400, 700, h, &res);
-	debug2("T11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -30, -10,    0, e11);
-	Dm(    0, 100,  200, h, &res);
-	debug2("T11 IS   SN: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh( -10,   0,   30, e11);
-	Dm( -300,   0,  300, h, &res);
-	debug2("T11 IS Zero: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh(   0,  30,   80, e11);
-	Dm( -200, -100, 0, h, &res);
-	debug2("T11 IS   SP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Dh(  30,  80,  180, e11);
-	Dm( -700, -400, -100, h, &res);
-	debug2("T11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Sh(  80, 180, 1000, e11);
-	Dm(-7000, -7000, -400, h, &res);
-	debug2("T11 IS   BP: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Zh(-1000, -10,   -1, d11);
-	Dm(  100, 400, 700, h, &res);
-	debug2("D11 IS    N: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-	h =  Sh(     1, 10, 1000, d11);
-	Dm( -700, -400, -100, h, &res);
-	debug2("D11 IS    P: 0x%05x, action: %5i, mass: %05x\n", h, res.value, res.mass);
-
-	if (curr->v11 != res.value) {
-		warn("bad fuzzy result %i %i\n", curr->v11, res.value);
-	} else {
-		debug("heating fuzzy result matched\n");
-	}
-	debug("V11_POS %i %i, V11_SUM %i %i\n", prev->v11_pos, curr->v11_pos,
-		       prev->v11_sum, curr->v11_sum);	
-	if (prev->v11_pos >=0) {
-		curr->v11_pos = prev->v11_pos + res.value;
-		if (curr->v11_pos < 0)
-			curr->v11_pos = 0;
-		else if (curr->v11_sum > 47000)
-			curr->v11_pos = 47000;
-		curr->v11 = curr->v11_pos - prev->v11_pos;
-		if (-50 < curr->v11 && curr->v11 < 50) 
-			curr->v11_pos = prev->v11_pos;
-	} else {
-		curr->v11 = res.value;
-		curr->v11_sum = prev->v11_sum;
-		if (-50 >= curr->v11 || curr->v11 >= 50) {
-			curr->v11_sum += res.value;
-			if (curr->v11_sum <= -47000)
-				curr->v11_pos = 0;
-			else if (47000 <= curr->v11_sum)
-				curr->v11_pos = 47000;
-		}
-	}
-}
 
 static void
 calculate_m11(struct site_status *curr, struct site_status *prev)
@@ -577,37 +491,6 @@ calculate_v21(struct site_status *curr, struct site_status *prev)
 }
 
 static unsigned
-execute_v11(struct site_status *curr)
-{
-	struct action action = {{0}};
-	long usec;
-
-	action.type = DIGITAL_OUTPUT;
-
-	if (-50 < curr->v11 && curr->v11 < 50)
-		return 0;
-
-	action.data.digital.mask |= 0x00000030;
-	if (curr->v11 < 0) {
-		usec = curr->v11 * -1000;
-		action.data.digital.value = 0x00000010;
-	} else {
-		usec = curr->v11 * 1000;
-		action.data.digital.value = 0x00000020;
-	}
-	if (usec > 5000000)
-		usec = 5000000;
-
-	queue_action(&action);
-
-	action.data.digital.delay = usec;
-	action.data.digital.value = 0x00000000;
-	queue_action(&action);
-
-	return 0;
-}
-
-static unsigned
 execute_v21(struct site_status *curr)
 {
 	struct action action = {{0}};
@@ -642,10 +525,10 @@ void
 log_status(struct site_status *site_status)
 {
 	logit("T %3i, T11 %3i, T12 %3i, T21 %3i, P11 %3u, P12 %3u, "
-			"V1 %3i, V2 %3i\n", site_status->t,
+			"V1 %4i V2 %4i\n", site_status->t,
 		       	site_status->t11, site_status->t12, site_status->t21,
-		       	site_status->p11, site_status->p12, site_status->v11,
-		       	site_status->v21);
+		       	site_status->p11, site_status->p12, 0,
+			site_status->v21);
 }
 
 void
@@ -664,11 +547,6 @@ process_loop(void)
 	while (load_site_status(&s2) != 0)
 		sleep (1);
 
-	s1.v11_pos = -1;
-	s1.v21_pos = -1;
-	s2.v11_pos = -1;
-	s2.v21_pos = -1;
-	calculate_e1(&s2);
 	calculate_e2(&s2);
 	while (!received_sigterm) {
 		c = c ^ 1;
@@ -690,14 +568,11 @@ process_loop(void)
 			}
 			p->class->run(curr, p->config);
 		}
-		calculate_e1(curr);
-		calculate_v11(curr, prev);
 		calculate_e2(curr);
 		calculate_v21(curr, prev);
 		calculate_m11(curr, prev);
 		log_status(curr);
 		t = 10000000;
-		t -= execute_v11(curr);;
 		t -= execute_v21(curr);;
 		t -= execute_actions(curr);
 		if (received_sigterm)
