@@ -35,6 +35,7 @@
 #include "process.h"
 #include "hot_water.h"
 #include "heating.h"
+#include "cascade.h"
 
 int received_sigterm = 0;
 
@@ -323,6 +324,7 @@ load_site_config(void)
 	debug("loading config\n");
 	load_heating(&process_list);
 	load_hot_water(&process_list);
+	load_cascade(&process_list);
 	debug("loaded config\n");
 }
 

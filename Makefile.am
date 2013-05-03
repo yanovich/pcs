@@ -3,6 +3,7 @@ AM_MAKEFLAGS			 = --no-print-directory
 
 noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
+				   cascade.c \
 				   fuzzy.c \
 				   heating.c \
 				   hot_water.c \
