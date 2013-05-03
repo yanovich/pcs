@@ -296,6 +296,7 @@ do_sleep(struct timeval *base, struct timeval *now, long offset)
 	if (0 >= delay || delay >= 100000000)
 		return 0;
 	usleep(delay);
+	gettimeofday(now, NULL);
 	return offset;
 }
 
@@ -315,13 +316,7 @@ execute_actions(struct site_status *s)
 		case DIGITAL_OUTPUT:
 			gettimeofday(&now, NULL);
 			if (!a->data.digital.delay) {
-				debug("base:  %li.%06li\n",
-					       	start.tv_sec,
-						start.tv_usec);
 				memcpy(&start, &now, sizeof(start));
-				debug("base:  %li.%06li\n",
-					       	start.tv_sec,
-						start.tv_usec);
 			} else {
 				t += do_sleep(&start, &now,
 					       	a->data.digital.delay);
@@ -348,6 +343,8 @@ execute_actions(struct site_status *s)
 
 LIST_HEAD(process_list);
 
+static struct site_status status = {0};
+
 void
 load_site_config(void)
 {
@@ -355,6 +352,7 @@ load_site_config(void)
 	load_heating(&process_list);
 	load_hot_water(&process_list);
 	load_cascade(&process_list);
+	status.interval = 10000000;
 	debug("loaded config\n");
 }
 
@@ -411,8 +409,6 @@ load_site_status(struct site_status *site_status)
 	return 0;
 }
 
-static struct site_status status = {0};
-
 unsigned int
 get_DO(int mod, int index)
 {
@@ -446,14 +442,15 @@ log_status(struct site_status *site_status)
 void
 process_loop(void)
 {
-	unsigned t;
 	struct site_status *curr = &status;
+	struct timeval start, now;
 	struct process *p;
 
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
 
+	gettimeofday(&start, NULL);
 	while (!received_sigterm) {
 		while (load_site_status(curr) != 0)
 			sleep (1);
@@ -466,10 +463,11 @@ process_loop(void)
 			p->ops->run(curr, p->config);
 		}
 		log_status(curr);
-		t = 10000000;
-		t -= execute_actions(curr);
+		execute_actions(curr);
+		gettimeofday(&now, NULL);
 		if (received_sigterm)
 			return;
-		usleep(t);
+		do_sleep(&start, &now, curr->interval);
+		start.tv_sec += 10;
 	}
 }

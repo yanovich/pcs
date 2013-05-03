@@ -50,6 +50,7 @@ struct site_status {
 	unsigned int	p12;
 	unsigned int	do0;
 	struct DO_mod	DO_mod[256];
+	long		interval;
 };
 
 struct process_ops {
