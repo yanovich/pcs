@@ -43,6 +43,16 @@ struct action {
 };
 
 struct site_status {
+	int		DO_count;
+	unsigned char	*DO;
+	int		DI_count;
+	unsigned char	*DI;
+	int		AO_count;
+	unsigned	*AO;
+	int		TR_count;
+	unsigned	*TR;
+	int		AI_count;
+	unsigned	*AI;
 	int		t;
 	int		t11;
 	int		t12;
@@ -64,7 +74,7 @@ struct site_status {
 };
 
 struct process_class {
-	int	(*run)(struct site_status *, struct site_status *, void *);
+	int	(*run)(struct site_status *, void *);
 	int	(*free)(void*);
 }; 
 

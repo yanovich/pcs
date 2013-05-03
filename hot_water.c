@@ -34,17 +34,25 @@
 
 struct hot_water_config {
 	struct list_head	fuzzy;
+	int			first_run;
+	int			t21_prev;
 };
 
 static int
-hot_water_run(struct site_status *curr, struct site_status *prev, void *conf)
+hot_water_run(struct site_status *curr, void *conf)
 {
 	struct hot_water_config *hwc = conf;
 	int vars[2];
-	vars[0] = curr->t21 - 570;
-	vars[1] = curr->t21 - prev->t21;
 
 	debug("running hot water\n");
+	if (hwc->first_run) {
+		hwc->first_run = 0;
+		hwc->t21_prev = curr->t21;
+	}
+	vars[0] = curr->t21 - 570;
+	vars[1] = curr->t21 - hwc->t21_prev;
+	hwc->t21_prev = curr->t21;
+
 	curr->v21 = process_fuzzy(&hwc->fuzzy, &vars[0]);
 	return 0;
 }
@@ -89,6 +97,7 @@ load_hot_water(struct list_head *list)
 	fuzzy_clause_init(fcl, 1, 1,     1,  10, 1000, 0,  -700,  -400, -100);
 	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
 
+	hwc->first_run = 1;
 	hwp->config = (void *) hwc;
 	hwp->class = &hot_water_class;
 	list_add_tail(&hwp->process_entry, list);
