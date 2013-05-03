@@ -70,7 +70,7 @@ struct site_status {
 };
 
 struct process_ops {
-	int	(*run)(struct site_status *, void *);
+	void	(*run)(struct site_status *, void *);
 	int	(*free)(void*);
 }; 
 

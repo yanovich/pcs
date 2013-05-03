@@ -38,7 +38,7 @@ struct hot_water_config {
 	int			t21_prev;
 };
 
-static int
+static void
 hot_water_run(struct site_status *curr, void *conf)
 {
 	struct hot_water_config *hwc = conf;
@@ -54,7 +54,7 @@ hot_water_run(struct site_status *curr, void *conf)
 	hwc->t21_prev = curr->t21;
 
 	curr->v21 = process_fuzzy(&hwc->fuzzy, &vars[0]);
-	return 0;
+	return;
 }
 
 struct process_ops hot_water_ops = {

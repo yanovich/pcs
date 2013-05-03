@@ -9,6 +9,7 @@ libpcs_a_SOURCES		 = \
 				   icp.c \
 				   log.c \
 				   process.c \
+				   valve.c \
 				   xmalloc.c
 
 LDADD				 = libpcs.a
