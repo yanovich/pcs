@@ -462,10 +462,8 @@ process_loop(void)
 			sleep (1);
 
 		list_for_each_entry(p, &process_list, process_entry) {
-			if (! p->ops->run) {
-				error("process without run\n");
-				continue;
-			}
+			if (! p->ops->run)
+				fatal("process without run\n");
 			p->ops->run(curr, p->config);
 		}
 		log_status(curr);
