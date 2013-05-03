@@ -84,9 +84,11 @@ adjust_2way_valve(int amount, void *data)
 		return;
 
 	if (amount < 0) {
+		set_DO(d->close.mod, d->open.i, 0, 0);
 		set_DO(d->close.mod, d->close.i, 1, 0);
 		set_DO(d->close.mod, d->close.i, 0, amount * -1000);
 	} else {
+		set_DO(d->close.mod, d->close.i, 0, 0);
 		set_DO(d->close.mod, d->open.i, 1, 0);
 		set_DO(d->close.mod, d->open.i, 0, amount *  1000);
 	}
