@@ -262,7 +262,7 @@ do_sleep(struct timeval *base, struct timeval *now, long offset)
 	delay = offset - now->tv_usec + base->tv_usec
 	       	- 1000000 * (now->tv_sec - base->tv_sec);
 	debug("delaying %li of %li usec\n", delay, offset);
-	if (0 >= delay && delay >= 100000000)
+	if (0 >= delay || delay >= 100000000)
 		return 0;
 	usleep(delay);
 	return offset;
