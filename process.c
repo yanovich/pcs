@@ -321,8 +321,8 @@ void
 load_site_config(void)
 {
 	debug("loading config\n");
-	load_hot_water(&process_list);
 	load_heating(&process_list);
+	load_hot_water(&process_list);
 	debug("loaded config\n");
 }
 
