@@ -150,7 +150,6 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 				       	strerror(errno), errno);
 			goto close_fd;
 		} else if (0 == err) {
-			error("%s %u: no data\n", __FILE__, __LINE__);
 			err = -1;
 			goto close_fd;
 		}

@@ -28,7 +28,7 @@
 
 void print_module(unsigned int slot, const char *name)
 {
-	printf("slot%i..%s\n", slot, name ? name : "empty");
+	printf("slot %i ... %s\n", slot, name ? name : "empty");
 }
 
 int main(int argc, char *argv[])

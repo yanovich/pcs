@@ -30,4 +30,19 @@ struct DO_mod {
 	int		slot;
 };
 
+struct TR_mod {
+	int		(*read)(struct TR_mod *mod);
+	unsigned int	count;
+	unsigned int	first;
+	int		block;
+	int		slot;
+};
+
+struct TR_sensor {
+	int		ohms;
+	int		grads;
+	int		mod;
+	;
+};
+
 #endif /* PCS_MODULES_H */

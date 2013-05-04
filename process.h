@@ -41,6 +41,7 @@ struct site_status {
 	unsigned int	p11;
 	unsigned int	p12;
 	struct DO_mod	DO_mod[256];
+	struct TR_mod	TR_mod[256];
 	long		interval;
 };
 
