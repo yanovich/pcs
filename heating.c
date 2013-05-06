@@ -84,22 +84,22 @@ heating_run(struct site_status *s, void *conf)
 
 static int
 heating_log(struct site_status *s, void *conf, char *buff,
-		const int sz, int c)
+		const int sz, int o)
 {
 	struct heating_config *c = conf;
 	int b = 0;
 
-	if (c == sz)
+	if (o == sz)
 		return 0;
-	if (c) {
-		buff[c] = ',';
+	if (o) {
+		buff[o] = ',';
 		b++;
 	}
-	b += snprintf(&buff[c + b], sz - c - b, "T %3i T11 %3i T12 %3i ",
+	b += snprintf(&buff[o + b], sz - o - b, "T %3i T11 %3i T12 %3i ",
 			s->t, s->t11, s->t12);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
-		b += c->valve->ops->log(c->valve->data, &buff[c + b],
-			       	sz, c + b);
+		b += c->valve->ops->log(c->valve->data, &buff[o + b],
+			       	sz, o + b);
 
 	return b;
 }
