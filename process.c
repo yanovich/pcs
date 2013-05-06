@@ -116,37 +116,6 @@ parse_amps(const char *data, int size, int *press)
 	}
 }
 
-static int
-parse_ohms(const char *data, int size, int *temp)
-{
-	int i = 0, point = 0, val = 0;
-	const char *p = data;
-
-	if (*p != '+')
-		return 0;
-
-	p++;
-	while (1) {
-		if (*p >= '0' && *p <= '9') {
-			val *= 10;
-			val += *p - '0';
-		} else if ('.' == *p) {
-			if (point)
-				return i;
-			point = 1;
-		} else if ('+' == *p || 0 == *p) {
-			if (i >= size)
-				return size + 1;
-			temp[i++] = ni1000(val);
-			if (!*p)
-				return i;
-			val = 0;
-			point = 0;
-		}
-		p++;
-	}
-}
-
 LIST_HEAD(action_list);
 
 typedef enum {
@@ -353,6 +322,13 @@ load_site_config(void)
 	status.DO_mod[0] = *(struct DO_mod *)
 	       	icp_init_module("8041", 0, &type, &more);
 	status.DO_mod[0].slot = 2;
+	status.TR_mod[0] = *(struct TR_mod *)
+	       	icp_init_module("87017", 0, &type, &more);
+	status.TR_mod[0].slot = 3;
+	status.T[0].convert	= ni1000;
+	status.T[1].convert	= ni1000;
+	status.T[3].convert	= ni1000;
+	status.T[4].convert	= ni1000;
 	load_heating(&process_list);
 	load_hot_water(&process_list);
 	load_cascade(&process_list);
@@ -376,33 +352,36 @@ load_DO(int offset, unsigned int value)
 }
 
 int
-load_site_status(struct site_status *site_status)
+load_site_status()
 {
 	int err;
-	int i;
+	int i, j, t;
 	int offset = 0;
 	char data[256];
-	int temp[7] = {0};
+	int ohms[7] = {0};
 	int press[8] = {0};
 
-	err = icp_serial_exchange(3, "#00", 256, &data[0]);
-	if (0 > err) {
-		error("%s: temp data read failure\n", __FILE__);
-		return err;
+	for (i = 0; status.TR_mod[i].count > 0; i++) {
+		err = status.TR_mod[i].read(&status.TR_mod[i], ohms);
+		if (0 > err) {
+			error("%s: bad temp data: %s(%i)\n", __FILE__,
+				       	data, err);
+			return -1;
+		}
+		t = offset;
+		offset += status.TR_mod[i].count;
+		for (j = 0; t < offset; j++, t++) {
+			status.T[t].t = -300;
+			if (!status.T[t].convert)
+				continue;
+			status.T[t].t = status.T[t].convert(ohms[j]);
+			if (-300 == status.T[t].t) {
+				error("%s: bad temp data: %s(%i)\n", __FILE__,
+					       	data, err);
+				return -1;
+			}
+		}
 	}
-	if ('>' != data[0]) {
-		error("%s: bad temp data: %s\n", __FILE__, data);
-		return -1;
-	}
-	err = parse_ohms(&data[1], sizeof(temp), temp);
-	if (7 != err) {
-		error("%s: bad temp data: %s\n", __FILE__, data);
-		return -1;
-	}
-	site_status->T[4].t	= temp[4];
-	site_status->T[0].t	= temp[0];
-	site_status->T[1].t	= temp[1];
-	site_status->T[3].t	= temp[3];
 
 	err = icp_serial_exchange(4, "#00", 256, &data[0]);
 	if (0 > err) {
@@ -415,15 +394,17 @@ load_site_status(struct site_status *site_status)
 		error("%s: bad temp data: %s(%i)\n", __FILE__, data, err);
 		return -1;
 	}
-	site_status->p12 = press[0];
-	site_status->p11 = press[1];
+	status.p12 = press[0];
+	status.p11 = press[1];
 
+	offset = 0;
 	for (i = 0; status.DO_mod[i].count > 0; i++) {
 		err = status.DO_mod[i].read(&status.DO_mod[i]);
 		if (0 != err) {
 			error("%s: status data\n", __FILE__);
 			return -1;
 		}
+		debug("DO status 0x%08x\n", status.DO_mod[i].state);
 		load_DO(offset, status.DO_mod[i].state);
 		offset += status.DO_mod[i].count;
 	}
@@ -497,7 +478,7 @@ process_loop(void)
 
 	gettimeofday(&start, NULL);
 	while (!received_sigterm) {
-		while (load_site_status(curr) != 0)
+		while (load_site_status() != 0)
 			sleep (1);
 
 		list_for_each_entry(p, &process_list, process_entry) {

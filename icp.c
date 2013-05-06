@@ -312,6 +312,60 @@ close_fd:
 	return err;
 }
 
+static int
+parse_ohms(const char *data, int size, int *ohms)
+{
+	int i = 0, point = 0, val = 0;
+	const char *p = data;
+
+	if (*p != '+')
+		return 0;
+
+	p++;
+	while (1) {
+		if (*p >= '0' && *p <= '9') {
+			val *= 10;
+			val += *p - '0';
+		} else if ('.' == *p) {
+			if (point)
+				return i;
+			point = 1;
+		} else if ('+' == *p || 0 == *p) {
+			if (i >= size)
+				return size + 1;
+			ohms[i++] = val;
+			if (!*p)
+				return i;
+			val = 0;
+			point = 0;
+		}
+		p++;
+	}
+}
+
+static int
+get_serial_resistance(struct TR_mod *mod, int *buffer)
+{
+	int err;
+	char data[256];
+
+	err = icp_serial_exchange(mod->slot, "#00", 256, &data[0]);
+	if (0 > err) {
+		error("%s: temp data read failure\n", __FILE__);
+		return err;
+	}
+	if ('>' != data[0]) {
+		error("%s: bad temp data: %s\n", __FILE__, data);
+		return -1;
+	}
+	err = parse_ohms(&data[1], mod->count, buffer);
+	if (mod->count != err) {
+		error("%s: bad temp data: %s\n", __FILE__, data);
+		return -1;
+	}
+	return 0;
+}
+
 #define MAX_RESPONSE 256
 #define REQUEST_NAME	"$00M"
 
@@ -344,6 +398,11 @@ static struct DO_mod DO32 = {
 	.count = 32,
 };
 
+static struct TR_mod TR7_S = {
+	.read = get_serial_resistance,
+	.count = 7,
+};
+
 struct module_config {
 	const char 		*name;
 	int			type;
@@ -355,6 +414,11 @@ struct module_config mods[] = {
 		.name = "8041",
 		.type = DO_MODULE,
 		.config = &DO32,
+	},
+	{
+		.name = "87017",
+		.type = TR_MODULE,
+		.config = &TR7_S,
 	},
 	{
 	}

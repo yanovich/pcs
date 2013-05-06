@@ -31,7 +31,7 @@ struct DO_mod {
 };
 
 struct TR_mod {
-	int		(*read)(struct TR_mod *mod);
+	int		(*read)(struct TR_mod *mod, int *buffer);
 	unsigned int	count;
 	unsigned int	first;
 	int		block;

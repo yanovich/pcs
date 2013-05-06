@@ -54,7 +54,7 @@ void
 load_site_config(void);
 
 int
-load_site_status(struct site_status *site_status);
+load_site_status();
 
 void
 log_status(struct site_status *site_status);

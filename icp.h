@@ -21,7 +21,10 @@
 #define ICP_H
 
 enum {
-	DO_MODULE
+	DO_MODULE,
+	DI_MODULE,
+	TR_MODULE,
+	NULL_MODULE_TYPE
 };
 
 int
