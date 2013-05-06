@@ -128,6 +128,7 @@ load_hot_water(struct list_head *list)
 	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 
 	c->first_run = 1;
+	c->input = 3;
 	c->valve = load_2way_valve(50, 5000, 47000, 8, 7);
 	hwp->config = (void *) c;
 	hwp->ops = &hot_water_ops;
