@@ -42,24 +42,24 @@ struct heating_config {
 };
 
 static void
-heating_run(struct site_status *curr, void *conf)
+heating_run(struct site_status *s, void *conf)
 {
 	struct heating_config *hwc = conf;
 	int vars[2];
 	int t11, t12, e12, v11;
 
-	if (curr->t > 160) {
-		t12 = curr->t12;
+	if (s->t > 160) {
+		t12 = s->t12;
 		t11 = 300;
 	} else {
-		t12 = 700 - ((curr->t + 280) * 250) / 400;
-		t11 = 950 - ((curr->t + 280) * 450) / 400;
+		t12 = 700 - ((s->t + 280) * 250) / 400;
+		t11 = 950 - ((s->t + 280) * 450) / 400;
 	}
-	e12 = curr->t12 - t12;
+	e12 = s->t12 - t12;
 	if (e12 > 0)
 		t11 -= e12;
 
-	vars[0] = curr->t11 - t11;
+	vars[0] = s->t11 - t11;
 	if (hwc->first_run) {
 		hwc->first_run = 0;
 		hwc->e11_prev = vars[0];
@@ -83,7 +83,7 @@ heating_run(struct site_status *curr, void *conf)
 }
 
 static int
-heating_log(struct site_status *curr, void *conf, char *buff,
+heating_log(struct site_status *s, void *conf, char *buff,
 		const int sz, int c)
 {
 	struct heating_config *hwc = conf;
@@ -96,7 +96,7 @@ heating_log(struct site_status *curr, void *conf, char *buff,
 		b++;
 	}
 	b += snprintf(&buff[c + b], sz - c - b, "T %3i T11 %3i T12 %3i ",
-			curr->t, curr->t11, curr->t12);
+			s->t, s->t11, s->t12);
 	if (hwc->valve && hwc->valve->ops && hwc->valve->ops->log)
 		b += hwc->valve->ops->log(hwc->valve->data, &buff[c + b],
 			       	sz, c + b);
