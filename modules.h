@@ -39,10 +39,9 @@ struct TR_mod {
 };
 
 struct TR_sensor {
-	int		ohms;
-	int		grads;
+	int		t;
+	int		(*convert)(int ohms);		
 	int		mod;
-	;
 };
 
 #endif /* PCS_MODULES_H */

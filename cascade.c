@@ -33,6 +33,7 @@
 #include "cascade.h"
 
 struct cascade_config {
+	int			input;
 	int			first_run;
 	int			m11_fail;
 	int			m11_int;
@@ -50,7 +51,7 @@ cascade_run(struct site_status *s, void *conf)
 
 	if (get_DO(3) == 0)
 		set_DO(3, 1, 0);
-	if (s->t > 160) {
+	if (s->T[c->input].t > 160) {
 		if (m1)
 			set_DO(1, 0, 0);
 		if (m2)
@@ -61,14 +62,14 @@ cascade_run(struct site_status *s, void *conf)
 		return;
 	}
 
-	if (s->t > 140)
+	if (s->T[c->input].t > 140)
 		return;
 
 	if (!m4)
 		set_DO(4, 1, 0);
 
 	if (!m1 && !m2) {
-		if (s->t % 2)
+		if (s->T[c->input].t % 2)
 			set_DO(1, 1, 0);
 		else
 			set_DO(2, 1, 0);
@@ -138,6 +139,7 @@ load_cascade(struct list_head *list)
 	struct cascade_config *c = (void *) xmalloc (sizeof(*c));
 
 	c->first_run = 1;
+	c->input = 4;
 	c->m11_fail = 0;
 	c->m11_int = 0;
 	p->config = (void *) c;

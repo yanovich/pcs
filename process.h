@@ -29,7 +29,6 @@ void
 set_DO(int index, int value, int delay);
 
 struct site_status {
-	int			t;
 	int			t11;
 	int			t12;
 	int			t21;
@@ -37,6 +36,7 @@ struct site_status {
 	unsigned int		p12;
 	unsigned int		DO[256];
 	struct DO_mod		DO_mod[256];
+	struct TR_sensor	T[256];
 	struct TR_mod		TR_mod[256];
 	long			interval;
 };
