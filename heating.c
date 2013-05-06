@@ -36,6 +36,7 @@
 struct heating_config {
 	int			street;
 	int			feed;
+	int			flowback;
 	struct list_head	fuzzy;
 	int			first_run;
 	int			e11_prev;
@@ -51,13 +52,13 @@ heating_run(struct site_status *s, void *conf)
 	int t11, t12, e12, v11;
 
 	if (s->T[c->street].t > 160) {
-		t12 = s->t12;
+		t12 = s->T[c->flowback].t;
 		t11 = 300;
 	} else {
 		t12 = 700 - ((s->T[c->street].t + 280) * 250) / 400;
 		t11 = 950 - ((s->T[c->street].t + 280) * 450) / 400;
 	}
-	e12 = s->t12 - t12;
+	e12 = s->T[c->flowback].t - t12;
 	if (e12 > 0)
 		t11 -= e12;
 
@@ -98,7 +99,7 @@ heating_log(struct site_status *s, void *conf, char *buff,
 		b++;
 	}
 	b += snprintf(&buff[o + b], sz - o - b, "T %3i T11 %3i T12 %3i ",
-			s->T[c->street].t, s->T[c->feed].t, s->t12);
+			s->T[c->street].t, s->T[c->feed].t, s->T[c->flowback].t);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
@@ -149,6 +150,7 @@ load_heating(struct list_head *list)
 
 	c->street = 4;
 	c->feed = 0;
+	c->flowback = 1;
 	c->first_run = 1;
 	c->valve = load_2way_valve(50, 5000, 47000, 5, 6);
 	hwp->config = (void *) c;
