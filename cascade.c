@@ -39,7 +39,7 @@ struct cascade_config {
 };
 
 static void
-cascade_run(struct site_status *curr, void *conf)
+cascade_run(struct site_status *s, void *conf)
 {
 	struct cascade_config *c = conf;
 	int m1 = get_DO(1);
@@ -50,7 +50,7 @@ cascade_run(struct site_status *curr, void *conf)
 
 	if (get_DO(3) == 0)
 		set_DO(3, 1, 0);
-	if (curr->t > 160) {
+	if (s->t > 160) {
 		if (m1)
 			set_DO(1, 0, 0);
 		if (m2)
@@ -61,14 +61,14 @@ cascade_run(struct site_status *curr, void *conf)
 		return;
 	}
 
-	if (curr->t > 140)
+	if (s->t > 140)
 		return;
 
 	if (!m4)
 		set_DO(4, 1, 0);
 
 	if (!m1 && !m2) {
-		if (curr->t % 2)
+		if (s->t % 2)
 			set_DO(1, 1, 0);
 		else
 			set_DO(2, 1, 0);
@@ -87,7 +87,7 @@ cascade_run(struct site_status *curr, void *conf)
 
 	c->m11_int++;
 
-	if (c->m11_int > 10 && (curr->p11 - curr->p12) < 40)
+	if (c->m11_int > 10 && (s->p11 - s->p12) < 40)
 		c->m11_fail++;
 	else
 		c->m11_fail = 0;
@@ -101,7 +101,7 @@ cascade_run(struct site_status *curr, void *conf)
 }
 
 static int
-cascade_log(struct site_status *curr, void *conf, char *buff,
+cascade_log(struct site_status *s, void *conf, char *buff,
 		const int sz, int c)
 {
 	int m1 = get_DO(1);
@@ -118,7 +118,7 @@ cascade_log(struct site_status *curr, void *conf, char *buff,
 	}
 	return snprintf(&buff[c + b], sz - c - b,
 		       	"P11 %3i P12 %3i %c%c%c%c",
-		       	curr->p11, curr->p12,
+		       	s->p11, s->p12,
 		       	m1 ? 'M' : '_',
 		       	m2 ? 'M' : '_',
 		       	m3 ? 'M' : '_',
