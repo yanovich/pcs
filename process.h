@@ -29,16 +29,16 @@ void
 set_DO(int index, int value, int delay);
 
 struct site_status {
-	int		t;
-	int		t11;
-	int		t12;
-	int		t21;
-	unsigned int	p11;
-	unsigned int	p12;
-	unsigned int	DO[256];
-	struct DO_mod	DO_mod[256];
-	struct TR_mod	TR_mod[256];
-	long		interval;
+	int			t;
+	int			t11;
+	int			t12;
+	int			t21;
+	unsigned int		p11;
+	unsigned int		p12;
+	unsigned int		DO[256];
+	struct DO_mod		DO_mod[256];
+	struct TR_mod		TR_mod[256];
+	long			interval;
 };
 
 struct process_ops {
