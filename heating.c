@@ -146,7 +146,7 @@ load_heating(struct list_head *list)
 	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
 
 	hwc->first_run = 1;
-	hwc->valve = load_2way_valve(50, 5000, 47000, 0, 5, 0, 6);
+	hwc->valve = load_2way_valve(50, 5000, 47000, 5, 6);
 	hwp->config = (void *) hwc;
 	hwp->ops = &heating_ops;
 	list_add_tail(&hwp->process_entry, list);

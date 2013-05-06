@@ -22,16 +22,11 @@
 
 #include "modules.h"
 
-struct address {
-	int		mod;
-	int		i;
-};
-
 unsigned int
-get_DO(int mod, int index);
+get_DO(int index);
 
 void
-set_DO(int mod, int index, int value, int delay);
+set_DO(int index, int value, int delay);
 
 struct site_status {
 	int		t;
@@ -40,6 +35,7 @@ struct site_status {
 	int		t21;
 	unsigned int	p11;
 	unsigned int	p12;
+	unsigned int	DO[256];
 	struct DO_mod	DO_mod[256];
 	struct TR_mod	TR_mod[256];
 	long		interval;

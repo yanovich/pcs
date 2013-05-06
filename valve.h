@@ -32,6 +32,6 @@ struct valve {
 };
 
 struct valve *
-load_2way_valve(int min, int max, int total, int mc, int c, int mo, int o);
+load_2way_valve(int min, int max, int total, int close, int open);
 
 #endif /* PCS_VALVE_H */

@@ -42,21 +42,21 @@ static void
 cascade_run(struct site_status *curr, void *conf)
 {
 	struct cascade_config *c = conf;
-	int m1 = get_DO(0, 1);
-	int m2 = get_DO(0, 2);
-	int m4 = get_DO(0, 4);
+	int m1 = get_DO(1);
+	int m2 = get_DO(2);
+	int m4 = get_DO(4);
 
 	debug("running cascade\n");
 
-	if (get_DO(0, 3) == 0)
-		set_DO(0, 3, 1, 0);
+	if (get_DO(3) == 0)
+		set_DO(3, 1, 0);
 	if (curr->t > 160) {
 		if (m1)
-			set_DO(0, 1, 0, 0);
+			set_DO(1, 0, 0);
 		if (m2)
-			set_DO(0, 2, 0, 0);
+			set_DO(2, 0, 0);
 		if (m4)
-			set_DO(0, 4, 0, 0);
+			set_DO(4, 0, 0);
 		c->m11_int = 0;
 		return;
 	}
@@ -65,22 +65,22 @@ cascade_run(struct site_status *curr, void *conf)
 		return;
 
 	if (!m4)
-		set_DO(0, 4, 1, 0);
+		set_DO(4, 1, 0);
 
 	if (!m1 && !m2) {
 		if (curr->t % 2)
-			set_DO(0, 1, 1, 0);
+			set_DO(1, 1, 0);
 		else
-			set_DO(0, 2, 1, 0);
+			set_DO(2, 1, 0);
 		c->m11_int = 0;
 		return;
 	}
 
 	if (c->m11_fail > 1) {
 		if (!m1)
-			set_DO(0, 1, 1, 0);
+			set_DO(1, 1, 0);
 		if (!m2)
-			set_DO(0, 2, 1, 0);
+			set_DO(2, 1, 0);
 		c->m11_int = 0;
 		return;
 	}
@@ -93,8 +93,8 @@ cascade_run(struct site_status *curr, void *conf)
 		c->m11_fail = 0;
 
 	if (c->m11_int > 7 * 24 * 60 * 6) {
-		set_DO(0, 1, !m1, 0);
-		set_DO(0, 2, !m2, 0);
+		set_DO(1, !m1, 0);
+		set_DO(2, !m2, 0);
 		c->m11_int = 0;
 	}
 	return;
@@ -104,10 +104,10 @@ static int
 cascade_log(struct site_status *curr, void *conf, char *buff,
 		const int sz, int c)
 {
-	int m1 = get_DO(0, 1);
-	int m2 = get_DO(0, 2);
-	int m3 = get_DO(0, 3);
-	int m4 = get_DO(0, 4);
+	int m1 = get_DO(1);
+	int m2 = get_DO(2);
+	int m3 = get_DO(3);
+	int m4 = get_DO(4);
 	int b = 0;
 
 	if (c == sz)

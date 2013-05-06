@@ -360,11 +360,27 @@ load_site_config(void)
 	debug("loaded config\n");
 }
 
+void
+load_DO(int offset, unsigned int value)
+{
+	int shift = offset % 32;
+	int index = offset / 32;
+
+	if (shift == 0) {
+		status.DO[index] = value;
+		return;
+	}
+	status.DO[index] &= (1 << shift) - 1;
+	status.DO[index] |= value << shift;
+	status.DO[index + 1] = value >> shift;
+}
+
 int
 load_site_status(struct site_status *site_status)
 {
 	int err;
 	int i;
+	int offset = 0;
 	char data[256];
 	int temp[7] = {0};
 	int press[8] = {0};
@@ -408,27 +424,47 @@ load_site_status(struct site_status *site_status)
 			error("%s: status data\n", __FILE__);
 			return -1;
 		}
+		load_DO(offset, status.DO_mod[i].state);
+		offset += status.DO_mod[i].count;
 	}
 
 	return 0;
 }
 
 unsigned int
-get_DO(int mod, int index)
+get_DO(int index)
 {
-	return (status.DO_mod[mod].state & 1 << (index - 1)) != 0;
+	index--;
+	return (status.DO[index/8] & 1 << (index % 8)) != 0;
 }
 
 void
-set_DO(int mod, int index, int value, int delay)
+set_DO(int index, int value, int delay)
 {
 	struct action action = {0};
+	int i = 0, offset = 0;
+
+	index--;
+	if (index < 0) {
+		fatal("Invalid DO index %i\n", index);
+		return;
+	}
 	action.type = DIGITAL_OUTPUT;
-	action.mod = mod;
+	while (1) {
+		if (status.DO_mod[i].count == 0) {
+			fatal("Invalid DO index %i\n", index);
+			return;
+		}
+		offset += status.DO_mod[i].count;
+		if (offset > index)
+			break;
+		i++;
+	}
+	action.mod = i;
 	action.digital.delay = delay;
-	action.digital.mask |= 1 << (index - 1);
+	action.digital.mask |= 1 << (index);
 	if (value)
-		action.digital.value |= 1 << (index - 1);
+		action.digital.value |= 1 << (index);
 	queue_action(&action);
 }
 
