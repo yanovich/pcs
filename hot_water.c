@@ -41,7 +41,7 @@ struct hot_water_config {
 };
 
 static void
-hot_water_run(struct site_status *curr, void *conf)
+hot_water_run(struct site_status *s, void *conf)
 {
 	struct hot_water_config *c = conf;
 	int vars[2];
@@ -50,11 +50,11 @@ hot_water_run(struct site_status *curr, void *conf)
 	debug("running hot water\n");
 	if (c->first_run) {
 		c->first_run = 0;
-		c->t21_prev = curr->t21;
+		c->t21_prev = s->t21;
 	}
-	vars[0] = curr->t21 - 570;
-	vars[1] = curr->t21 - c->t21_prev;
-	c->t21_prev = curr->t21;
+	vars[0] = s->t21 - 570;
+	vars[1] = s->t21 - c->t21_prev;
+	c->t21_prev = s->t21;
 
 	v21 = process_fuzzy(&c->fuzzy, &vars[0]);
 	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
@@ -65,7 +65,7 @@ hot_water_run(struct site_status *curr, void *conf)
 }
 
 static int
-hot_water_log(struct site_status *curr, void *conf, char *buff,
+hot_water_log(struct site_status *s, void *conf, char *buff,
 		const int sz, int o)
 {
 	struct hot_water_config *c = conf;
@@ -77,7 +77,7 @@ hot_water_log(struct site_status *curr, void *conf, char *buff,
 		buff[o] = ',';
 		b++;
 	}
-	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", curr->t21);
+	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->t21);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
