@@ -29,7 +29,6 @@ void
 set_DO(int index, int value, int delay);
 
 struct site_status {
-	int			t21;
 	unsigned int		p11;
 	unsigned int		p12;
 	unsigned int		DO[256];
