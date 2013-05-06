@@ -61,7 +61,7 @@ adjust_2way_valve(int amount, void *data)
 			amount = 0;
 		}
 		else if (amount > d->total) {
-			d->pos = d->total;
+			amount = d->total;
 		}
 	} else {
 		if (amount < -d->total) {
