@@ -400,7 +400,7 @@ load_site_status(struct site_status *site_status)
 		return -1;
 	}
 	site_status->T[4].t	= temp[4];
-	site_status->t11	= temp[0];
+	site_status->T[0].t	= temp[0];
 	site_status->t12	= temp[1];
 	site_status->t21	= temp[3];
 
