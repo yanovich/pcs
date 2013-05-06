@@ -44,7 +44,7 @@ struct heating_config {
 static void
 heating_run(struct site_status *s, void *conf)
 {
-	struct heating_config *hwc = conf;
+	struct heating_config *c = conf;
 	int vars[2];
 	int t11, t12, e12, v11;
 
@@ -60,25 +60,25 @@ heating_run(struct site_status *s, void *conf)
 		t11 -= e12;
 
 	vars[0] = s->t11 - t11;
-	if (hwc->first_run) {
-		hwc->first_run = 0;
-		hwc->e11_prev = vars[0];
-		hwc->e12_prev = e12 > 0 ? e12 : 0;
+	if (c->first_run) {
+		c->first_run = 0;
+		c->e11_prev = vars[0];
+		c->e12_prev = e12 > 0 ? e12 : 0;
 	}
-	vars[1] = vars[0] - hwc->e11_prev;
+	vars[1] = vars[0] - c->e11_prev;
 	if (e12 > 0)
-		vars[1] -= e12 - hwc->e12_prev;
-	hwc->e11_prev = vars[0];
-	hwc->e12_prev = e12 > 0 ? e12 : 0;
+		vars[1] -= e12 - c->e12_prev;
+	c->e11_prev = vars[0];
+	c->e12_prev = e12 > 0 ? e12 : 0;
 
 	debug("running heating\n");
 
-	v11 = process_fuzzy(&hwc->fuzzy, &vars[0]);
+	v11 = process_fuzzy(&c->fuzzy, &vars[0]);
 
-	if (!hwc->valve || !hwc->valve->ops || !hwc->valve->ops->adjust)
+	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
 		fatal("bad valve\n");
 	
-	hwc->valve->ops->adjust(v11, hwc->valve->data);
+	c->valve->ops->adjust(v11, c->valve->data);
 	return;
 }
 
@@ -86,7 +86,7 @@ static int
 heating_log(struct site_status *s, void *conf, char *buff,
 		const int sz, int c)
 {
-	struct heating_config *hwc = conf;
+	struct heating_config *c = conf;
 	int b = 0;
 
 	if (c == sz)
@@ -97,8 +97,8 @@ heating_log(struct site_status *s, void *conf, char *buff,
 	}
 	b += snprintf(&buff[c + b], sz - c - b, "T %3i T11 %3i T12 %3i ",
 			s->t, s->t11, s->t12);
-	if (hwc->valve && hwc->valve->ops && hwc->valve->ops->log)
-		b += hwc->valve->ops->log(hwc->valve->data, &buff[c + b],
+	if (c->valve && c->valve->ops && c->valve->ops->log)
+		b += c->valve->ops->log(c->valve->data, &buff[c + b],
 			       	sz, c + b);
 
 	return b;
@@ -113,41 +113,41 @@ void
 load_heating(struct list_head *list)
 {
 	struct process *hwp = (void *) xmalloc (sizeof(*hwp));
-	struct heating_config *hwc = (void *) xmalloc (sizeof(*hwc));
+	struct heating_config *c = (void *) xmalloc (sizeof(*c));
 	struct fuzzy_clause *fcl;
 
-	INIT_LIST_HEAD(&hwc->fuzzy);
+	INIT_LIST_HEAD(&c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 2, -1500, -50,  -30, 0,   400,  7000, 7000);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 0,   -50, -30,  -10, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 0,   -30, -10,    0, 0,     0,   100,  200);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 0,   -10,   0,   30, 0,  -300,     0,  300);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 0,     0,  30,   80, 0,  -200,  -100,    0);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 0,    30,  80,  180, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 0, 1,    80, 180, 1500, 0, -7000, -7000, -400);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 1, 2, -1000, -10,   -1, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
 	fuzzy_clause_init(fcl, 1, 1,     1,  10, 1000, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &hwc->fuzzy);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 
-	hwc->first_run = 1;
-	hwc->valve = load_2way_valve(50, 5000, 47000, 5, 6);
-	hwp->config = (void *) hwc;
+	c->first_run = 1;
+	c->valve = load_2way_valve(50, 5000, 47000, 5, 6);
+	hwp->config = (void *) c;
 	hwp->ops = &heating_ops;
 	list_add_tail(&hwp->process_entry, list);
 }
