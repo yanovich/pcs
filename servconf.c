@@ -150,6 +150,14 @@ parse(yaml_event_t *event, struct config_node *top)
 }
 #endif
 
+int
+parse_top_level(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	return (event->type == YAML_STREAM_END_EVENT);
+}
+
+
 void
 load_server_config(const char *filename, struct site_config *conf)
 {
@@ -157,6 +165,12 @@ load_server_config(const char *filename, struct site_config *conf)
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
 	int type, more;
+	struct config_node top_level = {
+		.parse = parse_top_level,
+	};
+	struct config_node *node;
+
+	INIT_LIST_HEAD(&top_level.node_entry);
 
 	if (NULL == f)
 		fatal("failed to open %s (%s)\n", filename, strerror(errno));
@@ -168,8 +182,12 @@ load_server_config(const char *filename, struct site_config *conf)
 	while (1) {
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
+		node = list_entry(top_level.node_entry.next,
+			       	struct config_node, node_entry);
+		if (!node->parse)
+			fatal("%s:%i internal error\n", __FILE__, __LINE__);
 
-		if (event.type == YAML_STREAM_END_EVENT)
+		if (node->parse(&event, conf, node))
 			break;
 	}
 
