@@ -103,7 +103,7 @@ cascade_run(struct site_status *s, void *conf)
 
 static int
 cascade_log(struct site_status *s, void *conf, char *buff,
-		const int sz, int c)
+		const int sz, int o)
 {
 	int m1 = get_DO(1);
 	int m2 = get_DO(2);
@@ -111,13 +111,13 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 	int m4 = get_DO(4);
 	int b = 0;
 
-	if (c == sz)
+	if (o == sz)
 		return 0;
-	if (c) {
-		buff[c] = ',';
+	if (o) {
+		buff[o] = ',';
 		b++;
 	}
-	return snprintf(&buff[c + b], sz - c - b,
+	return snprintf(&buff[o + b], sz - o - b,
 		       	"P11 %3i P12 %3i %c%c%c%c",
 		       	s->p11, s->p12,
 		       	m1 ? 'M' : '_',
