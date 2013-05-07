@@ -31,13 +31,13 @@ set_DO(int index, int value, int delay);
 #define PCS_BAD_DATA		0x80000000
 
 struct site_status {
-	unsigned int		p11;
-	unsigned int		p12;
+	long			interval;
 	unsigned int		DO[256];
 	struct DO_mod		DO_mod[256];
 	struct TR_sensor	T[256];
 	struct TR_mod		TR_mod[256];
-	long			interval;
+	struct AI_sensor	AI[256];
+	struct AI_mod		AI_mod[256];
 };
 
 struct process_ops {

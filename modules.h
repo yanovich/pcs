@@ -44,4 +44,18 @@ struct TR_sensor {
 	int		mod;
 };
 
+struct AI_mod {
+	int		(*read)(struct AI_mod *mod, int *buffer);
+	unsigned int	count;
+	unsigned int	first;
+	int		block;
+	int		slot;
+};
+
+struct AI_sensor {
+	int		ai;
+	int		(*convert)(int raw);		
+	int		mod;
+};
+
 #endif /* PCS_MODULES_H */

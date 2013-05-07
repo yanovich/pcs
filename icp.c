@@ -378,6 +378,29 @@ get_serial_resistance(struct TR_mod *mod, int *buffer)
 	return 0;
 }
 
+static int
+get_serial_analog_input(struct AI_mod *mod, int *buffer)
+{
+	int err;
+	char data[256];
+
+	err = icp_serial_exchange(mod->slot, "#00", 256, &data[0]);
+	if (0 > err) {
+		error("%s: temp data read failure\n", __FILE__);
+		return err;
+	}
+	if ('>' != data[0]) {
+		error("%s: bad temp data: %s\n", __FILE__, data);
+		return -1;
+	}
+	err = parse_signed_input(&data[1], mod->count, buffer);
+	if (mod->count != err) {
+		error("%s: bad temp data: %s\n", __FILE__, data);
+		return -1;
+	}
+	return 0;
+}
+
 #define MAX_RESPONSE 256
 #define REQUEST_NAME	"$00M"
 
@@ -415,6 +438,11 @@ static struct TR_mod TR7_S = {
 	.count = 7,
 };
 
+static struct AI_mod AI8_S = {
+	.read = get_serial_analog_input,
+	.count = 8,
+};
+
 struct module_config {
 	const char 		*name;
 	int			type;
@@ -436,6 +464,11 @@ struct module_config mods[] = {
 		.name = "87015P",
 		.type = TR_MODULE,
 		.config = &TR7_S,
+	},
+	{
+		.name = "87017",
+		.type = AI_MODULE,
+		.config = &AI8_S,
 	},
 	{
 	}

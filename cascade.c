@@ -34,6 +34,8 @@
 
 struct cascade_config {
 	int			input;
+	int			p_in;
+	int			p_out;
 	int			first_run;
 	int			m11_fail;
 	int			m11_int;
@@ -88,7 +90,7 @@ cascade_run(struct site_status *s, void *conf)
 
 	c->m11_int++;
 
-	if (c->m11_int > 10 && (s->p11 - s->p12) < 40)
+	if (c->m11_int > 10 && (s->AI[c->p_out].ai - s->AI[c->p_in].ai) < 40)
 		c->m11_fail++;
 	else
 		c->m11_fail = 0;
@@ -105,6 +107,7 @@ static int
 cascade_log(struct site_status *s, void *conf, char *buff,
 		const int sz, int o)
 {
+	struct cascade_config *c = conf;
 	int m1 = get_DO(1);
 	int m2 = get_DO(2);
 	int m3 = get_DO(3);
@@ -119,7 +122,7 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 	}
 	return snprintf(&buff[o + b], sz - o - b,
 		       	"P11 %3i P12 %3i %c%c%c%c",
-		       	s->p11, s->p12,
+		       	s->AI[c->p_out].ai, s->AI[c->p_in].ai,
 		       	m1 ? 'M' : '_',
 		       	m2 ? 'M' : '_',
 		       	m3 ? 'M' : '_',
@@ -140,6 +143,8 @@ load_cascade(struct list_head *list)
 
 	c->first_run = 1;
 	c->input = 4;
+	c->p_in = 0;
+	c->p_out = 1;
 	c->m11_fail = 0;
 	c->m11_int = 0;
 	p->config = (void *) c;

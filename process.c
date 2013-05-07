@@ -85,37 +85,6 @@ b016(int apm)
 	return (1600 * (apm - 3937)) / (19685 - 3937);
 }
 
-static int
-parse_amps(const char *data, int size, int *press)
-{
-	int i = 0, point = 0, val = 0;
-	const char *p = data;
-
-	if (*p != '+')
-		return 0;
-
-	p++;
-	while (1) {
-		if (*p >= '0' && *p <= '9') {
-			val *= 10;
-			val += *p - '0';
-		} else if ('.' == *p) {
-			if (point)
-				return i;
-			point = 1;
-		} else if ('+' == *p || 0 == *p) {
-			if (i >= size)
-				return size + 1;
-			press[i++] = b016(val);
-			if (!*p)
-				return i;
-			val = 0;
-			point = 0;
-		}
-		p++;
-	}
-}
-
 LIST_HEAD(action_list);
 
 typedef enum {
@@ -323,12 +292,17 @@ load_site_config(void)
 	       	icp_init_module("8041", 0, &type, &more);
 	status.DO_mod[0].slot = 2;
 	status.TR_mod[0] = *(struct TR_mod *)
-	       	icp_init_module("87017", 0, &type, &more);
+	       	icp_init_module("87015", 0, &type, &more);
 	status.TR_mod[0].slot = 3;
 	status.T[0].convert	= ni1000;
 	status.T[1].convert	= ni1000;
 	status.T[3].convert	= ni1000;
 	status.T[4].convert	= ni1000;
+	status.AI_mod[0] = *(struct AI_mod *)
+	       	icp_init_module("87017", 0, &type, &more);
+	status.AI_mod[0].slot = 4;
+	status.AI[0].convert	= b016;
+	status.AI[1].convert	= b016;
 	load_heating(&process_list);
 	load_hot_water(&process_list);
 	load_cascade(&process_list);
@@ -358,11 +332,10 @@ load_site_status()
 	int i, j, t;
 	int offset = 0;
 	char data[256];
-	int ohms[7] = {0};
-	int press[8] = {0};
+	int raw[8] = {0};
 
 	for (i = 0; status.TR_mod[i].count > 0; i++) {
-		err = status.TR_mod[i].read(&status.TR_mod[i], ohms);
+		err = status.TR_mod[i].read(&status.TR_mod[i], raw);
 		if (0 > err) {
 			error("%s: bad temp data: %s(%i)\n", __FILE__,
 				       	data, err);
@@ -374,28 +347,37 @@ load_site_status()
 			status.T[t].t = PCS_BAD_DATA;
 			if (!status.T[t].convert)
 				continue;
-			status.T[t].t = status.T[t].convert(ohms[j]);
+			status.T[t].t = status.T[t].convert(raw[j]);
 			if (PCS_BAD_DATA == status.T[t].t) {
 				error("%s: bad temp data: %s(%i)\n", __FILE__,
-					       	data, err);
+					       	data, j);
 				return -1;
 			}
 		}
 	}
 
-	err = icp_serial_exchange(4, "#00", 256, &data[0]);
-	if (0 > err) {
-		error("%s: pressure data read failure\n", __FILE__);
-		return err;
+	offset = 0;
+	for (i = 0; status.AI_mod[i].count > 0; i++) {
+		err = status.AI_mod[i].read(&status.AI_mod[i], raw);
+		if (0 > err) {
+			error("%s: bad analog data: %s(%i)\n", __FILE__,
+				       	data, err);
+			return -1;
+		}
+		t = offset;
+		offset += status.AI_mod[i].count;
+		for (j = 0; t < offset; j++, t++) {
+			status.AI[t].ai = PCS_BAD_DATA;
+			if (!status.AI[t].convert)
+				continue;
+			status.AI[t].ai = status.AI[t].convert(raw[j]);
+			if (PCS_BAD_DATA == status.AI[t].ai) {
+				error("%s: bad analog data: %s(%i)\n", __FILE__,
+					       	data, j);
+				return -1;
+			}
+		}
 	}
-
-	err = parse_amps(&data[1], sizeof(press), press);
-	if (8 != err) {
-		error("%s: bad temp data: %s(%i)\n", __FILE__, data, err);
-		return -1;
-	}
-	status.p12 = press[0];
-	status.p11 = press[1];
 
 	offset = 0;
 	for (i = 0; status.DO_mod[i].count > 0; i++) {
