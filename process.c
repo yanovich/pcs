@@ -282,13 +282,12 @@ execute_actions(struct site_status *s)
 	return t;
 }
 
-LIST_HEAD(process_list);
-
 void
 load_site_config(const char *config_file)
 {
 	debug("loading config\n");
 	int type, more;
+	INIT_LIST_HEAD(&config.process_list);
 	config.DO_mod[0] = *(struct DO_mod *)
 	       	icp_init_module("8041", 0, &type, &more);
 	config.DO_mod[0].slot = 2;
@@ -304,9 +303,9 @@ load_site_config(const char *config_file)
 	config.AI_mod[0].slot = 4;
 	config.AI[0].convert	= b016;
 	config.AI[1].convert	= b016;
-	load_heating(&process_list);
-	load_hot_water(&process_list);
-	load_cascade(&process_list);
+	load_heating(&config.process_list);
+	load_hot_water(&config.process_list);
+	load_cascade(&config.process_list);
 	config.interval = 10000000;
 	debug("loaded config\n");
 }
@@ -440,7 +439,7 @@ log_status(struct site_status *curr)
 	char buff[sz];
 	struct process *p;
 	buff[0] = 0;
-	list_for_each_entry(p, &process_list, process_entry) {
+	list_for_each_entry(p, &config.process_list, process_entry) {
 		if (!p->ops->log)
 			continue;
 		c += p->ops->log(curr, p->config, buff, sz, c);
@@ -463,7 +462,7 @@ process_loop(void)
 		while (load_site_status() != 0)
 			sleep (1);
 
-		list_for_each_entry(p, &process_list, process_entry) {
+		list_for_each_entry(p, &config.process_list, process_entry) {
 			if (! p->ops->run)
 				fatal("process without run\n");
 			p->ops->run(&status, p->config);

@@ -43,6 +43,7 @@ struct site_config {
 	struct TR_mod		TR_mod[256];
 	struct AI_sensor	AI[256];
 	struct AI_mod		AI_mod[256];
+	struct list_head	process_list;
 };
 
 struct process_ops {
