@@ -421,6 +421,11 @@ struct module_config mods[] = {
 		.config = &TR7_S,
 	},
 	{
+		.name = "87015P",
+		.type = TR_MODULE,
+		.config = &TR7_S,
+	},
+	{
 	}
 };
 
