@@ -151,10 +151,87 @@ parse(yaml_event_t *event, struct config_node *top)
 #endif
 
 int
+parse_do_nothing(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	int done = 0;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+	case YAML_SCALAR_EVENT:
+		break;
+	case YAML_STREAM_END_EVENT:
+		done = 1;
+		break;
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_MAPPING_START_EVENT:
+		node->data++;
+		break;
+	case YAML_SEQUENCE_END_EVENT:
+	case YAML_MAPPING_END_EVENT:
+		node->data--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (!node->data)
+		list_del(&node->node_entry);
+	return done;
+}
+
+struct config_node empty = {
+	.parse = parse_do_nothing,
+};
+
+struct top_level_parser {
+	int		in_a_map;
+};
+
+int
 parse_top_level(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
-	return (event->type == YAML_STREAM_END_EVENT);
+	int done = 0;
+	struct top_level_parser *data = node->data;
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+		break;
+	case YAML_STREAM_END_EVENT:
+		done = 1;
+		break;
+	case YAML_ALIAS_EVENT:
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_SEQUENCE_END_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		debug("configuring %s\n", event->data.scalar.value);
+		empty.data = 0;
+		list_add(&empty.node_entry, &node->node_entry);
+		break;
+	case YAML_MAPPING_START_EVENT:
+		if (data->in_a_map)
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		data->in_a_map = 1;
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map = 0;
+		break;
+	};
+
+	yaml_event_delete(event);
+	return done;
 }
 
 
@@ -165,8 +242,12 @@ load_server_config(const char *filename, struct site_config *conf)
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
 	int type, more;
+	struct top_level_parser data = {
+		.in_a_map	= 0,
+	};
 	struct config_node top_level = {
-		.parse = parse_top_level,
+		.parse		= parse_top_level,
+		.data		= &data,
 	};
 	struct config_node *node;
 
@@ -182,7 +263,7 @@ load_server_config(const char *filename, struct site_config *conf)
 	while (1) {
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
-		node = list_entry(top_level.node_entry.next,
+		node = list_entry(top_level.node_entry.prev,
 			       	struct config_node, node_entry);
 		if (!node->parse)
 			fatal("%s:%i internal error\n", __FILE__, __LINE__);
