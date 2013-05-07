@@ -416,7 +416,7 @@ struct module_config mods[] = {
 		.config = &DO32,
 	},
 	{
-		.name = "87017",
+		.name = "87015",
 		.type = TR_MODULE,
 		.config = &TR7_S,
 	},
