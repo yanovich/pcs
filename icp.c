@@ -313,12 +313,16 @@ close_fd:
 }
 
 static int
-parse_ohms(const char *data, int size, int *ohms)
+parse_signed_input(const char *data, int size, int *raw)
 {
-	int i = 0, point = 0, val = 0;
+	int i = 0, point = 0, val = 0, sign;
 	const char *p = data;
 
-	if (*p != '+')
+	if ('+' == *p)
+		sign = 0;
+	else if ('-' == *p)
+		sign = 1;
+	else
 		return 0;
 
 	p++;
@@ -330,14 +334,22 @@ parse_ohms(const char *data, int size, int *ohms)
 			if (point)
 				return i;
 			point = 1;
-		} else if ('+' == *p || 0 == *p) {
+		} else if ('+' == *p || '-' == *p || 0 == *p) {
 			if (i >= size)
 				return size + 1;
-			ohms[i++] = val;
+			if (sign)
+				val = -val;
+			raw[i++] = val;
 			if (!*p)
 				return i;
 			val = 0;
 			point = 0;
+			if ('+' == *p)
+				sign = 0;
+			else
+				sign = 1;
+		} else {
+			return i;
 		}
 		p++;
 	}
@@ -358,7 +370,7 @@ get_serial_resistance(struct TR_mod *mod, int *buffer)
 		error("%s: bad temp data: %s\n", __FILE__, data);
 		return -1;
 	}
-	err = parse_ohms(&data[1], mod->count, buffer);
+	err = parse_signed_input(&data[1], mod->count, buffer);
 	if (mod->count != err) {
 		error("%s: bad temp data: %s\n", __FILE__, data);
 		return -1;
