@@ -285,7 +285,7 @@ execute_actions(struct site_status *s)
 LIST_HEAD(process_list);
 
 void
-load_site_config(void)
+load_site_config(const char *config_file)
 {
 	debug("loading config\n");
 	int type, more;

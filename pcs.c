@@ -37,7 +37,7 @@
 #include "process.h"
 
 const char *pid_file = PCS_PID_FILE_PATH;
-const char *config_file_name;
+const char *config_file_name = PCS_CONF_FILE_PATH;
 
 int no_detach_flag = 0;
 
@@ -79,7 +79,7 @@ main(int ac, char **av)
 	}
 
 	log_init("pcs", log_level, LOG_DAEMON, 1);
-	load_site_config();
+	load_site_config(config_file_name);
 	if (!no_detach_flag)
 		daemon(0, 0);
 

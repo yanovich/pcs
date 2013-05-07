@@ -58,7 +58,7 @@ struct process {
 };
 
 void
-load_site_config(void);
+load_site_config(const char *config_file);
 
 int
 load_site_status();
