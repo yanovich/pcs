@@ -28,6 +28,8 @@ get_DO(int index);
 void
 set_DO(int index, int value, int delay);
 
+#define PCS_BAD_DATA		0x80000000
+
 struct site_status {
 	unsigned int		p11;
 	unsigned int		p12;

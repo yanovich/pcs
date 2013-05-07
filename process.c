@@ -371,11 +371,11 @@ load_site_status()
 		t = offset;
 		offset += status.TR_mod[i].count;
 		for (j = 0; t < offset; j++, t++) {
-			status.T[t].t = -300;
+			status.T[t].t = PCS_BAD_DATA;
 			if (!status.T[t].convert)
 				continue;
 			status.T[t].t = status.T[t].convert(ohms[j]);
-			if (-300 == status.T[t].t) {
+			if (PCS_BAD_DATA == status.T[t].t) {
 				error("%s: bad temp data: %s(%i)\n", __FILE__,
 					       	data, err);
 				return -1;
