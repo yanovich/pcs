@@ -53,7 +53,7 @@ cascade_run(struct site_status *s, void *conf)
 
 	if (get_DO(3) == 0)
 		set_DO(3, 1, 0);
-	if (s->T[c->input].t > 160) {
+	if (s->T[c->input] > 160) {
 		if (m1)
 			set_DO(1, 0, 0);
 		if (m2)
@@ -64,14 +64,14 @@ cascade_run(struct site_status *s, void *conf)
 		return;
 	}
 
-	if (s->T[c->input].t > 140)
+	if (s->T[c->input] > 140)
 		return;
 
 	if (!m4)
 		set_DO(4, 1, 0);
 
 	if (!m1 && !m2) {
-		if (s->T[c->input].t % 2)
+		if (s->T[c->input] % 2)
 			set_DO(1, 1, 0);
 		else
 			set_DO(2, 1, 0);
@@ -90,7 +90,7 @@ cascade_run(struct site_status *s, void *conf)
 
 	c->m11_int++;
 
-	if (c->m11_int > 10 && (s->AI[c->p_out].ai - s->AI[c->p_in].ai) < 40)
+	if (c->m11_int > 10 && (s->AI[c->p_out] - s->AI[c->p_in]) < 40)
 		c->m11_fail++;
 	else
 		c->m11_fail = 0;
@@ -122,7 +122,7 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 	}
 	return snprintf(&buff[o + b], sz - o - b,
 		       	"P11 %3i P12 %3i %c%c%c%c",
-		       	s->AI[c->p_out].ai, s->AI[c->p_in].ai,
+		       	s->AI[c->p_out], s->AI[c->p_in],
 		       	m1 ? 'M' : '_',
 		       	m2 ? 'M' : '_',
 		       	m3 ? 'M' : '_',

@@ -39,7 +39,6 @@ struct TR_mod {
 };
 
 struct TR_sensor {
-	int		t;
 	int		(*convert)(int ohms);		
 	int		mod;
 };
@@ -53,7 +52,6 @@ struct AI_mod {
 };
 
 struct AI_sensor {
-	int		ai;
 	int		(*convert)(int raw);		
 	int		mod;
 };

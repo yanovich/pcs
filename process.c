@@ -238,7 +238,8 @@ do_sleep(struct timeval *base, struct timeval *now, long offset)
 	return offset;
 }
 
-static struct site_status status = {0};
+static struct site_status status = {{0}};
+static struct site_config config = {0};
 
 unsigned
 execute_actions(struct site_status *s)
@@ -267,9 +268,9 @@ execute_actions(struct site_status *s)
 					a->digital.value,
 					a->digital.mask,
 					a->digital.delay);
-			status.DO_mod[a->mod].state &= ~a->digital.mask;
-			status.DO_mod[a->mod].state |=  a->digital.value;
-			status.DO_mod[a->mod].write(&status.DO_mod[a->mod]);
+			config.DO_mod[a->mod].state &= ~a->digital.mask;
+			config.DO_mod[a->mod].state |=  a->digital.value;
+			config.DO_mod[a->mod].write(&config.DO_mod[a->mod]);
 			list_del(&a->action_entry);
 			xfree(a);
 			continue;
@@ -288,25 +289,25 @@ load_site_config(void)
 {
 	debug("loading config\n");
 	int type, more;
-	status.DO_mod[0] = *(struct DO_mod *)
+	config.DO_mod[0] = *(struct DO_mod *)
 	       	icp_init_module("8041", 0, &type, &more);
-	status.DO_mod[0].slot = 2;
-	status.TR_mod[0] = *(struct TR_mod *)
+	config.DO_mod[0].slot = 2;
+	config.TR_mod[0] = *(struct TR_mod *)
 	       	icp_init_module("87015", 0, &type, &more);
-	status.TR_mod[0].slot = 3;
-	status.T[0].convert	= ni1000;
-	status.T[1].convert	= ni1000;
-	status.T[3].convert	= ni1000;
-	status.T[4].convert	= ni1000;
-	status.AI_mod[0] = *(struct AI_mod *)
+	config.TR_mod[0].slot = 3;
+	config.T[0].convert	= ni1000;
+	config.T[1].convert	= ni1000;
+	config.T[3].convert	= ni1000;
+	config.T[4].convert	= ni1000;
+	config.AI_mod[0] = *(struct AI_mod *)
 	       	icp_init_module("87017", 0, &type, &more);
-	status.AI_mod[0].slot = 4;
-	status.AI[0].convert	= b016;
-	status.AI[1].convert	= b016;
+	config.AI_mod[0].slot = 4;
+	config.AI[0].convert	= b016;
+	config.AI[1].convert	= b016;
 	load_heating(&process_list);
 	load_hot_water(&process_list);
 	load_cascade(&process_list);
-	status.interval = 10000000;
+	config.interval = 10000000;
 	debug("loaded config\n");
 }
 
@@ -334,21 +335,21 @@ load_site_status()
 	char data[256];
 	int raw[8] = {0};
 
-	for (i = 0; status.TR_mod[i].count > 0; i++) {
-		err = status.TR_mod[i].read(&status.TR_mod[i], raw);
+	for (i = 0; config.TR_mod[i].count > 0; i++) {
+		err = config.TR_mod[i].read(&config.TR_mod[i], raw);
 		if (0 > err) {
 			error("%s: bad temp data: %s(%i)\n", __FILE__,
 				       	data, err);
 			return -1;
 		}
 		t = offset;
-		offset += status.TR_mod[i].count;
+		offset += config.TR_mod[i].count;
 		for (j = 0; t < offset; j++, t++) {
-			status.T[t].t = PCS_BAD_DATA;
-			if (!status.T[t].convert)
+			status.T[t] = PCS_BAD_DATA;
+			if (!config.T[t].convert)
 				continue;
-			status.T[t].t = status.T[t].convert(raw[j]);
-			if (PCS_BAD_DATA == status.T[t].t) {
+			status.T[t] = config.T[t].convert(raw[j]);
+			if (PCS_BAD_DATA == status.T[t]) {
 				error("%s: bad temp data: %s(%i)\n", __FILE__,
 					       	data, j);
 				return -1;
@@ -357,21 +358,21 @@ load_site_status()
 	}
 
 	offset = 0;
-	for (i = 0; status.AI_mod[i].count > 0; i++) {
-		err = status.AI_mod[i].read(&status.AI_mod[i], raw);
+	for (i = 0;config.AI_mod[i].count > 0; i++) {
+		err = config.AI_mod[i].read(&config.AI_mod[i], raw);
 		if (0 > err) {
 			error("%s: bad analog data: %s(%i)\n", __FILE__,
 				       	data, err);
 			return -1;
 		}
 		t = offset;
-		offset += status.AI_mod[i].count;
+		offset += config.AI_mod[i].count;
 		for (j = 0; t < offset; j++, t++) {
-			status.AI[t].ai = PCS_BAD_DATA;
-			if (!status.AI[t].convert)
+			status.AI[t] = PCS_BAD_DATA;
+			if (!config.AI[t].convert)
 				continue;
-			status.AI[t].ai = status.AI[t].convert(raw[j]);
-			if (PCS_BAD_DATA == status.AI[t].ai) {
+			status.AI[t] = config.AI[t].convert(raw[j]);
+			if (PCS_BAD_DATA == status.AI[t]) {
 				error("%s: bad analog data: %s(%i)\n", __FILE__,
 					       	data, j);
 				return -1;
@@ -380,15 +381,15 @@ load_site_status()
 	}
 
 	offset = 0;
-	for (i = 0; status.DO_mod[i].count > 0; i++) {
-		err = status.DO_mod[i].read(&status.DO_mod[i]);
+	for (i = 0; config.DO_mod[i].count > 0; i++) {
+		err = config.DO_mod[i].read(&config.DO_mod[i]);
 		if (0 != err) {
 			error("%s: status data\n", __FILE__);
 			return -1;
 		}
-		debug("DO status 0x%08x\n", status.DO_mod[i].state);
-		load_DO(offset, status.DO_mod[i].state);
-		offset += status.DO_mod[i].count;
+		debug("DO status 0x%08x\n", config.DO_mod[i].state);
+		load_DO(offset, config.DO_mod[i].state);
+		offset += config.DO_mod[i].count;
 	}
 
 	return 0;
@@ -414,11 +415,11 @@ set_DO(int index, int value, int delay)
 	}
 	action.type = DIGITAL_OUTPUT;
 	while (1) {
-		if (status.DO_mod[i].count == 0) {
+		if (config.DO_mod[i].count == 0) {
 			fatal("Invalid DO index %i\n", index);
 			return;
 		}
-		offset += status.DO_mod[i].count;
+		offset += config.DO_mod[i].count;
 		if (offset > index)
 			break;
 		i++;
@@ -450,7 +451,6 @@ log_status(struct site_status *curr)
 void
 process_loop(void)
 {
-	struct site_status *curr = &status;
 	struct timeval start, now;
 	struct process *p;
 
@@ -466,14 +466,14 @@ process_loop(void)
 		list_for_each_entry(p, &process_list, process_entry) {
 			if (! p->ops->run)
 				fatal("process without run\n");
-			p->ops->run(curr, p->config);
+			p->ops->run(&status, p->config);
 		}
-		log_status(curr);
-		execute_actions(curr);
+		log_status(&status);
+		execute_actions(&status);
 		gettimeofday(&now, NULL);
 		if (received_sigterm)
 			return;
-		do_sleep(&start, &now, curr->interval);
-		start.tv_sec += curr->interval / 1000000;
+		do_sleep(&start, &now, config.interval);
+		start.tv_sec += config.interval / 1000000;
 	}
 }

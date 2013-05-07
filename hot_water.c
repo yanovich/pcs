@@ -51,11 +51,11 @@ hot_water_run(struct site_status *s, void *conf)
 	debug("running hot water\n");
 	if (c->first_run) {
 		c->first_run = 0;
-		c->t21_prev = s->T[c->input].t;
+		c->t21_prev = s->T[c->input];
 	}
-	vars[0] = s->T[c->input].t - 570;
-	vars[1] = s->T[c->input].t - c->t21_prev;
-	c->t21_prev = s->T[c->input].t;
+	vars[0] = s->T[c->input] - 570;
+	vars[1] = s->T[c->input] - c->t21_prev;
+	c->t21_prev = s->T[c->input];
 
 	v21 = process_fuzzy(&c->fuzzy, &vars[0]);
 	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
@@ -78,7 +78,7 @@ hot_water_log(struct site_status *s, void *conf, char *buff,
 		buff[o] = ',';
 		b++;
 	}
-	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->T[c->input].t);
+	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->T[c->input]);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);

@@ -51,18 +51,18 @@ heating_run(struct site_status *s, void *conf)
 	int vars[2];
 	int t11, t12, e12, v11;
 
-	if (s->T[c->street].t > 160) {
-		t12 = s->T[c->flowback].t;
+	if (s->T[c->street] > 160) {
+		t12 = s->T[c->flowback];
 		t11 = 300;
 	} else {
-		t12 = 700 - ((s->T[c->street].t + 280) * 250) / 400;
-		t11 = 950 - ((s->T[c->street].t + 280) * 450) / 400;
+		t12 = 700 - ((s->T[c->street] + 280) * 250) / 400;
+		t11 = 950 - ((s->T[c->street] + 280) * 450) / 400;
 	}
-	e12 = s->T[c->flowback].t - t12;
+	e12 = s->T[c->flowback] - t12;
 	if (e12 > 0)
 		t11 -= e12;
 
-	vars[0] = s->T[c->feed].t - t11;
+	vars[0] = s->T[c->feed] - t11;
 	if (c->first_run) {
 		c->first_run = 0;
 		c->e11_prev = vars[0];
@@ -99,7 +99,7 @@ heating_log(struct site_status *s, void *conf, char *buff,
 		b++;
 	}
 	b += snprintf(&buff[o + b], sz - o - b, "T %3i T11 %3i T12 %3i ",
-			s->T[c->street].t, s->T[c->feed].t, s->T[c->flowback].t);
+			s->T[c->street], s->T[c->feed], s->T[c->flowback]);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
