@@ -58,6 +58,12 @@ struct process {
 	void			*config;
 };
 
+int
+ni1000(int ohm);
+
+int
+b016(int apm);
+
 void
 load_site_config(const char *config_file);
 

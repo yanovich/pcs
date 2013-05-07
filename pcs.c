@@ -57,6 +57,7 @@ main(int ac, char **av)
 	FILE *f;
 	int opt;
 	int log_level = LOG_NOTICE;
+	int test_config = 0;
 
 	while ((opt = getopt(ac, av, "f:dDt")) != -1) {
 		switch (opt) {
@@ -70,7 +71,8 @@ main(int ac, char **av)
 			no_detach_flag = 1;
 			break;
 		case 't':
-			return 0;
+			test_config = 1;
+			break;
 		case '?':
 		default:
 			usage();
@@ -80,6 +82,9 @@ main(int ac, char **av)
 
 	log_init("pcs", log_level, LOG_DAEMON, 1);
 	load_site_config(config_file_name);
+	if (test_config)
+		return 0;
+
 	if (!no_detach_flag)
 		daemon(0, 0);
 

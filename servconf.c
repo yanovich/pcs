@@ -25,17 +25,14 @@
 
 #include "includes.h"
 #include "list.h"
+#include "process.h"
+#include "icp.h"
+#include "hot_water.h"
+#include "heating.h"
+#include "cascade.h"
+#include "servconf.h"
 
-struct server_config {
-};
-
-struct config_node {
-	struct list_head node_entry;
-	yaml_event_type_t type;
-	int level;
-	int subnode;
-};
-
+#if 0
 static int
 parse(yaml_event_t *event, struct config_node *top)
 {
@@ -151,20 +148,16 @@ parse(yaml_event_t *event, struct config_node *top)
 	yaml_event_delete(event);
 	return done;
 }
+#endif
 
 void
-load_server_config(const char *filename, struct server_config *conf)
+load_server_config(const char *filename, struct site_config *conf)
 {
 	yaml_parser_t parser;
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
-	struct config_node bottom;
-	int done = 0;
+	int type, more;
 
-	INIT_LIST_HEAD(&bottom.node_entry);
-	bottom.level = 0;
-	bottom.type = YAML_DOCUMENT_START_EVENT;
-	bottom.subnode = 0;
 	if (NULL == f)
 		fatal("failed to open %s (%s)\n", filename, strerror(errno));
 
@@ -172,14 +165,33 @@ load_server_config(const char *filename, struct server_config *conf)
 
 	yaml_parser_set_input_file(&parser, f);
 
-	while (!done) {
+	while (1) {
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
 
-		done = parse(&event, list_entry(bottom.node_entry.next,
-				       	struct config_node, node_entry));
+		if (event.type == YAML_STREAM_END_EVENT)
+			break;
 	}
 
 	yaml_parser_delete(&parser);
 	fclose(f);
+	conf->DO_mod[0] = *(struct DO_mod *)
+	       	icp_init_module("8041", 0, &type, &more);
+	conf->DO_mod[0].slot = 2;
+	conf->TR_mod[0] = *(struct TR_mod *)
+	       	icp_init_module("87015", 0, &type, &more);
+	conf->TR_mod[0].slot = 3;
+	conf->T[0].convert	= ni1000;
+	conf->T[1].convert	= ni1000;
+	conf->T[3].convert	= ni1000;
+	conf->T[4].convert	= ni1000;
+	conf->AI_mod[0] = *(struct AI_mod *)
+	       	icp_init_module("87017", 0, &type, &more);
+	conf->AI_mod[0].slot = 4;
+	conf->AI[0].convert	= b016;
+	conf->AI[1].convert	= b016;
+	load_heating(&conf->process_list);
+	load_hot_water(&conf->process_list);
+	load_cascade(&conf->process_list);
+	conf->interval = 10000000;
 }

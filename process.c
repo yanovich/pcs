@@ -29,13 +29,10 @@
 
 #include "includes.h"
 #include "fuzzy.h"
-#include "icp.h"
 #include "log.h"
 #include "list.h"
 #include "process.h"
-#include "hot_water.h"
-#include "heating.h"
-#include "cascade.h"
+#include "servconf.h"
 
 int received_sigterm = 0;
 
@@ -45,7 +42,7 @@ sigterm_handler(int sig)
 	  received_sigterm = sig;
 }
 
-static int
+int
 ni1000(int ohm)
 {
 	const int o[] = {7909, 8308, 8717, 9135 , 9562 , 10000 ,
@@ -77,7 +74,7 @@ ni1000(int ohm)
 	} while (1);
 }
 
-static int
+int
 b016(int apm)
 {
 	if (apm < 3937 || apm > 19685)
@@ -286,27 +283,8 @@ void
 load_site_config(const char *config_file)
 {
 	debug("loading config\n");
-	int type, more;
 	INIT_LIST_HEAD(&config.process_list);
-	config.DO_mod[0] = *(struct DO_mod *)
-	       	icp_init_module("8041", 0, &type, &more);
-	config.DO_mod[0].slot = 2;
-	config.TR_mod[0] = *(struct TR_mod *)
-	       	icp_init_module("87015", 0, &type, &more);
-	config.TR_mod[0].slot = 3;
-	config.T[0].convert	= ni1000;
-	config.T[1].convert	= ni1000;
-	config.T[3].convert	= ni1000;
-	config.T[4].convert	= ni1000;
-	config.AI_mod[0] = *(struct AI_mod *)
-	       	icp_init_module("87017", 0, &type, &more);
-	config.AI_mod[0].slot = 4;
-	config.AI[0].convert	= b016;
-	config.AI[1].convert	= b016;
-	load_heating(&config.process_list);
-	load_hot_water(&config.process_list);
-	load_cascade(&config.process_list);
-	config.interval = 10000000;
+	load_server_config(config_file, &config);
 	debug("loaded config\n");
 }
 
