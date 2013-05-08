@@ -159,12 +159,15 @@ struct modules_parser {
 	int			last_type;
 };
 
+#define NI1000_TK5000	"ni1000 tk5000"
+
 void
 configure_module(struct site_config *conf, struct modules_parser *data,
 		const char *text)
 {
 	int type, more;
 	int i;
+	int offset = 0;
 	void *mod;
 	switch (data->in_a_seq) {
 	case 1:
@@ -175,7 +178,7 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 		switch (type) {
 		case DO_MODULE:
 			for (i = 0; conf->DO_mod[i].count > 0; i++)
-				continue;
+				offset += conf->DO_mod[i].count;
 			data->last_mod = i;
 			conf->DO_mod[i] = *(struct DO_mod *) mod;
 			conf->DO_mod[i].block = data->level[0];
@@ -183,19 +186,21 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 			break;
 		case TR_MODULE:
 			for (i = 0; conf->TR_mod[i].count > 0; i++)
-				continue;
+				offset += conf->TR_mod[i].count;
 			data->last_mod = i;
 			conf->TR_mod[i] = *(struct TR_mod *) mod;
 			conf->TR_mod[i].block = data->level[0];
 			conf->TR_mod[i].slot = data->level[1] + 1;
+			conf->TR_mod[i].first = offset;
 			break;
 		case AI_MODULE:
 			for (i = 0; conf->AI_mod[i].count > 0; i++)
-				continue;
+				offset += conf->AI_mod[i].count;
 			data->last_mod = i;
 			conf->AI_mod[i] = *(struct AI_mod *) mod;
 			conf->AI_mod[i].block = data->level[0];
 			conf->AI_mod[i].slot = data->level[1] + 1;
+			conf->AI_mod[i].first = offset;
 			break;
 		case DI_MODULE:
 		case NULL_MODULE_TYPE:
@@ -206,6 +211,28 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 		};
 		break;
 	case 3:
+		if (!text || !text[0])
+			break;
+		switch (data->last_type) {
+		case TR_MODULE:
+			i = conf->TR_mod[data->last_mod].first + data->level[2];
+			conf->T[i].mod = data->last_mod;
+			if (!strcmp(text, NI1000_TK5000))
+				conf->T[i].convert = ni1000;
+			break;
+		case AI_MODULE:
+			break;
+		case DO_MODULE:
+		case DI_MODULE:
+		case NULL_MODULE_TYPE:
+		default:
+			if (text && text[0])
+				fatal("sensor '%s' is unsupported for "
+						"module %i-%i\n", text,
+					       	data->level[0],
+						data->level[1]);
+			break;
+		};
 		break;
 	default:
 		break;
@@ -408,10 +435,6 @@ load_server_config(const char *filename, struct site_config *conf)
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	conf->T[0].convert	= ni1000;
-	conf->T[1].convert	= ni1000;
-	conf->T[3].convert	= ni1000;
-	conf->T[4].convert	= ni1000;
 	conf->AI[0].convert	= b016;
 	conf->AI[1].convert	= b016;
 	load_heating(&conf->process_list);
