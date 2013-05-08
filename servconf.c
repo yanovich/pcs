@@ -150,6 +150,49 @@ parse(yaml_event_t *event, struct config_node *top)
 }
 #endif
 
+struct modules_parser {
+	struct config_node	node;
+	int			level;
+	int			subnode;
+};
+
+int
+parse_modules(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct modules_parser *data = container_of(node, typeof(*data), node);
+	int done = 0;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+	case YAML_SCALAR_EVENT:
+		debug(" %s\n", event->data.scalar.value);
+		break;
+	case YAML_STREAM_END_EVENT:
+		done = 1;
+		break;
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_MAPPING_START_EVENT:
+		data->level++;
+		break;
+	case YAML_SEQUENCE_END_EVENT:
+	case YAML_MAPPING_END_EVENT:
+		data->level--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->level)
+		return done;
+	list_del(&node->node_entry);
+	xfree(data);
+	return done;
+}
+
 struct top_level_parser {
 	struct config_node	node;
 	int			in_a_map;
@@ -201,6 +244,7 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 {
 	int done = 0;
 	struct top_level_parser *data = container_of(node, typeof(*data), node);
+	struct config_node *next;
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
@@ -219,8 +263,15 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SCALAR_EVENT:
 		debug("configuring %s\n", event->data.scalar.value);
-		empty.in_a_map = 0;
-		list_add(&empty.node.node_entry, &node->node_entry);
+		if (!strcmp((const char *)event->data.scalar.value, "modules")) {
+			struct modules_parser *m = xzalloc(sizeof(*m));
+			m->node.parse = parse_modules;
+			next = &m->node; 
+		} else {
+			empty.in_a_map = 0;
+			next = &empty.node;
+		}
+		list_add(&next->node_entry, &node->node_entry);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_map)
