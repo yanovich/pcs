@@ -315,8 +315,8 @@ load_site_status()
 	for (i = 0; config.TR_mod[i].count > 0; i++) {
 		err = config.TR_mod[i].read(&config.TR_mod[i], raw);
 		if (0 > err) {
-			error("%s: bad temp data: %s(%i)\n", __FILE__,
-				       	data, err);
+			error("%s:%i bad temp data: %s(%i)\n", __FILE__,
+				       	__LINE__, data, err);
 			return -1;
 		}
 		t = offset;
@@ -327,8 +327,9 @@ load_site_status()
 				continue;
 			status.T[t] = config.T[t].convert(raw[j]);
 			if (PCS_BAD_DATA == status.T[t]) {
-				error("%s: bad temp data: %s(%i)\n", __FILE__,
-					       	data, j);
+				error("%s:%i bad temp data: %s(%i)\n", __FILE__,
+					       	__LINE__, data, j);
+				error("convert: %p\n", config.T[t].convert);
 				return -1;
 			}
 		}
@@ -437,8 +438,10 @@ process_loop(void)
 
 	gettimeofday(&start, NULL);
 	while (!received_sigterm) {
-		while (load_site_status() != 0)
+		while (load_site_status() != 0 && !received_sigterm)
 			sleep (1);
+		if (received_sigterm)
+			return;
 
 		list_for_each_entry(p, &config.process_list, process_entry) {
 			if (! p->ops->run)
