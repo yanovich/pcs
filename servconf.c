@@ -249,15 +249,18 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	struct modules_parser *data = container_of(node, typeof(*data), node);
-	int done = 0;
 	char spaces[8] = "       ";
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
 		break;
 	case YAML_SCALAR_EVENT:
 		if (!data->in_a_seq)
@@ -270,9 +273,6 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 			       	event->data.scalar.value);
 		configure_module(conf, data, (const char *)event->data.scalar.value);
 		data->level[data->in_a_seq - 1]++;
-		break;
-	case YAML_STREAM_END_EVENT:
-		done = 1;
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
@@ -299,10 +299,10 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 
 	yaml_event_delete(event);
 	if (data->in_a_seq)
-		return done;
+		return 0;
 	list_del(&node->node_entry);
 	xfree(data);
-	return done;
+	return 0;
 }
 
 struct top_level_parser {
@@ -315,18 +315,19 @@ parse_do_nothing(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	struct top_level_parser *data = container_of(node, typeof(*data), node);
-	int done = 0;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-	case YAML_SCALAR_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
 		break;
-	case YAML_STREAM_END_EVENT:
-		done = 1;
+	case YAML_SCALAR_EVENT:
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_MAPPING_START_EVENT:
@@ -341,7 +342,7 @@ parse_do_nothing(yaml_event_t *event, struct site_config *conf,
 	yaml_event_delete(event);
 	if (!data->in_a_map)
 		list_del(&node->node_entry);
-	return done;
+	return 0;
 }
 
 struct top_level_parser empty = {
@@ -350,36 +351,64 @@ struct top_level_parser empty = {
 	},
 };
 
-struct process_parser {
+struct setpoints_parser {
 	struct config_node	node;
-	int			in_a_seq;
+	int			index;
 	int			in_a_map;
 	struct process_builder	*builder;
+	void			*conf;
+	char			buff[256];
 };
 
 int
-parse_process(yaml_event_t *event, struct site_config *conf,
+parse_setpoints(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
-	struct process_parser *data = container_of(node, typeof(*data), node);
-	int done = 0;
+	struct setpoints_parser *data = container_of(node, typeof(*data), node);
+	int value;
+	int i;
+	const char *text;
+       	char *bad;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-	case YAML_SCALAR_EVENT:
-		break;
-	case YAML_STREAM_END_EVENT:
-		done = 1;
-		break;
 	case YAML_SEQUENCE_START_EVENT:
+	case YAML_SEQUENCE_END_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		text = (const char *) event->data.scalar.value;
+		if ((data->index % 2) == 0) {
+			strncpy(data->buff, text, 255);
+			data->index++;
+			break;
+		}
+		value = (int) strtol(text, &bad, 0);
+		if (bad[0] != 0)
+			fatal("bad integer near %s\n", bad);
+		for (i = 0; data->builder->setpoint[i].name; i++) {
+			if (strcmp(data->builder->setpoint[i].name, data->buff))
+				continue;
+			break;
+		}
+		if(!data->builder->setpoint[i].name)
+			fatal("process does not expect setpoint %s\n",
+				       data->buff);
+		data->builder->setpoint[i].set(data->conf, value);
+		data->index++;
+		break;
 	case YAML_MAPPING_START_EVENT:
+		if (!data->builder || !data->builder->setpoint)
+			fatal("process does not expect setpoints\n");
 		data->in_a_map++;
 		break;
-	case YAML_SEQUENCE_END_EVENT:
 	case YAML_MAPPING_END_EVENT:
 		data->in_a_map--;
 		break;
@@ -387,10 +416,67 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 
 	yaml_event_delete(event);
 	if (data->in_a_map)
-		return done;
+		return 0;
 	list_del(&node->node_entry);
 	xfree(data);
-	return done;
+	return 0;
+}
+
+struct process_parser {
+	struct config_node	node;
+	int			in_a_map;
+	struct process_builder	*builder;
+	void			*conf;
+};
+
+int
+parse_process(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct process_parser *data = container_of(node, typeof(*data), node);
+	struct config_node *next;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_SEQUENCE_END_EVENT:
+	case YAML_ALIAS_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		if (!strcmp((const char *)event->data.scalar.value,
+				       	"setpoints")) {
+			struct setpoints_parser *p = xzalloc(sizeof(*p));
+			p->builder = data->builder;
+			p->conf = data->conf;
+			p->node.parse = parse_setpoints;
+			next = &p->node; 
+		} else {
+			empty.in_a_map = 0;
+			next = &empty.node;
+		}
+		list_add(&next->node_entry, &node->node_entry);
+		break;
+	case YAML_MAPPING_START_EVENT:
+		data->in_a_map++;
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_map)
+		return 0;
+	list_del(&node->node_entry);
+	xfree(data);
+	return 0;
 }
 
 struct processes_parser {
@@ -420,14 +506,17 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 	struct process_parser *p;
 	struct config_node *next = NULL;
 	int i;
-	int done = 0;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
 		break;
 	case YAML_SCALAR_EVENT:
 		if (data->in_a_map > 1 || data->in_a_seq > 1)
@@ -441,17 +530,16 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 			p = xzalloc(sizeof(*p));
 			p->node.parse = parse_process;
 			p->builder = builders[i].builder();
+			p->conf = p->builder->alloc();
 			next = &p->node;
 			debug("configuring %s\n", event->data.scalar.value);
+			break;
 		}
 		if (!next) {
 			empty.in_a_map = 0;
 			next = &empty.node;
 		}
 		list_add(&next->node_entry, &node->node_entry);
-		break;
-	case YAML_STREAM_END_EVENT:
-		done = 1;
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
@@ -473,10 +561,10 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 
 	yaml_event_delete(event);
 	if (data->in_a_seq)
-		return done;
+		return 0;
 	list_del(&node->node_entry);
 	xfree(data);
-	return done;
+	return 0;
 }
 
 int

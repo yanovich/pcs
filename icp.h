@@ -20,14 +20,6 @@
 #ifndef ICP_H
 #define ICP_H
 
-enum {
-	DO_MODULE,
-	DI_MODULE,
-	TR_MODULE,
-	AI_MODULE,
-	NULL_MODULE_TYPE
-};
-
 int
 icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data);
 

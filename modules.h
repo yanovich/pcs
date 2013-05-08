@@ -21,6 +21,14 @@
 #ifndef PCS_MODULES_H
 #define PCS_MODULES_H
 
+enum {
+	DO_MODULE,
+	DI_MODULE,
+	TR_MODULE,
+	AI_MODULE,
+	NULL_MODULE_TYPE
+};
+
 struct DO_mod {
 	int		(*read)(struct DO_mod *mod);
 	int		(*write)(struct DO_mod *mod);
