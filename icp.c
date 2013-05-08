@@ -492,5 +492,9 @@ icp_init_module(const char *name, int n, int *type, int *more)
 		else
 			*more = 0;
 	}
+	if (!c) {
+		*type = NULL_MODULE_TYPE;
+		return NULL;
+	};
 	return c->config;
 }

@@ -155,7 +155,62 @@ struct modules_parser {
 	int			in_a_seq;
 	int			in_a_map;
 	int			level[3];
+	int			last_mod;
+	int			last_type;
 };
+
+void
+configure_module(struct site_config *conf, struct modules_parser *data,
+		const char *text)
+{
+	int type, more;
+	int i;
+	void *mod;
+	switch (data->in_a_seq) {
+	case 1:
+		break;
+	case 2:
+	       	mod = icp_init_module(text, 0, &type, &more);
+		data->last_type = type;
+		switch (type) {
+		case DO_MODULE:
+			for (i = 0; conf->DO_mod[i].count > 0; i++)
+				continue;
+			data->last_mod = i;
+			conf->DO_mod[i] = *(struct DO_mod *) mod;
+			conf->DO_mod[i].block = data->level[0];
+			conf->DO_mod[i].slot = data->level[1] + 1;
+			break;
+		case TR_MODULE:
+			for (i = 0; conf->TR_mod[i].count > 0; i++)
+				continue;
+			data->last_mod = i;
+			conf->TR_mod[i] = *(struct TR_mod *) mod;
+			conf->TR_mod[i].block = data->level[0];
+			conf->TR_mod[i].slot = data->level[1] + 1;
+			break;
+		case AI_MODULE:
+			for (i = 0; conf->AI_mod[i].count > 0; i++)
+				continue;
+			data->last_mod = i;
+			conf->AI_mod[i] = *(struct AI_mod *) mod;
+			conf->AI_mod[i].block = data->level[0];
+			conf->AI_mod[i].slot = data->level[1] + 1;
+			break;
+		case DI_MODULE:
+		case NULL_MODULE_TYPE:
+		default:
+			if (text && text[0])
+				fatal("module %s is unsupported\n", text);
+			break;
+		};
+		break;
+	case 3:
+		break;
+	default:
+		break;
+	}
+}
 
 int
 parse_modules(yaml_event_t *event, struct site_config *conf,
@@ -181,6 +236,7 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 			spaces[data->in_a_seq] = 0;
 		debug("%s%i:%s\n", spaces, data->level[data->in_a_seq - 1],
 			       	event->data.scalar.value);
+		configure_module(conf, data, (const char *)event->data.scalar.value);
 		data->level[data->in_a_seq - 1]++;
 		break;
 	case YAML_STREAM_END_EVENT:
@@ -188,6 +244,10 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
+		if (data->in_a_seq > 3)
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (!data->in_a_seq)
@@ -195,10 +255,6 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 					event->start_mark.line,
 					event->start_mark.column);
 		data->in_a_map++;
-		if (data->in_a_map > 3)
-			fatal("unexpected element at line %i column %i\n",
-					event->start_mark.line,
-					event->start_mark.column);
 		break;
 	case YAML_SEQUENCE_END_EVENT:
 		data->in_a_seq--;
@@ -320,7 +376,6 @@ load_server_config(const char *filename, struct site_config *conf)
 	yaml_parser_t parser;
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
-	int type, more;
 	struct top_level_parser top = {
 		.node		= {
 			.parse		= parse_top_level,
@@ -352,19 +407,10 @@ load_server_config(const char *filename, struct site_config *conf)
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	conf->DO_mod[0] = *(struct DO_mod *)
-	       	icp_init_module("8041", 0, &type, &more);
-	conf->DO_mod[0].slot = 2;
-	conf->TR_mod[0] = *(struct TR_mod *)
-	       	icp_init_module("87015", 0, &type, &more);
-	conf->TR_mod[0].slot = 3;
 	conf->T[0].convert	= ni1000;
 	conf->T[1].convert	= ni1000;
 	conf->T[3].convert	= ni1000;
 	conf->T[4].convert	= ni1000;
-	conf->AI_mod[0] = *(struct AI_mod *)
-	       	icp_init_module("87017", 0, &type, &more);
-	conf->AI_mod[0].slot = 4;
 	conf->AI[0].convert	= b016;
 	conf->AI[1].convert	= b016;
 	load_heating(&conf->process_list);
