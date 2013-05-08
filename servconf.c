@@ -350,6 +350,64 @@ struct top_level_parser empty = {
 	},
 };
 
+struct processes_parser {
+	struct config_node	node;
+	int			in_a_seq;
+	int			in_a_map;
+};
+
+int
+parse_processes(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct processes_parser *data = container_of(node, typeof(*data), node);
+	int done = 0;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+		break;
+	case YAML_SCALAR_EVENT:
+		if (data->in_a_map > 1 || data->in_a_seq > 1)
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		debug("configuring %s\n", event->data.scalar.value);
+		empty.in_a_map = 0;
+		list_add(&empty.node.node_entry, &node->node_entry);
+		break;
+	case YAML_STREAM_END_EVENT:
+		done = 1;
+		break;
+	case YAML_SEQUENCE_START_EVENT:
+		data->in_a_seq++;
+		break;
+	case YAML_MAPPING_START_EVENT:
+		if (data->in_a_seq != 1)
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		data->in_a_map++;
+		break;
+	case YAML_SEQUENCE_END_EVENT:
+		data->in_a_seq--;
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_seq)
+		return done;
+	list_del(&node->node_entry);
+	xfree(data);
+	return done;
+}
+
 int
 parse_top_level(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
@@ -375,10 +433,16 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SCALAR_EVENT:
 		debug("configuring %s\n", event->data.scalar.value);
-		if (!strcmp((const char *)event->data.scalar.value, "modules")) {
+		if (!strcmp((const char *)event->data.scalar.value,
+				       	"modules")) {
 			struct modules_parser *m = xzalloc(sizeof(*m));
 			m->node.parse = parse_modules;
 			next = &m->node; 
+		} else if (!strcmp((const char *)event->data.scalar.value,
+				       	"processes")) {
+			struct processes_parser *p = xzalloc(sizeof(*p));
+			p->node.parse = parse_processes;
+			next = &p->node; 
 		} else {
 			empty.in_a_map = 0;
 			next = &empty.node;
