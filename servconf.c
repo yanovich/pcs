@@ -150,10 +150,16 @@ parse(yaml_event_t *event, struct config_node *top)
 }
 #endif
 
+struct top_level_parser {
+	struct config_node	node;
+	int			in_a_map;
+};
+
 int
 parse_do_nothing(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
+	struct top_level_parser *data = container_of(node, typeof(*data), node);
 	int done = 0;
 
 	switch (event->type) {
@@ -169,26 +175,24 @@ parse_do_nothing(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_MAPPING_START_EVENT:
-		node->data++;
+		data->in_a_map++;
 		break;
 	case YAML_SEQUENCE_END_EVENT:
 	case YAML_MAPPING_END_EVENT:
-		node->data--;
+		data->in_a_map--;
 		break;
 	};
 
 	yaml_event_delete(event);
-	if (!node->data)
+	if (!data->in_a_map)
 		list_del(&node->node_entry);
 	return done;
 }
 
-struct config_node empty = {
-	.parse = parse_do_nothing,
-};
-
-struct top_level_parser {
-	int		in_a_map;
+struct top_level_parser empty = {
+	.node		= {
+		.parse		= parse_do_nothing,
+	},
 };
 
 int
@@ -196,7 +200,7 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	int done = 0;
-	struct top_level_parser *data = node->data;
+	struct top_level_parser *data = container_of(node, typeof(*data), node);
 	switch (event->type) {
 	case YAML_NO_EVENT:
 	case YAML_STREAM_START_EVENT:
@@ -215,8 +219,8 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SCALAR_EVENT:
 		debug("configuring %s\n", event->data.scalar.value);
-		empty.data = 0;
-		list_add(&empty.node_entry, &node->node_entry);
+		empty.in_a_map = 0;
+		list_add(&empty.node.node_entry, &node->node_entry);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_map)
@@ -242,16 +246,15 @@ load_server_config(const char *filename, struct site_config *conf)
 	yaml_event_t event;
 	FILE *f = fopen(filename, "r");
 	int type, more;
-	struct top_level_parser data = {
+	struct top_level_parser top = {
+		.node		= {
+			.parse		= parse_top_level,
+		},
 		.in_a_map	= 0,
-	};
-	struct config_node top_level = {
-		.parse		= parse_top_level,
-		.data		= &data,
 	};
 	struct config_node *node;
 
-	INIT_LIST_HEAD(&top_level.node_entry);
+	INIT_LIST_HEAD(&top.node.node_entry);
 
 	if (NULL == f)
 		fatal("failed to open %s (%s)\n", filename, strerror(errno));
@@ -263,7 +266,7 @@ load_server_config(const char *filename, struct site_config *conf)
 	while (1) {
 		if (!yaml_parser_parse(&parser, &event))
 			fatal("failed to parse %s\n", filename);
-		node = list_entry(top_level.node_entry.prev,
+		node = list_entry(top.node.node_entry.prev,
 			       	struct config_node, node_entry);
 		if (!node->parse)
 			fatal("%s:%i internal error\n", __FILE__, __LINE__);
