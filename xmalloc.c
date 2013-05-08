@@ -37,6 +37,14 @@ xmalloc(size_t size)
 }
 
 void *
+xzalloc(size_t size)
+{
+	void *ptr = xmalloc(size);
+	memset(ptr, 0, size);
+	return ptr;
+}
+
+void *
 xcalloc(size_t nmemb, size_t size)
 {
 	void *ptr;
