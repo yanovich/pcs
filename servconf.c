@@ -159,7 +159,8 @@ struct modules_parser {
 	int			last_type;
 };
 
-#define NI1000_TK5000	"ni1000 tk5000"
+#define NI1000_TK5000		"ni1000 tk5000"
+#define P_0_16BAR_4_20_MA	"0-16 bar 4-20 mA"
 
 void
 configure_module(struct site_config *conf, struct modules_parser *data,
@@ -221,6 +222,10 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 				conf->T[i].convert = ni1000;
 			break;
 		case AI_MODULE:
+			i = conf->AI_mod[data->last_mod].first + data->level[2];
+			conf->AI[i].mod = data->last_mod;
+			if (!strcmp(text, P_0_16BAR_4_20_MA))
+				conf->AI[i].convert = b016;
 			break;
 		case DO_MODULE:
 		case DI_MODULE:
@@ -435,8 +440,6 @@ load_server_config(const char *filename, struct site_config *conf)
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	conf->AI[0].convert	= b016;
-	conf->AI[1].convert	= b016;
 	load_heating(&conf->process_list);
 	load_hot_water(&conf->process_list);
 	load_cascade(&conf->process_list);
