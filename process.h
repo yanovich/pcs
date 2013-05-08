@@ -21,6 +21,7 @@
 #define PCS_PROCESS_H
 
 #include "modules.h"
+#include "valve.h"
 
 unsigned int
 get_DO(int index);
@@ -56,6 +57,9 @@ struct process {
 	struct process_ops	*ops;
 	struct list_head	process_entry;
 	void			*config;
+};
+
+struct process_builder {
 };
 
 int

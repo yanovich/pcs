@@ -134,3 +134,12 @@ load_hot_water(struct list_head *list)
 	hwp->ops = &hot_water_ops;
 	list_add_tail(&hwp->process_entry, list);
 }
+
+struct process_builder hot_water_builder = {
+};
+
+struct process_builder *
+load_hot_water_builder(void)
+{
+	return &hot_water_builder;
+}

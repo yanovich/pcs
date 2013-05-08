@@ -21,7 +21,12 @@
 #ifndef PCS_HOT_WATER_H
 #define PCS_HOT_WATER_H
 
+#include "process.h"
+
 void
 load_hot_water(struct list_head *list);
+
+struct process_builder *
+load_hot_water_builder(void);
 
 #endif /* PCS_HOT_WATER_H */

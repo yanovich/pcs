@@ -350,17 +350,76 @@ struct top_level_parser empty = {
 	},
 };
 
+struct process_parser {
+	struct config_node	node;
+	int			in_a_seq;
+	int			in_a_map;
+	struct process_builder	*builder;
+};
+
+int
+parse_process(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct process_parser *data = container_of(node, typeof(*data), node);
+	int done = 0;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+	case YAML_SCALAR_EVENT:
+		break;
+	case YAML_STREAM_END_EVENT:
+		done = 1;
+		break;
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_MAPPING_START_EVENT:
+		data->in_a_map++;
+		break;
+	case YAML_SEQUENCE_END_EVENT:
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_map)
+		return done;
+	list_del(&node->node_entry);
+	xfree(data);
+	return done;
+}
+
 struct processes_parser {
 	struct config_node	node;
 	int			in_a_seq;
 	int			in_a_map;
 };
 
+struct process_map {
+	const char		*name;
+	struct process_builder	*(*builder)(void);
+};
+
+struct process_map builders[] = {
+	{
+		.name		= "hot water",
+		.builder	= load_hot_water_builder,
+	},
+	{
+	}
+};
 int
 parse_processes(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	struct processes_parser *data = container_of(node, typeof(*data), node);
+	struct process_parser *p;
+	struct config_node *next = NULL;
+	int i;
 	int done = 0;
 
 	switch (event->type) {
@@ -375,9 +434,21 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 			fatal("unexpected element at line %i column %i\n",
 					event->start_mark.line,
 					event->start_mark.column);
-		debug("configuring %s\n", event->data.scalar.value);
-		empty.in_a_map = 0;
-		list_add(&empty.node.node_entry, &node->node_entry);
+		for (i = 0; builders[i].name; i++) {
+			if (strcmp((const char *)event->data.scalar.value, 
+						builders[i].name))
+				continue;
+			p = xzalloc(sizeof(*p));
+			p->node.parse = parse_process;
+			p->builder = builders[i].builder();
+			next = &p->node;
+			debug("configuring %s\n", event->data.scalar.value);
+		}
+		if (!next) {
+			empty.in_a_map = 0;
+			next = &empty.node;
+		}
+		list_add(&next->node_entry, &node->node_entry);
 		break;
 	case YAML_STREAM_END_EVENT:
 		done = 1;
