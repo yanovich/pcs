@@ -384,6 +384,7 @@ load_server_config(const char *filename, struct site_config *conf)
 	};
 	struct config_node *node;
 
+	conf->interval = 10000000;
 	INIT_LIST_HEAD(&top.node.node_entry);
 
 	if (NULL == f)
@@ -416,5 +417,4 @@ load_server_config(const char *filename, struct site_config *conf)
 	load_heating(&conf->process_list);
 	load_hot_water(&conf->process_list);
 	load_cascade(&conf->process_list);
-	conf->interval = 10000000;
 }
