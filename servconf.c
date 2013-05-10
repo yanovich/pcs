@@ -643,6 +643,8 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 		} else if (!strcmp((const char *)event->data.scalar.value,
 				       	"fuzzy")) {
 			struct fuzzy_parser *p = xzalloc(sizeof(*p));
+			if (!data->builder->fuzzy)
+				fatal("process doesn't support fuzzy logic\n");
 			p->fuzzy_list = data->builder->fuzzy(data->conf);
 			p->node.parse = parse_fuzzy;
 			next = &p->node; 
