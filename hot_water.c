@@ -126,10 +126,16 @@ hot_water_init(void *conf)
 	fuzzy_clause_init(fcl, 0, 1,    80, 180, 1500, 0, -7000, -7000, -400);
 	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 2, -1000, -10,   -1, 0,   100,   400,  700);
+	fuzzy_clause_init(fcl, 1, 2, -1000, -20,  -10, 0,   400,  3000, 3000);
 	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 1,     1,  10, 1000, 0,  -700,  -400, -100);
+	fuzzy_clause_init(fcl, 1, 0,   -20, -10,   -1, 0,   100,   400,  700);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 1, 0,     1,  10,   20, 0,  -700,  -400, -100);
+	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
+	fcl = (void *) xmalloc(sizeof(*fcl));
+	fuzzy_clause_init(fcl, 1, 1,    10,  20, 1000, 0, -3000, -3000, -400);
 	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 
 	c->first_run = 1;
