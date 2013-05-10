@@ -35,7 +35,7 @@
 
 struct hot_water_config {
 	int			feed;
-	int			feed_IO;
+	int			feed_io;
 	struct list_head	fuzzy;
 	int			first_run;
 	int			t21_prev;
@@ -52,11 +52,11 @@ hot_water_run(struct site_status *s, void *conf)
 	debug("running hot water\n");
 	if (c->first_run) {
 		c->first_run = 0;
-		c->t21_prev = s->T[c->feed_IO];
+		c->t21_prev = s->T[c->feed_io];
 	}
-	vars[0] = s->T[c->feed_IO] - c->feed;
-	vars[1] = s->T[c->feed_IO] - c->t21_prev;
-	c->t21_prev = s->T[c->feed_IO];
+	vars[0] = s->T[c->feed_io] - c->feed;
+	vars[1] = s->T[c->feed_io] - c->t21_prev;
+	c->t21_prev = s->T[c->feed_io];
 
 	v21 = process_fuzzy(&c->fuzzy, &vars[0]);
 	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
@@ -79,7 +79,7 @@ hot_water_log(struct site_status *s, void *conf, char *buff,
 		buff[o] = ',';
 		b++;
 	}
-	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->T[c->feed_IO]);
+	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->T[c->feed_io]);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
@@ -130,7 +130,7 @@ load_hot_water(struct list_head *list)
 
 	c->first_run = 1;
 	c->feed = 570;
-	c->feed_IO = 3;
+	c->feed_io = 3;
 	c->valve = load_2way_valve(50, 5000, 47000, 8, 7);
 	hwp->config = (void *) c;
 	hwp->ops = &hot_water_ops;
@@ -155,19 +155,19 @@ struct setpoint_map hot_water_setpoints[] = {
 };
 
 static void
-set_feed_IO(void *conf, int type, int value)
+set_feed_io(void *conf, int type, int value)
 {
 	struct hot_water_config *c = conf;
 	if (type != TR_MODULE)
 		fatal("hot water: wrong type of feed sensor\n");
-	c->feed_IO = value;
-	debug("  hot water: feed_IO = %i\n", value);
+	c->feed_io = value;
+	debug("  hot water: feed_io = %i\n", value);
 }
 
-struct IO_map hot_water_IO[] = {
+struct io_map hot_water_io[] = {
 	{
-		.name 		= "feed_IO",
-		.set		= set_feed_IO,
+		.name 		= "feed_io",
+		.set		= set_feed_io,
 	},
 	{
 	}
@@ -181,7 +181,7 @@ hwc_alloc(void)
 
 struct process_builder hot_water_builder = {
 	.setpoint		= hot_water_setpoints,
-	.IO			= hot_water_IO,
+	.io			= hot_water_io,
 	.alloc			= hwc_alloc,
 };
 

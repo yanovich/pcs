@@ -64,14 +64,14 @@ struct setpoint_map {
 	void			(*set)(void *config, int value);
 };
 
-struct IO_map {
+struct io_map {
 	const char		*name;
 	void			(*set)(void *config, int type, int value);
 };
 
 struct process_builder {
 	struct setpoint_map	*setpoint;
-	struct IO_map		*IO;
+	struct io_map		*io;
 	struct list_head *	(*fuzzy)(void *config);
 	void			(*valve)(void *config, struct valve *valve);
 	void			(*motor)(void *config, struct valve *valve);

@@ -399,7 +399,7 @@ parse_setpoints(yaml_event_t *event, struct site_config *conf,
 			break;
 		}
 		if(!data->builder->setpoint[i].name)
-			fatal("process does not expect setpoint %s\n",
+			fatal("process does not expect setpoint '%s'\n",
 				       data->buff);
 		data->builder->setpoint[i].set(data->conf, value);
 		data->index++;
