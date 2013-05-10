@@ -65,7 +65,10 @@ main(int ac, char **av)
 			config_file_name = optarg;
 			break;
 		case 'd':
-			log_level = LOG_DEBUG;
+			if (log_level >= LOG_DEBUG)
+				log_level++;
+			else
+				log_level = LOG_DEBUG;
 			break;
 		case 'D':
 			no_detach_flag = 1;
