@@ -419,7 +419,7 @@ parse_fuzzy_if(struct fuzzy_clause *fcl, const char *key, const char *value)
 {
 	char *bad;
 	int i;
-	debug("   %s:%s\n", key, value);
+	debug2("   %s:%s\n", key, value);
 	switch (key[0]) {
 	case 'v':
 		i = (int) strtol(value, &bad, 0);
@@ -474,7 +474,7 @@ parse_fuzzy_then(struct fuzzy_clause *fcl, const char *key, const char *value)
 {
 	char *bad;
 	int i;
-	debug("   %s:%s\n", key, value);
+	debug2("   %s:%s\n", key, value);
 	switch (key[0]) {
 	case 'f':
 		switch (value[0]) {
@@ -548,7 +548,7 @@ parse_fuzzy(yaml_event_t *event, struct site_config *conf,
 			data->index++;
 			break;
 		}
-		debug("   %i\n", data->part);
+		debug3("   %i\n", data->part);
 		if ((data->part % 2) == 1) {
 			err = parse_fuzzy_if(data->fuzzy_clause, data->buff,
 				       	text);
@@ -684,6 +684,10 @@ struct process_map {
 };
 
 struct process_map builders[] = {
+	{
+		.name		= "heating",
+		.builder	= load_heating_builder,
+	},
 	{
 		.name		= "hot water",
 		.builder	= load_hot_water_builder,
@@ -856,6 +860,5 @@ load_server_config(const char *filename, struct site_config *conf)
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	load_heating(&conf->process_list);
 	load_cascade(&conf->process_list);
 }

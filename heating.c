@@ -34,6 +34,16 @@
 #include "heating.h"
 
 struct heating_config {
+	int			street_sp;
+	int			feed_sp;
+	int			flowback_sp;
+	int			inside;
+	int			stop;
+	int			min;
+	int			max;
+	int			total;
+	int			open;
+	int			close;
 	int			street;
 	int			feed;
 	int			flowback;
@@ -49,16 +59,22 @@ heating_run(struct site_status *s, void *conf)
 {
 	struct heating_config *c = conf;
 	int vars[2];
-	int t11, t12, e12, v11;
+	int t11, d11, e12, v11;
+	int street = s->T[c->street];
 
-	if (s->T[c->street] > 160) {
-		t12 = s->T[c->flowback];
-		t11 = 300;
-	} else {
-		t12 = 700 - ((s->T[c->street] + 280) * 250) / 400;
-		t11 = 950 - ((s->T[c->street] + 280) * 450) / 400;
-	}
-	e12 = s->T[c->flowback] - t12;
+	if (street > c->stop)
+		street = c->stop;
+
+	t11 = ((c->feed_sp - c->inside) * (c->inside - street))
+		/ (c->inside - c->street_sp) + c->inside;
+	d11 = (c->feed_sp - c->flowback_sp) * (c->inside - street)
+		/ (c->inside - c->street_sp);
+	if (s->T[c->street] < c->street)
+		t11 = c->feed_sp;
+	debug(" t11 %i t12 %i\n", t11, t11 - d11);
+
+	e12 = s->T[c->flowback] + d11 - t11;
+
 	if (e12 > 0)
 		t11 -= e12;
 
@@ -73,8 +89,6 @@ heating_run(struct site_status *s, void *conf)
 		vars[1] -= e12 - c->e12_prev;
 	c->e11_prev = vars[0];
 	c->e12_prev = e12 > 0 ? e12 : 0;
-
-	debug("running heating\n");
 
 	v11 = process_fuzzy(&c->fuzzy, &vars[0]);
 
@@ -112,48 +126,217 @@ struct process_ops heating_ops = {
 	.log = heating_log,
 };
 
-void
-load_heating(struct list_head *list)
+struct process_ops *
+heating_init(void *conf)
 {
-	struct process *hwp = (void *) xmalloc (sizeof(*hwp));
-	struct heating_config *c = (void *) xmalloc (sizeof(*c));
-	struct fuzzy_clause *fcl;
+	struct heating_config *c = conf;
 
-	INIT_LIST_HEAD(&c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 2, -1500, -50,  -30, 0,   400,  7000, 7000);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -50, -30,  -10, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -30, -10,    0, 0,     0,   100,  200);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -10,   0,   30, 0,  -300,     0,  300);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,     0,  30,   80, 0,  -200,  -100,    0);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,    30,  80,  180, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 1,    80, 180, 1500, 0, -7000, -7000, -400);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 2, -1000, -10,   -1, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 1,     1,  10, 1000, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-
-	c->street = 4;
-	c->feed = 0;
-	c->flowback = 1;
 	c->first_run = 1;
-	c->valve = load_2way_valve(50, 5000, 47000, 5, 6);
-	hwp->config = (void *) c;
-	hwp->ops = &heating_ops;
-	list_add_tail(&hwp->process_entry, list);
+	c->valve = load_2way_valve(c->min, c->max, c->total, c->close, c->open);
+	return &heating_ops;
+}
+
+static void
+set_feed(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->feed_sp = value;
+	debug("  heating: feed_sp = %i\n", value);
+}
+
+static void
+set_flowback(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->flowback_sp = value;
+	debug("  heating: flowback_sp = %i\n", value);
+}
+
+static void
+set_street(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->street_sp = value;
+	debug("  heating: street_sp = %i\n", value);
+}
+
+static void
+set_inside(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->inside = value;
+	debug("  heating: inside = %i\n", value);
+}
+
+static void
+set_stop(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->stop = value;
+	debug("  heating: stop = %i\n", value);
+}
+
+static void
+set_min(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->min = value;
+	debug("  heating: min = %i\n", value);
+}
+
+static void
+set_max(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->max = value;
+	debug("  heating: max = %i\n", value);
+}
+
+static void
+set_total(void *conf, int value)
+{
+	struct heating_config *c = conf;
+	c->total = value;
+	debug("  heating: total = %i\n", value);
+}
+
+struct setpoint_map heating_setpoints[] = {
+	{
+		.name 		= "feed",
+		.set		= set_feed,
+	},
+	{
+		.name 		= "flowback",
+		.set		= set_flowback,
+	},
+	{
+		.name 		= "street",
+		.set		= set_street,
+	},
+	{
+		.name 		= "inside",
+		.set		= set_inside,
+	},
+	{
+		.name 		= "stop",
+		.set		= set_stop,
+	},
+	{
+		.name 		= "min",
+		.set		= set_min,
+	},
+	{
+		.name 		= "max",
+		.set		= set_max,
+	},
+	{
+		.name 		= "total",
+		.set		= set_total,
+	},
+	{
+	}
+};
+
+static void
+set_feed_io(void *conf, int type, int value)
+{
+	struct heating_config *c = conf;
+	if (type != TR_MODULE)
+		fatal("heating: wrong type of feed sensor\n");
+	c->feed = value;
+	debug("  heating: feed io = %i\n", value);
+}
+
+static void
+set_flowback_io(void *conf, int type, int value)
+{
+	struct heating_config *c = conf;
+	if (type != TR_MODULE)
+		fatal("heating: wrong type of flowback sensor\n");
+	c->flowback = value;
+	debug("  heating: flowback io = %i\n", value);
+}
+
+static void
+set_street_io(void *conf, int type, int value)
+{
+	struct heating_config *c = conf;
+	if (type != TR_MODULE)
+		fatal("heating: wrong type of street sensor\n");
+	c->street = value;
+	debug("  heating: street io = %i\n", value);
+}
+
+static void
+set_open_io(void *conf, int type, int value)
+{
+	struct heating_config *c = conf;
+	if (type != DO_MODULE)
+		fatal("heating: wrong type of feed sensor\n");
+	c->open = value;
+	debug("  heating: open = %i\n", value);
+}
+
+static void
+set_close_io(void *conf, int type, int value)
+{
+	struct heating_config *c = conf;
+	if (type != DO_MODULE)
+		fatal("heating: wrong type of feed sensor\n");
+	c->close = value;
+	debug("  heating: close = %i\n", value);
+}
+
+struct io_map heating_io[] = {
+	{
+		.name 		= "feed",
+		.set		= set_feed_io,
+	},
+	{
+		.name 		= "flowback",
+		.set		= set_flowback_io,
+	},
+	{
+		.name 		= "street",
+		.set		= set_street_io,
+	},
+	{
+		.name 		= "open",
+		.set		= set_open_io,
+	},
+	{
+		.name 		= "close",
+		.set		= set_close_io,
+	},
+	{
+	}
+};
+
+static void *
+hwc_alloc(void)
+{
+	struct heating_config *c = xzalloc(sizeof(*c));
+	INIT_LIST_HEAD(&c->fuzzy);
+	return c;
+}
+
+struct list_head *
+heating_fuzzy(void *conf)
+{
+	struct heating_config *c = conf;
+	return &c->fuzzy;
+}
+
+struct process_builder heating_builder = {
+	.alloc			= hwc_alloc,
+	.setpoint		= heating_setpoints,
+	.io			= heating_io,
+	.fuzzy			= heating_fuzzy,
+	.ops			= heating_init,
+};
+
+struct process_builder *
+load_heating_builder(void)
+{
+	return &heating_builder;
 }

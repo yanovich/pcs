@@ -103,7 +103,7 @@ hot_water_init(void *conf)
 	struct hot_water_config *c = conf;
 
 	c->first_run = 1;
-	c->valve = load_2way_valve(c->min, c->max, c->total, c->open, c->close);
+	c->valve = load_2way_valve(c->min, c->max, c->total, c->close, c->open);
 	return &hot_water_ops;
 }
 

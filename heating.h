@@ -21,7 +21,7 @@
 #ifndef PCS_HEATING_H
 #define PCS_HEATING_H
 
-void
-load_heating(struct list_head *list);
+struct process_builder *
+load_heating_builder(void);
 
 #endif /* PCS_HEATING_H */
