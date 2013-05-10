@@ -542,6 +542,7 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 {
 	struct process_parser *data = container_of(node, typeof(*data), node);
 	struct config_node *next;
+	struct process *pr;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
@@ -589,6 +590,10 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 	if (data->in_a_map)
 		return 0;
 	list_del(&node->node_entry);
+	pr = xzalloc(sizeof(*pr));
+	pr->config = data->conf;
+	pr->ops = data->builder->ops(data->conf);
+	list_add_tail(&pr->process_entry, &conf->process_list);
 	xfree(data);
 	return 0;
 }
@@ -778,6 +783,5 @@ load_server_config(const char *filename, struct site_config *conf)
 	yaml_parser_delete(&parser);
 	fclose(f);
 	load_heating(&conf->process_list);
-	load_hot_water(&conf->process_list);
 	load_cascade(&conf->process_list);
 }

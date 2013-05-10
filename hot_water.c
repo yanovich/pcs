@@ -36,6 +36,11 @@
 struct hot_water_config {
 	int			feed;
 	int			feed_io;
+	int			min;
+	int			max;
+	int			total;
+	int			open;
+	int			close;
 	struct list_head	fuzzy;
 	int			first_run;
 	int			t21_prev;
@@ -92,11 +97,10 @@ struct process_ops hot_water_ops = {
 	.log = hot_water_log,
 };
 
-void
-load_hot_water(struct list_head *list)
+struct process_ops *
+hot_water_init(void *conf)
 {
-	struct process *hwp = (void *) xmalloc (sizeof(*hwp));
-	struct hot_water_config *c = (void *) xmalloc (sizeof(*c));
+	struct hot_water_config *c = conf;
 	struct fuzzy_clause *fcl;
 
 	INIT_LIST_HEAD(&c->fuzzy);
@@ -131,10 +135,13 @@ load_hot_water(struct list_head *list)
 	c->first_run = 1;
 	c->feed = 570;
 	c->feed_io = 3;
-	c->valve = load_2way_valve(50, 5000, 47000, 8, 7);
-	hwp->config = (void *) c;
-	hwp->ops = &hot_water_ops;
-	list_add_tail(&hwp->process_entry, list);
+	c->min = 50;
+	c->max = 5000;
+	c->total = 47000;
+	c->open = 8;
+	c->close = 7;
+	c->valve = load_2way_valve(c->min, c->max, c->total, c->open, c->close);
+	return &hot_water_ops;
 }
 
 static void
@@ -180,9 +187,10 @@ hwc_alloc(void)
 }
 
 struct process_builder hot_water_builder = {
+	.alloc			= hwc_alloc,
 	.setpoint		= hot_water_setpoints,
 	.io			= hot_water_io,
-	.alloc			= hwc_alloc,
+	.ops			= hot_water_init,
 };
 
 struct process_builder *

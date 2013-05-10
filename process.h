@@ -70,13 +70,11 @@ struct io_map {
 };
 
 struct process_builder {
+	void			*(*alloc)(void);
 	struct setpoint_map	*setpoint;
 	struct io_map		*io;
 	struct list_head *	(*fuzzy)(void *config);
-	void			(*valve)(void *config, struct valve *valve);
-	void			(*motor)(void *config, struct valve *valve);
-	struct process_ops *	(*ops)(void);
-	void			*(*alloc)(void);
+	struct process_ops *	(*ops)(void *config);
 };
 
 int

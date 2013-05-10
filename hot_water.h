@@ -23,9 +23,6 @@
 
 #include "process.h"
 
-void
-load_hot_water(struct list_head *list);
-
 struct process_builder *
 load_hot_water_builder(void);
 
