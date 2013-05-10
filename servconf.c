@@ -446,7 +446,9 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 		*type = DO_MODULE;
 		for (j = 0; conf->DO_mod[j].count > 0; j++) {
 			if (conf->DO_mod[j].slot == slot) {
-				*index = offset + i - 1;
+				if (i > conf->DO_mod[j].count)
+					return 1;
+				*index = offset + i;
 				return 0;
 			}
 			offset += conf->DO_mod[j].count;
