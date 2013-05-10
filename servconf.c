@@ -27,128 +27,11 @@
 #include "list.h"
 #include "process.h"
 #include "icp.h"
+#include "fuzzy.h"
 #include "hot_water.h"
 #include "heating.h"
 #include "cascade.h"
 #include "servconf.h"
-
-#if 0
-static int
-parse(yaml_event_t *event, struct config_node *top)
-{
-	int done = (event->type == YAML_STREAM_END_EVENT);
-	struct config_node *node;
-	int i;
-
-	debug("%p %i %i %i\n", top, top->level, top->subnode, top->type);
-	debug2("%p %p %p\n", top->node_entry.prev, &top->node_entry, top->node_entry.next);
-	switch (event->type) {
-	case YAML_NO_EVENT:
-		break;
-	case YAML_STREAM_START_EVENT:
-		break;
-	case YAML_STREAM_END_EVENT:
-		break;
-	case YAML_DOCUMENT_START_EVENT:
-		if (top->level != 0)
-			fatal("Unexpected '---'\n");
-		printf("---");
-		break;
-	case YAML_DOCUMENT_END_EVENT:
-		if (top->level != 0)
-			fatal("Unexpected '...'\n");
-		printf("\n...\n");
-		break;
-	case YAML_ALIAS_EVENT:
-		break;
-	case YAML_SCALAR_EVENT:
-		if (top->subnode && (top->type == YAML_SEQUENCE_START_EVENT
-			       	|| (top->type == YAML_MAPPING_START_EVENT
-					&& top->subnode % 2 == 0)))
-			printf(",");
-		printf("\n");
-		for (i = 0; i < top->level; i++)
-			printf("  ");
-		if (top->type == YAML_MAPPING_START_EVENT) {
-			if (top->subnode % 2)
-				printf(": ");
-			else
-				printf("? ");
-		}
-		printf("\"%s\"", event->data.scalar.value);
-		top->subnode++;
-		break;
-	case YAML_SEQUENCE_START_EVENT:
-		node = (struct config_node *) xmalloc(sizeof(*node));
-		list_add_tail(&node->node_entry, &top->node_entry);
-		node->level = top->level + 1;
-		if (top->subnode && (top->type == YAML_SEQUENCE_START_EVENT
-			       	|| (top->type == YAML_MAPPING_START_EVENT
-					&& top->subnode % 2 == 0)))
-			printf(",");
-		printf("\n");
-		for (i = 0; i < top->level; i++)
-			printf("  ");
-		if (top->type == YAML_MAPPING_START_EVENT) {
-			if ((top->subnode % 2) == 1)
-				printf(": ");
-			else
-				printf("? ");
-		}
-		node->type = YAML_SEQUENCE_START_EVENT;
-		node->subnode = 0;
-		printf("[");
-		top->subnode++;
-		break;
-	case YAML_SEQUENCE_END_EVENT:
-		printf("\n");
-		node = top;
-		top = list_entry(top->node_entry.next, struct config_node,
-				node_entry);
-		list_del(&node->node_entry);
-		xfree(node);
-		for (i = 0; i < top->level; i++)
-			printf("  ");
-		printf("]");
-		break;
-	case YAML_MAPPING_START_EVENT:
-		node = (struct config_node *) xmalloc(sizeof(*node));
-		list_add_tail(&node->node_entry, &top->node_entry);
-		node->level = top->level + 1;
-		if (top->subnode && (top->type == YAML_SEQUENCE_START_EVENT
-			       	|| (top->type == YAML_MAPPING_START_EVENT
-					&& top->subnode % 2 == 0)))
-			printf(",");
-		printf("\n");
-		for (i = 0; i < top->level; i++)
-			printf("  ");
-		if (top->type == YAML_MAPPING_START_EVENT) {
-			if (top->subnode % 2)
-				printf(": ");
-			else
-				printf("? ");
-		}
-		node->type = YAML_MAPPING_START_EVENT;
-		node->subnode = 0;
-		printf("{");
-		top->subnode++;
-		break;
-	case YAML_MAPPING_END_EVENT:
-		node = top;
-		top = list_entry(top->node_entry.next, struct config_node,
-				node_entry);
-		list_del(&node->node_entry);
-		xfree(node);
-		printf("\n");
-		for (i = 0; i < top->level; i++)
-			printf("  ");
-		printf("}");
-		break;
-	};
-	yaml_event_delete(event);
-	return done;
-}
-#endif
 
 struct modules_parser {
 	struct config_node	node;
@@ -531,6 +414,189 @@ parse_io(yaml_event_t *event, struct site_config *conf,
 	return 0;
 }
 
+int
+parse_fuzzy_if(struct fuzzy_clause *fcl, const char *key, const char *value)
+{
+	char *bad;
+	int i;
+	debug("   %s:%s\n", key, value);
+	switch (key[0]) {
+	case 'v':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->var = i;
+		break;
+	case 'f':
+		switch (value[0]) {
+		case 'A':
+			i = 0;
+			break;
+		case 'S':
+			i = 1;
+			break;
+		case 'Z':
+			i = 2;
+			break;
+		default:
+			return 1;
+		};
+		fcl->h_f = i;
+		break;
+	case 'a':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->h_a = i;
+		break;
+	case 'b':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->h_b = i;
+		break;
+	case 'c':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->h_c = i;
+		break;
+	case 0:
+	default:
+		return 1;
+	};
+
+	return 0;
+}
+
+int
+parse_fuzzy_then(struct fuzzy_clause *fcl, const char *key, const char *value)
+{
+	char *bad;
+	int i;
+	debug("   %s:%s\n", key, value);
+	switch (key[0]) {
+	case 'f':
+		switch (value[0]) {
+		case 'A':
+			i = 0;
+			break;
+		default:
+			return 1;
+		};
+		fcl->m_f = i;
+		break;
+	case 'a':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->m_a = i;
+		break;
+	case 'b':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->m_b = i;
+		break;
+	case 'c':
+		i = (int) strtol(value, &bad, 0);
+		if (0 != bad[0])
+			return 1;
+		fcl->m_c = i;
+		break;
+	case 0:
+	default:
+		return 1;
+	};
+	return 0;
+}
+
+struct fuzzy_parser {
+	struct config_node	node;
+	int			in_a_map;
+	int			in_a_seq;
+	int			part;
+	int			index;
+	struct list_head	*fuzzy_list;
+	struct fuzzy_clause	*fuzzy_clause;
+	char			buff[256];
+};
+
+int
+parse_fuzzy(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct fuzzy_parser *data = container_of(node, typeof(*data), node);
+	const char *text;
+	int err;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		text = (const char *) event->data.scalar.value;
+		if ((data->index % 2) == 0) {
+			strncpy(data->buff, text, 255);
+			data->index++;
+			break;
+		}
+		debug("   %i\n", data->part);
+		if ((data->part % 2) == 1) {
+			err = parse_fuzzy_if(data->fuzzy_clause, data->buff,
+				       	text);
+		} else {
+			err = parse_fuzzy_then(data->fuzzy_clause, data->buff,
+				       	text);
+		}
+		if (0 != err)
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		data->index++;
+		break;
+	case YAML_MAPPING_START_EVENT:
+		data->in_a_map++;
+		if (data->in_a_map == 2) {
+			data->part++;
+			break;
+		} else if (data->in_a_map == 1)
+			data->fuzzy_clause =
+				xzalloc(sizeof(*data->fuzzy_clause));
+		else
+			fatal("unexpected element at line %i column %i\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		if (!data->in_a_map)
+			list_add_tail(&data->fuzzy_clause->fuzzy_entry,
+					data->fuzzy_list);
+		break;
+	case YAML_SEQUENCE_START_EVENT:
+		data->in_a_seq++;
+		break;
+	case YAML_SEQUENCE_END_EVENT:
+		data->in_a_seq--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_seq)
+		return 0;
+	list_del(&node->node_entry);
+	xfree(data);
+	return 0;
+}
+
 struct process_parser {
 	struct config_node	node;
 	int			in_a_map;
@@ -573,6 +639,12 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 			p->builder = data->builder;
 			p->conf = data->conf;
 			p->node.parse = parse_io;
+			next = &p->node; 
+		} else if (!strcmp((const char *)event->data.scalar.value,
+				       	"fuzzy")) {
+			struct fuzzy_parser *p = xzalloc(sizeof(*p));
+			p->fuzzy_list = data->builder->fuzzy(data->conf);
+			p->node.parse = parse_fuzzy;
 			next = &p->node; 
 		} else {
 			empty.in_a_map = 0;

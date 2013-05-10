@@ -101,42 +101,6 @@ struct process_ops *
 hot_water_init(void *conf)
 {
 	struct hot_water_config *c = conf;
-	struct fuzzy_clause *fcl;
-
-	INIT_LIST_HEAD(&c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 2, -1500, -50,  -30, 0,   400,  7000, 7000);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -50, -30,  -10, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -30, -10,    0, 0,     0,   100,  200);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,   -10,   0,   30, 0,  -300,     0,  300);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,     0,  30,   80, 0,  -200,  -100,    0);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 0,    30,  80,  180, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 0, 1,    80, 180, 1500, 0, -7000, -7000, -400);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 2, -1000, -20,  -10, 0,   400,  3000, 3000);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 0,   -20, -10,   -1, 0,   100,   400,  700);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 0,     1,  10,   20, 0,  -700,  -400, -100);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
-	fcl = (void *) xmalloc(sizeof(*fcl));
-	fuzzy_clause_init(fcl, 1, 1,    10,  20, 1000, 0, -3000, -3000, -400);
-	list_add_tail(&fcl->fuzzy_entry, &c->fuzzy);
 
 	c->first_run = 1;
 	c->valve = load_2way_valve(c->min, c->max, c->total, c->open, c->close);
@@ -246,13 +210,23 @@ struct io_map hot_water_io[] = {
 static void *
 hwc_alloc(void)
 {
-	return xzalloc(sizeof(struct hot_water_config));
+	struct hot_water_config *c = xzalloc(sizeof(*c));
+	INIT_LIST_HEAD(&c->fuzzy);
+	return c;
+}
+
+struct list_head *
+hot_water_fuzzy(void *conf)
+{
+	struct hot_water_config *c = conf;
+	return &c->fuzzy;
 }
 
 struct process_builder hot_water_builder = {
 	.alloc			= hwc_alloc,
 	.setpoint		= hot_water_setpoints,
 	.io			= hot_water_io,
+	.fuzzy			= hot_water_fuzzy,
 	.ops			= hot_water_init,
 };
 
