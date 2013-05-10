@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "fuzzy.h"
+#include "log.h"
 
 unsigned
 Dh(int a, int b, int c, int x)
@@ -86,6 +87,7 @@ process_fuzzy(struct list_head *fuzzy, int *vars)
 	list_for_each_entry(f, fuzzy, fuzzy_entry) {
 		h = ha[f->h_f](f->h_a, f->h_b, f->h_c, vars[f->var]);
 		ma[f->m_f](f->m_a, f->m_b, f->m_c, h, &r);
+		debug2("    %4i %6u %6i\n", vars[f->var], r.mass, r.value);
 	}
 	return r.value;
 }
