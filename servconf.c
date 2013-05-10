@@ -469,13 +469,6 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 	return 1;
 }
 
-struct process_parser {
-	struct config_node	node;
-	int			in_a_map;
-	struct process_builder	*builder;
-	void			*conf;
-};
-
 int
 parse_io(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
@@ -537,6 +530,13 @@ parse_io(yaml_event_t *event, struct site_config *conf,
 	xfree(data);
 	return 0;
 }
+
+struct process_parser {
+	struct config_node	node;
+	int			in_a_map;
+	struct process_builder	*builder;
+	void			*conf;
+};
 
 int
 parse_process(yaml_event_t *event, struct site_config *conf,
