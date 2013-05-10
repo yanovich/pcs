@@ -422,12 +422,119 @@ parse_setpoints(yaml_event_t *event, struct site_config *conf,
 	return 0;
 }
 
+struct io_parser {
+	struct config_node	node;
+	int			index;
+	int			in_a_map;
+	struct process_builder	*builder;
+	void			*conf;
+	char			buff[256];
+};
+
+static int
+find_io(const char *text, struct site_config *conf, int *type, int *index)
+{
+	char buff[16];
+	int block;
+	int slot;
+	int i;
+	int j;
+	int offset = 0;
+	sscanf(text, "%15[^][:]:%d:%d:%d", buff, &block, &slot, &i);
+	debug("%s:%d:%d:%d\n", buff, block, slot, i);
+	if (!strcmp("do", buff)) {
+		*type = DO_MODULE;
+		for (j = 0; conf->DO_mod[j].count > 0; j++) {
+			if (conf->DO_mod[j].slot == slot) {
+				*index = offset + i - 1;
+				return 0;
+			}
+			offset += conf->DO_mod[j].count;
+		}
+
+	} else if (!strcmp("tr", buff)) {
+		*type = TR_MODULE;
+		for (j = 0; conf->TR_mod[j].count > 0; j++) {
+			if (conf->TR_mod[j].slot == slot) {
+				*index = offset + i - 1;
+				return 0;
+			}
+			offset += conf->TR_mod[j].count;
+		}
+	} else if (!strcmp("ai", buff)) {
+		*type = AI_MODULE;
+	}
+	return 1;
+}
+
 struct process_parser {
 	struct config_node	node;
 	int			in_a_map;
 	struct process_builder	*builder;
 	void			*conf;
 };
+
+int
+parse_io(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct io_parser *data = container_of(node, typeof(*data), node);
+	int type, index;
+	int i;
+	const char *text;
+	int err;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_ALIAS_EVENT:
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_SEQUENCE_END_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		text = (const char *) event->data.scalar.value;
+		if ((data->index % 2) == 0) {
+			strncpy(data->buff, text, 255);
+			data->index++;
+			break;
+		}
+		err = find_io(text, conf, &type, &index);
+		if (0 != err)
+			fatal("bad address %s\n", text);
+		for (i = 0; data->builder->io[i].name; i++) {
+			if (strcmp(data->builder->io[i].name, data->buff))
+				continue;
+			break;
+		}
+		if(!data->builder->io[i].name)
+			fatal("process does not expect io '%s'\n",
+				       data->buff);
+		data->builder->io[i].set(data->conf, type, index);
+		data->index++;
+		break;
+	case YAML_MAPPING_START_EVENT:
+		if (!data->builder || !data->builder->setpoint)
+			fatal("process does not expect setpoints\n");
+		data->in_a_map++;
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_map)
+		return 0;
+	list_del(&node->node_entry);
+	xfree(data);
+	return 0;
+}
 
 int
 parse_process(yaml_event_t *event, struct site_config *conf,
@@ -456,6 +563,13 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 			p->builder = data->builder;
 			p->conf = data->conf;
 			p->node.parse = parse_setpoints;
+			next = &p->node; 
+		} else if (!strcmp((const char *)event->data.scalar.value,
+				       	"IO")) {
+			struct io_parser *p = xzalloc(sizeof(*p));
+			p->builder = data->builder;
+			p->conf = data->conf;
+			p->node.parse = parse_io;
 			next = &p->node; 
 		} else {
 			empty.in_a_map = 0;

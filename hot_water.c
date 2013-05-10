@@ -166,7 +166,7 @@ set_feed_io(void *conf, int type, int value)
 
 struct io_map hot_water_io[] = {
 	{
-		.name 		= "feed_io",
+		.name 		= "feed",
 		.set		= set_feed_io,
 	},
 	{
