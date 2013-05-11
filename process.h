@@ -37,16 +37,6 @@ struct site_status {
 	int			AI[256];
 };
 
-struct site_config {
-	long			interval;
-	struct DO_mod		DO_mod[256];
-	struct TR_sensor	T[256];
-	struct TR_mod		TR_mod[256];
-	struct AI_sensor	AI[256];
-	struct AI_mod		AI_mod[256];
-	struct list_head	process_list;
-};
-
 struct process_ops {
 	void	(*run)(struct site_status *, void *);
 	int	(*log)(struct site_status *, void *, char *, const int, int);
@@ -59,22 +49,13 @@ struct process {
 	void			*config;
 };
 
-struct setpoint_map {
-	const char		*name;
-	void			(*set)(void *config, int value);
-};
-
-struct io_map {
-	const char		*name;
-	void			(*set)(void *config, int type, int value);
-};
-
 struct process_builder {
 	void			*(*alloc)(void);
 	struct setpoint_map	*setpoint;
 	struct io_map		*io;
 	struct list_head *	(*fuzzy)(void *config);
-	struct process_ops *	(*ops)(void *config);
+	void			(*set_valve)(void *config, struct valve *v);
+	void *			(*ops)(void *config);
 };
 
 int

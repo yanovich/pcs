@@ -23,11 +23,31 @@
 #include <yaml.h>
 #include "list.h"
 
+struct site_config {
+	long			interval;
+	struct DO_mod		DO_mod[256];
+	struct TR_sensor	T[256];
+	struct TR_mod		TR_mod[256];
+	struct AI_sensor	AI[256];
+	struct AI_mod		AI_mod[256];
+	struct list_head	process_list;
+};
+
 struct config_node {
 	int			(*parse)(yaml_event_t *event,
 		       			struct site_config *conf,
 					struct config_node *node);
 	struct list_head 	node_entry;
+};
+
+struct setpoint_map {
+	const char		*name;
+	void			(*set)(void *config, int value);
+};
+
+struct io_map {
+	const char		*name;
+	void			(*set)(void *config, int type, int value);
 };
 
 void

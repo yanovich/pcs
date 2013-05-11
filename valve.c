@@ -106,26 +106,107 @@ log_2way_valve(void *data, char *buff, const int sz, int c)
 			d->abs ? 'A' : 'R', d->pos/100);
 }
 
-struct valve_ops valve_ops = {
+static struct valve_ops valve_ops = {
 	.adjust = adjust_2way_valve,
 	.log = log_2way_valve,
 };
 
-struct valve *
-load_2way_valve(int min, int max, int total, int close, int open)
+static void *
+twv_init(void *conf)
 {
-	struct valve *valve = (void *) xmalloc(sizeof(*valve));
-	struct valve_data *d = (void *) xmalloc(sizeof(*d));
-	
-	valve->ops = &valve_ops;
-	valve->data = d;
-	d->abs = 0;
-	d->min = min;
-	d->max = max;
-	d->close = close;
-	d->open = open;
-	d->total = total;
-	d->pos = 0;
+	return &valve_ops;
+}
 
-	return valve;
+static void
+set_min(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->min = value;
+	debug("  2way valve: min = %i\n", value);
+}
+
+static void
+set_max(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->max = value;
+	debug("  2way valve: max = %i\n", value);
+}
+
+static void
+set_total(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->total = value;
+	debug("  2way valve: total = %i\n", value);
+}
+
+static struct setpoint_map twv_setpoints[] = {
+	{
+		.name 		= "min",
+		.set		= set_min,
+	},
+	{
+		.name 		= "max",
+		.set		= set_max,
+	},
+	{
+		.name 		= "total",
+		.set		= set_total,
+	},
+	{
+	}
+};
+
+static void
+set_open_io(void *conf, int type, int value)
+{
+	struct valve_data *c = conf;
+	if (type != DO_MODULE)
+		fatal("heating: wrong type of open output\n");
+	c->open = value;
+	debug("  2way valve: open = %i\n", value);
+}
+
+static void
+set_close_io(void *conf, int type, int value)
+{
+	struct valve_data *c = conf;
+	if (type != DO_MODULE)
+		fatal("heating: wrong type of close output\n");
+	c->close = value;
+	debug("  2way valve: close = %i\n", value);
+}
+
+static struct io_map twv_io[] = {
+	{
+		.name 		= "open",
+		.set		= set_open_io,
+	},
+	{
+		.name 		= "close",
+		.set		= set_close_io,
+	},
+	{
+	}
+};
+
+static void *
+twv_alloc(void)
+{
+	struct valve_data *c = xzalloc(sizeof(*c));
+	return c;
+}
+
+static struct process_builder twv_builder = {
+	.alloc			= twv_alloc,
+	.setpoint		= twv_setpoints,
+	.io			= twv_io,
+	.ops			= twv_init,
+};
+
+struct process_builder *
+load_2way_valve(void)
+{
+	return &twv_builder;
 }

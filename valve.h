@@ -21,6 +21,8 @@
 #ifndef PCS_VALVE_H
 #define PCS_VALVE_H
 
+#include "servconf.h"
+
 struct valve_ops {
 	void			(*adjust)(int amount, void *data);
 	int			(*log)(void *data, char *, const int, int);
@@ -31,7 +33,7 @@ struct valve {
 	void			*data;
 };
 
-struct valve *
-load_2way_valve(int min, int max, int total, int close, int open);
+struct process_builder *
+load_2way_valve(void);
 
 #endif /* PCS_VALVE_H */

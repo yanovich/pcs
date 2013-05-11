@@ -97,13 +97,12 @@ struct process_ops hot_water_ops = {
 	.log = hot_water_log,
 };
 
-struct process_ops *
+static void *
 hot_water_init(void *conf)
 {
 	struct hot_water_config *c = conf;
 
 	c->first_run = 1;
-	c->valve = load_2way_valve(c->min, c->max, c->total, c->close, c->open);
 	return &hot_water_ops;
 }
 
@@ -115,46 +114,10 @@ set_feed(void *conf, int value)
 	debug("  hot water: feed = %i\n", value);
 }
 
-static void
-set_min(void *conf, int value)
-{
-	struct hot_water_config *c = conf;
-	c->min = value;
-	debug("  hot water: min = %i\n", value);
-}
-
-static void
-set_max(void *conf, int value)
-{
-	struct hot_water_config *c = conf;
-	c->max = value;
-	debug("  hot water: max = %i\n", value);
-}
-
-static void
-set_total(void *conf, int value)
-{
-	struct hot_water_config *c = conf;
-	c->total = value;
-	debug("  hot water: total = %i\n", value);
-}
-
 struct setpoint_map hot_water_setpoints[] = {
 	{
 		.name 		= "feed",
 		.set		= set_feed,
-	},
-	{
-		.name 		= "min",
-		.set		= set_min,
-	},
-	{
-		.name 		= "max",
-		.set		= set_max,
-	},
-	{
-		.name 		= "total",
-		.set		= set_total,
 	},
 	{
 	}
@@ -170,38 +133,10 @@ set_feed_io(void *conf, int type, int value)
 	debug("  hot water: feed_io = %i\n", value);
 }
 
-static void
-set_open_io(void *conf, int type, int value)
-{
-	struct hot_water_config *c = conf;
-	if (type != DO_MODULE)
-		fatal("hot water: wrong type of feed sensor\n");
-	c->open = value;
-	debug("  hot water: open = %i\n", value);
-}
-
-static void
-set_close_io(void *conf, int type, int value)
-{
-	struct hot_water_config *c = conf;
-	if (type != DO_MODULE)
-		fatal("hot water: wrong type of feed sensor\n");
-	c->close = value;
-	debug("  hot water: close = %i\n", value);
-}
-
 struct io_map hot_water_io[] = {
 	{
 		.name 		= "feed",
 		.set		= set_feed_io,
-	},
-	{
-		.name 		= "open",
-		.set		= set_open_io,
-	},
-	{
-		.name 		= "close",
-		.set		= set_close_io,
 	},
 	{
 	}
@@ -222,11 +157,19 @@ hot_water_fuzzy(void *conf)
 	return &c->fuzzy;
 }
 
+static void
+set_valve(void *conf, struct valve *v)
+{
+	struct hot_water_config *c = conf;
+	c->valve = v;
+}
+
 struct process_builder hot_water_builder = {
 	.alloc			= hwc_alloc,
 	.setpoint		= hot_water_setpoints,
 	.io			= hot_water_io,
 	.fuzzy			= hot_water_fuzzy,
+	.set_valve		= set_valve,
 	.ops			= hot_water_init,
 };
 

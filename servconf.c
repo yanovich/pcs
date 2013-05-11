@@ -604,20 +604,38 @@ parse_fuzzy(yaml_event_t *event, struct site_config *conf,
 	return 0;
 }
 
-struct process_parser {
+struct process_map {
+	const char		*name;
+	struct process_builder	*(*builder)(void);
+};
+
+struct process_map v_builders[] = {
+	{
+		.name		= "2way",
+		.builder	= load_2way_valve,
+	},
+	{
+	}
+};
+
+struct valve_parser {
 	struct config_node	node;
 	int			in_a_map;
 	struct process_builder	*builder;
+	struct process_builder	*v_builder;
 	void			*conf;
+	void			*p_conf;
 };
 
 int
-parse_process(yaml_event_t *event, struct site_config *conf,
+parse_valve(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
-	struct process_parser *data = container_of(node, typeof(*data), node);
+	struct valve_parser *data = container_of(node, typeof(*data), node);
 	struct config_node *next;
-	struct process *pr;
+	struct valve *v;
+	const char *text;
+	int i;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
@@ -633,27 +651,125 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 				event->start_mark.column);
 		break;
 	case YAML_SCALAR_EVENT:
-		if (!strcmp((const char *)event->data.scalar.value,
-				       	"setpoints")) {
+		text = (const char *)event->data.scalar.value;
+		if (!data->v_builder) {
+			if (data->in_a_map > 1)
+				fatal("unexpected element at line %i"
+						" column %i\n",
+						event->start_mark.line,
+						event->start_mark.column);
+			for (i = 0; v_builders[i].name; i++) {
+				if (strcmp(text, v_builders[i].name))
+					continue;
+				data->v_builder = v_builders[i].builder();
+				data->conf = data->v_builder->alloc();
+				break;
+			}
+			if (!data->v_builder) {
+				fatal("unexpected element at line %i"
+						" column %i\n",
+						event->start_mark.line,
+						event->start_mark.column);
+			}
+			break;
+		}
+		if (!strcmp(text, "setpoints")) {
+			struct setpoints_parser *p = xzalloc(sizeof(*p));
+			p->builder = data->v_builder;
+			p->conf = data->conf;
+			p->node.parse = parse_setpoints;
+			next = &p->node; 
+		} else if (!strcmp(text, "IO")) {
+			struct io_parser *p = xzalloc(sizeof(*p));
+			p->builder = data->v_builder;
+			p->conf = data->conf;
+			p->node.parse = parse_io;
+			next = &p->node; 
+		} else {
+			empty.in_a_map = 0;
+			next = &empty.node;
+		}
+		list_add(&next->node_entry, &node->node_entry);
+		break;
+	case YAML_MAPPING_START_EVENT:
+		data->in_a_map++;
+		break;
+	case YAML_MAPPING_END_EVENT:
+		data->in_a_map--;
+		break;
+	};
+
+	yaml_event_delete(event);
+	if (data->in_a_map)
+		return 0;
+	list_del(&node->node_entry);
+	v = xzalloc(sizeof(*v));
+	v->data = data->conf;
+	v->ops = data->v_builder->ops(data->conf);
+	if (!v->ops || !v->ops->adjust)
+		fatal("bad valve ops at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+	data->builder->set_valve(data->p_conf, v);
+	xfree(data);
+	return 0;
+}
+
+struct process_parser {
+	struct config_node	node;
+	int			in_a_map;
+	struct process_builder	*builder;
+	void			*conf;
+};
+
+int
+parse_process(yaml_event_t *event, struct site_config *conf,
+	       struct config_node *node)
+{
+	struct process_parser *data = container_of(node, typeof(*data), node);
+	struct config_node *next;
+	struct process *pr;
+	const char *text;
+
+	switch (event->type) {
+	case YAML_NO_EVENT:
+	case YAML_STREAM_START_EVENT:
+	case YAML_STREAM_END_EVENT:
+	case YAML_DOCUMENT_START_EVENT:
+	case YAML_DOCUMENT_END_EVENT:
+	case YAML_SEQUENCE_START_EVENT:
+	case YAML_SEQUENCE_END_EVENT:
+	case YAML_ALIAS_EVENT:
+		fatal("unexpected element at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
+		break;
+	case YAML_SCALAR_EVENT:
+		text = (const char *)event->data.scalar.value;
+		if (!strcmp(text, "setpoints")) {
 			struct setpoints_parser *p = xzalloc(sizeof(*p));
 			p->builder = data->builder;
 			p->conf = data->conf;
 			p->node.parse = parse_setpoints;
 			next = &p->node; 
-		} else if (!strcmp((const char *)event->data.scalar.value,
-				       	"IO")) {
+		} else if (!strcmp(text, "IO")) {
 			struct io_parser *p = xzalloc(sizeof(*p));
 			p->builder = data->builder;
 			p->conf = data->conf;
 			p->node.parse = parse_io;
 			next = &p->node; 
-		} else if (!strcmp((const char *)event->data.scalar.value,
-				       	"fuzzy")) {
+		} else if (!strcmp(text, "fuzzy")) {
 			struct fuzzy_parser *p = xzalloc(sizeof(*p));
 			if (!data->builder->fuzzy)
 				fatal("process doesn't support fuzzy logic\n");
 			p->fuzzy_list = data->builder->fuzzy(data->conf);
 			p->node.parse = parse_fuzzy;
+			next = &p->node; 
+		} else if (!strcmp(text, "valve")) {
+			struct valve_parser *p = xzalloc(sizeof(*p));
+			p->builder = data->builder;
+			p->node.parse = parse_valve;
+			p->p_conf = data->conf;
 			next = &p->node; 
 		} else {
 			empty.in_a_map = 0;
@@ -691,11 +807,6 @@ struct processes_parser {
 	int			in_a_map;
 };
 
-struct process_map {
-	const char		*name;
-	struct process_builder	*(*builder)(void);
-};
-
 struct process_map builders[] = {
 	{
 		.name		= "heating",
@@ -712,6 +823,7 @@ struct process_map builders[] = {
 	{
 	}
 };
+
 int
 parse_processes(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)

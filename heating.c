@@ -77,6 +77,7 @@ heating_run(struct site_status *s, void *conf)
 
 	if (e12 > 0)
 		t11 -= e12;
+	debug(" t11 %i t12 %i\n", t11, t11 - d11);
 
 	vars[0] = s->T[c->feed] - t11;
 	if (c->first_run) {
@@ -126,13 +127,12 @@ struct process_ops heating_ops = {
 	.log = heating_log,
 };
 
-struct process_ops *
+static void *
 heating_init(void *conf)
 {
 	struct heating_config *c = conf;
 
 	c->first_run = 1;
-	c->valve = load_2way_valve(c->min, c->max, c->total, c->close, c->open);
 	return &heating_ops;
 }
 
@@ -176,30 +176,6 @@ set_stop(void *conf, int value)
 	debug("  heating: stop = %i\n", value);
 }
 
-static void
-set_min(void *conf, int value)
-{
-	struct heating_config *c = conf;
-	c->min = value;
-	debug("  heating: min = %i\n", value);
-}
-
-static void
-set_max(void *conf, int value)
-{
-	struct heating_config *c = conf;
-	c->max = value;
-	debug("  heating: max = %i\n", value);
-}
-
-static void
-set_total(void *conf, int value)
-{
-	struct heating_config *c = conf;
-	c->total = value;
-	debug("  heating: total = %i\n", value);
-}
-
 struct setpoint_map heating_setpoints[] = {
 	{
 		.name 		= "feed",
@@ -220,18 +196,6 @@ struct setpoint_map heating_setpoints[] = {
 	{
 		.name 		= "stop",
 		.set		= set_stop,
-	},
-	{
-		.name 		= "min",
-		.set		= set_min,
-	},
-	{
-		.name 		= "max",
-		.set		= set_max,
-	},
-	{
-		.name 		= "total",
-		.set		= set_total,
 	},
 	{
 	}
@@ -267,26 +231,6 @@ set_street_io(void *conf, int type, int value)
 	debug("  heating: street io = %i\n", value);
 }
 
-static void
-set_open_io(void *conf, int type, int value)
-{
-	struct heating_config *c = conf;
-	if (type != DO_MODULE)
-		fatal("heating: wrong type of feed sensor\n");
-	c->open = value;
-	debug("  heating: open = %i\n", value);
-}
-
-static void
-set_close_io(void *conf, int type, int value)
-{
-	struct heating_config *c = conf;
-	if (type != DO_MODULE)
-		fatal("heating: wrong type of feed sensor\n");
-	c->close = value;
-	debug("  heating: close = %i\n", value);
-}
-
 struct io_map heating_io[] = {
 	{
 		.name 		= "feed",
@@ -299,14 +243,6 @@ struct io_map heating_io[] = {
 	{
 		.name 		= "street",
 		.set		= set_street_io,
-	},
-	{
-		.name 		= "open",
-		.set		= set_open_io,
-	},
-	{
-		.name 		= "close",
-		.set		= set_close_io,
 	},
 	{
 	}
@@ -327,11 +263,19 @@ heating_fuzzy(void *conf)
 	return &c->fuzzy;
 }
 
+static void
+set_valve(void *conf, struct valve *v)
+{
+	struct heating_config *c = conf;
+	c->valve = v;
+}
+
 struct process_builder heating_builder = {
 	.alloc			= hwc_alloc,
 	.setpoint		= heating_setpoints,
 	.io			= heating_io,
 	.fuzzy			= heating_fuzzy,
+	.set_valve		= set_valve,
 	.ops			= heating_init,
 };
 

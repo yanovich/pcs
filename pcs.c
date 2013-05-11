@@ -59,7 +59,7 @@ main(int ac, char **av)
 	int log_level = LOG_NOTICE;
 	int test_config = 0;
 
-	while ((opt = getopt(ac, av, "f:dDt")) != -1) {
+	while ((opt = getopt(ac, av, "f:dDth")) != -1) {
 		switch (opt) {
                 case 'f': 
 			config_file_name = optarg;
@@ -76,7 +76,7 @@ main(int ac, char **av)
 		case 't':
 			test_config = 1;
 			break;
-		case '?':
+		case 'h':
 		default:
 			usage();
 			break;

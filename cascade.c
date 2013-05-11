@@ -240,22 +240,7 @@ struct process_ops cascade_ops = {
 	.log = cascade_log,
 };
 
-void
-load_cascade(struct list_head *list)
-{
-	struct process *p = (void *) xmalloc (sizeof(*p));
-	struct cascade_config *c = (void *) xmalloc (sizeof(*c));
-
-	c->first_run = 1;
-	c->block = 4;
-	c->m11_fail = 0;
-	c->m11_int = 0;
-	p->config = (void *) c;
-	p->ops = &cascade_ops;
-	list_add_tail(&p->process_entry, list);
-}
-
-struct process_ops *
+static void *
 cascade_init(void *conf)
 {
 	struct cascade_config *c = conf;
