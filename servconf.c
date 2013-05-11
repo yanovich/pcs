@@ -348,6 +348,13 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 		}
 	} else if (!strcmp("ai", buff)) {
 		*type = AI_MODULE;
+		for (j = 0; conf->AI_mod[j].count > 0; j++) {
+			if (conf->AI_mod[j].slot == slot) {
+				*index = offset + i - 1;
+				return 0;
+			}
+			offset += conf->AI_mod[j].count;
+		}
 	}
 	return 1;
 }
@@ -669,6 +676,10 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 	pr = xzalloc(sizeof(*pr));
 	pr->config = data->conf;
 	pr->ops = data->builder->ops(data->conf);
+	if (!pr->ops || !pr->ops->run)
+		fatal("bad process ops at line %i column %i\n",
+			       	event->start_mark.line,
+				event->start_mark.column);
 	list_add_tail(&pr->process_entry, &conf->process_list);
 	xfree(data);
 	return 0;
@@ -693,6 +704,10 @@ struct process_map builders[] = {
 	{
 		.name		= "hot water",
 		.builder	= load_hot_water_builder,
+	},
+	{
+		.name		= "cascade",
+		.builder	= load_cascade_builder,
 	},
 	{
 	}
@@ -862,5 +877,4 @@ load_server_config(const char *filename, struct site_config *conf)
 
 	yaml_parser_delete(&parser);
 	fclose(f);
-	load_cascade(&conf->process_list);
 }

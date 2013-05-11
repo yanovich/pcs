@@ -20,7 +20,7 @@
 #ifndef PCS_CASCADE_H
 #define PCS_CASCADE_H
 
-void
-load_cascade(struct list_head *list);
+struct process_builder *
+load_cascade_builder(void);
 
 #endif /* PCS_CASCADE_H */
