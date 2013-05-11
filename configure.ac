@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT([pcs], [0.0], [ynvich@gmail.com])
+AC_INIT([Omatika process control service], [0.1], [ynvich@gmail.com], [pcs])
 AC_CONFIG_HEADERS([config.h:config-h.in])
 
 AM_INIT_AUTOMAKE([1.11 foreign])
