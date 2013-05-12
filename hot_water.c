@@ -67,7 +67,7 @@ hot_water_run(struct site_status *s, void *conf)
 	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
 		fatal("bad valve\n");
 	
-	c->valve->ops->adjust(v21, c->valve->data);
+	c->valve->ops->adjust(v21, c->valve->data, s);
 	return;
 }
 

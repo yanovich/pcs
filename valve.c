@@ -42,7 +42,7 @@ struct valve_data {
 };
 
 static void
-adjust_2way_valve(int amount, void *data)
+adjust_2way_valve(int amount, void *data, void *s)
 {
 	struct valve_data *d = data;
 

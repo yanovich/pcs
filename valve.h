@@ -24,7 +24,7 @@
 #include "servconf.h"
 
 struct valve_ops {
-	void			(*adjust)(int amount, void *data);
+	void			(*adjust)(int amount, void *data, void *s);
 	int			(*log)(void *data, char *, const int, int);
 };
 
@@ -35,5 +35,8 @@ struct valve {
 
 struct process_builder *
 load_2way_valve(void);
+
+struct process_builder *
+load_analog_valve(void);
 
 #endif /* PCS_VALVE_H */
