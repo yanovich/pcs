@@ -9,6 +9,7 @@ AM_CPPFLAGS			+= -DPIDDIR='"$(piddir)"'
 
 noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
+				   analog_valve.c	\
 				   cascade.c	\
 				   fuzzy.c	\
 				   heating.c	\

@@ -82,6 +82,12 @@ b016(int apm)
 	return (1600 * (apm - 3937)) / (19685 - 3937);
 }
 
+int
+v2h(int volts)
+{
+	return (volts * 8) / 10;
+}
+
 LIST_HEAD(action_list);
 
 typedef enum {

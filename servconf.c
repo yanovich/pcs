@@ -44,6 +44,7 @@ struct modules_parser {
 
 #define NI1000_TK5000		"ni1000 tk5000"
 #define P_0_16BAR_4_20_MA	"0-16 bar 4-20 mA"
+#define VOLTS_TO_HEX		"0-8000 0-10 V"
 
 void
 configure_module(struct site_config *conf, struct modules_parser *data,
@@ -110,14 +111,30 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 		case TR_MODULE:
 			i = conf->TR_mod[data->last_mod].first + data->level[2];
 			conf->T[i].mod = data->last_mod;
-			if (!strcmp(text, NI1000_TK5000))
+			if (!strcmp(text, NI1000_TK5000)) {
 				conf->T[i].convert = ni1000;
+				break;
+			}
+			fatal("conversion '%s' is unsupported for "
+					"module %i-%i\n", text,
+					data->level[0],
+					data->level[1]);
 			break;
 		case AI_MODULE:
 			i = conf->AI_mod[data->last_mod].first + data->level[2];
 			conf->AI[i].mod = data->last_mod;
-			if (!strcmp(text, P_0_16BAR_4_20_MA))
+			if (!strcmp(text, P_0_16BAR_4_20_MA)) {
 				conf->AI[i].convert = b016;
+				break;
+			}
+			if (!strcmp(text, VOLTS_TO_HEX)) {
+				conf->AI[i].convert = v2h;
+				break;
+			}
+			fatal("conversion '%s' is unsupported for "
+					"module %i-%i\n", text,
+					data->level[0],
+					data->level[1]);
 			break;
 		case DO_MODULE:
 		case DI_MODULE:

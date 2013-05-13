@@ -67,6 +67,9 @@ ni1000(int ohm);
 int
 b016(int apm);
 
+int
+v2h(int volts);
+
 void
 load_site_config(const char *config_file);
 
