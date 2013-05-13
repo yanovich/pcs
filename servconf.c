@@ -86,6 +86,15 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 			conf->AI_mod[i].slot = data->level[1] + 1;
 			conf->AI_mod[i].first = offset;
 			break;
+		case AO_MODULE:
+			for (i = 0; conf->AO_mod[i].count > 0; i++)
+				offset += conf->AO_mod[i].count;
+			data->last_mod = i;
+			conf->AO_mod[i] = *(struct AO_mod *) mod;
+			conf->AO_mod[i].block = data->level[0];
+			conf->AO_mod[i].slot = data->level[1] + 1;
+			conf->AO_mod[i].first = offset;
+			break;
 		case DI_MODULE:
 		case NULL_MODULE_TYPE:
 		default:
@@ -355,6 +364,15 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 			}
 			offset += conf->AI_mod[j].count;
 		}
+	} else if (!strcmp("ao", buff)) {
+		*type = AO_MODULE;
+		for (j = 0; conf->AO_mod[j].count > 0; j++) {
+			if (conf->AO_mod[j].slot == slot) {
+				*index = offset + i - 1;
+				return 0;
+			}
+			offset += conf->AO_mod[j].count;
+		}
 	}
 	return 1;
 }
@@ -613,6 +631,10 @@ struct process_map v_builders[] = {
 	{
 		.name		= "2way",
 		.builder	= load_2way_valve,
+	},
+	{
+		.name		= "analog",
+		.builder	= load_analog_valve,
 	},
 	{
 	}

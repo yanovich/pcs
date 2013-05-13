@@ -250,6 +250,10 @@ execute_actions(struct site_status *s)
 
 		switch (a->type) {
 		case ANALOG_OUTPUT:
+			config.AO_mod[a->mod].write(&config.AO_mod[a->mod],
+					a->analog.index, a->analog.value);
+			list_del(&a->action_entry);
+			xfree(a);
 			continue;
 		case DIGITAL_OUTPUT:
 			gettimeofday(&now, NULL);
@@ -407,6 +411,34 @@ set_DO(int index, int value, int delay)
 	action.digital.mask |= 1 << (index);
 	if (value)
 		action.digital.value |= 1 << (index);
+	queue_action(&action);
+}
+
+void
+set_AO(int index, int value)
+{
+	struct action action = {0};
+	int i = 0, offset = 0;
+
+	if (index < 0) {
+		fatal("Invalid AO index %i\n", index);
+		return;
+	}
+	action.type = ANALOG_OUTPUT;
+	while (1) {
+		if (config.AO_mod[i].count == 0) {
+			fatal("Invalid DO index %i\n", index);
+			return;
+		}
+		offset += config.AO_mod[i].count;
+		if (offset > index)
+			break;
+		i++;
+	}
+	action.mod = i;
+	action.analog.index = index;
+	action.analog.index -= config.AO_mod[i].first;
+	action.analog.value = value;
 	queue_action(&action);
 }
 

@@ -26,6 +26,7 @@ enum {
 	DI_MODULE,
 	TR_MODULE,
 	AI_MODULE,
+	AO_MODULE,
 	NULL_MODULE_TYPE
 };
 
@@ -62,6 +63,14 @@ struct AI_mod {
 struct AI_sensor {
 	int		(*convert)(int raw);		
 	int		mod;
+};
+
+struct AO_mod {
+	int		(*write)(struct AO_mod *, int, int);
+	unsigned int	count;
+	unsigned int	first;
+	int		block;
+	int		slot;
 };
 
 #endif /* PCS_MODULES_H */

@@ -313,6 +313,62 @@ close_fd:
 }
 
 static int
+set_parallel_analog_output(struct AO_mod *module, int port, int value)
+{
+	int fd, err;
+	unsigned int slot = module->slot;
+	unsigned int data = ((unsigned int) value) + 0x2000;
+	char buff[256];
+
+	if (value < 0 || 0x3fff < value) {
+		error("%s:%u: value out of range (0x%08x)\n", __FILE__, __LINE__,
+			       	data);
+		return -1;
+	}
+	if (port < 0 || module->count <= port) {
+		error("%s:%u: port out of range (%i)\n", __FILE__, __LINE__,
+			       	port);
+	}
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+		       	"/sys/bus/icpdas/devices/slot%02u/analog_output", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+
+	data |= ((unsigned int) port) << 14;
+	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%04x", data);
+	debug("analog output: %u %s\n", slot, buff);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	err = write(fd, buff, strlen(buff));
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+close_fd:
+	close(fd);
+	return err;
+}
+
+static int
 parse_signed_input(const char *data, int size, int *raw)
 {
 	int i = 0, point = 0, val = 0, sign;
@@ -427,6 +483,11 @@ icp_list_modules(void (*callback)(unsigned int, const char *))
 	}
 }
 
+static struct AO_mod AO4 = {
+	.write = set_parallel_analog_output,
+	.count = 4,
+};
+
 static struct DO_mod DO16 = {
 	.read = get_parallel_output_status,
 	.write = set_parallel_output_status,
@@ -447,7 +508,7 @@ static struct TR_mod TR7_S = {
 static struct AI_mod AI8_S = {
 	.read = get_serial_analog_input,
 	.count = 8,
-};
+}; 
 
 struct module_config {
 	const char 		*name;
@@ -456,6 +517,11 @@ struct module_config {
 };
 
 struct module_config mods[] = {
+	{
+		.name = "8024",
+		.type = AO_MODULE,
+		.config = &AO4,
+	},
 	{
 		.name = "8041",
 		.type = DO_MODULE,
