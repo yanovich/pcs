@@ -427,6 +427,12 @@ icp_list_modules(void (*callback)(unsigned int, const char *))
 	}
 }
 
+static struct DO_mod DO16 = {
+	.read = get_parallel_output_status,
+	.write = set_parallel_output_status,
+	.count = 16,
+};
+
 static struct DO_mod DO32 = {
 	.read = get_parallel_output_status,
 	.write = set_parallel_output_status,
@@ -454,6 +460,11 @@ struct module_config mods[] = {
 		.name = "8041",
 		.type = DO_MODULE,
 		.config = &DO32,
+	},
+	{
+		.name = "8042",
+		.type = DO_MODULE,
+		.config = &DO16,
 	},
 	{
 		.name = "87015",
