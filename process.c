@@ -121,7 +121,7 @@ compare_actions(struct action *a1, struct action *a2)
 			return -1;
 		if (a1->analog.index > a2->analog.index)
 			return 1;
-		if (a1->analog.index > a2->analog.index)
+		if (a1->analog.index < a2->analog.index)
 			return -1;
 		return 0;
 	case DIGITAL_OUTPUT:
