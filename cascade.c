@@ -144,6 +144,7 @@ cascade_run(struct site_status *s, void *conf)
 			       go = 0;
 		}
 	}
+	debug("  cascade: after block go %i\n", go);
 	if (go == 0)
 		return;
 
@@ -161,6 +162,7 @@ cascade_run(struct site_status *s, void *conf)
 		return;
 	}
 
+	debug("  cascade: target processing\n");
 	val = s->AI[c->feed];
 	if (c->has_target & HAS_BEFORE_IO)
 		val -= s->AI[c->entry];
