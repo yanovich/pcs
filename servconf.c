@@ -178,7 +178,7 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 					event->start_mark.column);
 		if (data->in_a_seq < 8)
 			spaces[data->in_a_seq] = 0;
-		debug("%s%i:%s\n", spaces, data->level[data->in_a_seq - 1],
+		debug("%s%i:%s\n", spaces, data->level[data->in_a_seq - 1] + 1,
 			       	event->data.scalar.value);
 		configure_module(conf, data, (const char *)event->data.scalar.value);
 		data->level[data->in_a_seq - 1]++;
