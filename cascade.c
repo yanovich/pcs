@@ -49,17 +49,21 @@ struct cascade_config {
 	int			unblock_sp;
 	int			stage;
 	int			unstage;
+	int			stage_wait;
+	int			unstage_wait;
 	int			entry;
 	int			entry_type;
 	int			feed;
 	int			feed_type;
 	int			first_run;
 	int			motor[256];
+	int			mark[256];
 	int			motor_count;
 	unsigned		has_analog_block;
 	unsigned		has_target;
 	int			m11_fail;
 	int			m11_int;
+	int			cycle;
 };
 
 static void
@@ -73,6 +77,8 @@ cascade_run(struct site_status *s, void *conf)
 	int on = 0;
 	int val;
 	
+	c->cycle++;
+
 	debug("running cascade\n");
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
@@ -97,15 +103,28 @@ cascade_run(struct site_status *s, void *conf)
 
 	if (go == -1) {
 		for (i = 0; i < c->motor_count; i++)
-			if (get_DO(c->motor[i]))
+			if (get_DO(c->motor[i])) {
+				if (c->unstage_wait && c->mark[i] > (c->cycle
+							- c->unstage_wait))
+					return;
 				set_DO(c->motor[i], 0, 0);
+				c->mark[i] = c->cycle;
+			}
 		return;
 	}
 
 	if ((c->has_target & HAS_TARGET) != HAS_TARGET) {
 		for (i = 0; i < c->motor_count; i++)
-			if (!get_DO(c->motor[i]))
+			if (!get_DO(c->motor[i])) {
+				debug2("  motor %i[%i]: %i\n", i,
+					       	c->motor[i],
+					       	get_DO(c->motor[i]));
+				if (c->stage_wait && c->mark[i] > (c->cycle
+							- c->stage_wait))
+					return;
 				set_DO(c->motor[i], 1, 0);
+				c->mark[i] = c->cycle;
+			}
 		return;
 	}
 
@@ -151,7 +170,11 @@ cascade_run(struct site_status *s, void *conf)
 			return;
 		for (i = 0; i < c->motor_count; i++)
 			if (get_DO(c->motor[i])) {
+				if (c->unstage_wait && c->mark[i] > (c->cycle
+							- c->unstage_wait))
+					return;
 				set_DO(c->motor[i], 0, 0);
+				c->mark[i] = c->cycle;
 				return;
 			}
 	}
@@ -163,7 +186,11 @@ cascade_run(struct site_status *s, void *conf)
 		j = tv.tv_sec;
 	}
 	i = (j + 1) % c->motor_count;
+	if (c->stage_wait && c->mark[i] > (c->cycle
+				- c->stage_wait))
+		return;
 	set_DO(c->motor[i], 1, 0);
+	c->mark[i] = c->cycle;
 	return;
 }
 
@@ -226,6 +253,7 @@ cascade_init(void *conf)
 	struct cascade_config *c = conf;
 
 	c->first_run = 1;
+	c->cycle = c->stage_wait + 1;
 	return &cascade_ops;
 }
 
@@ -243,6 +271,24 @@ set_unstage(void *conf, int value)
 {
 	struct cascade_config *c = conf;
 	c->unstage = value;
+	c->has_target |= HAS_UNSTAGE_SP;
+	debug("  cascade: unstage = %i\n", value);
+}
+
+static void
+set_stage_wait(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->stage_wait = value;
+	c->has_target |= HAS_STAGE_SP;
+	debug("  cascade: stage = %i\n", value);
+}
+
+static void
+set_unstage_wait(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->unstage_wait = value;
 	c->has_target |= HAS_UNSTAGE_SP;
 	debug("  cascade: unstage = %i\n", value);
 }
@@ -273,6 +319,14 @@ struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "unstage",
 		.set		= set_unstage,
+	},
+	{
+		.name 		= "stage wait",
+		.set		= set_stage_wait,
+	},
+	{
+		.name 		= "unstage wait",
+		.set		= set_unstage_wait,
 	},
 	{
 		.name 		= "block",
