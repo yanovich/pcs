@@ -31,6 +31,7 @@
 #include "hot_water.h"
 #include "heating.h"
 #include "cascade.h"
+#include "reference.h"
 #include "servconf.h"
 
 struct modules_parser {
@@ -858,6 +859,10 @@ struct process_map builders[] = {
 	{
 		.name		= "cascade",
 		.builder	= load_cascade_builder,
+	},
+	{
+		.name		= "reference",
+		.builder	= load_reference_builder,
 	},
 	{
 	}

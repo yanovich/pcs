@@ -17,6 +17,7 @@ libpcs_a_SOURCES		 = \
 				   icp.c	\
 				   log.c	\
 				   process.c	\
+				   reference.c	\
 				   servconf.c	\
 				   valve.c	\
 				   xmalloc.c
