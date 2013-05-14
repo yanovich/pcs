@@ -57,20 +57,23 @@ struct cascade_config {
 	int			feed_type;
 	int			first_run;
 	int			motor[256];
-	int			mark[256];
 	int			motor_count;
 	unsigned		has_analog_block;
 	unsigned		has_target;
 	int			m11_fail;
 	int			m11_int;
 	int			cycle;
+	int			mark;
+	int			next_stop;
+	int			next_start;
+	int			run_min;
+	int			run_max;
 };
 
 static void
 cascade_run(struct site_status *s, void *conf)
 {
 	struct cascade_config *c = conf;
-	struct timeval tv;
 	int go = 1;
 	int i;
 	int j = 0;
@@ -104,11 +107,16 @@ cascade_run(struct site_status *s, void *conf)
 	if (go == -1) {
 		for (i = 0; i < c->motor_count; i++)
 			if (get_DO(c->motor[i])) {
-				if (c->unstage_wait && c->mark[i] > (c->cycle
-							- c->unstage_wait))
+				if (c->unstage_wait && c->mark > (c->cycle
+							- c->unstage_wait)) {
+					debug("   waiting %i cycles\n",
+							c->mark +
+							+ c->unstage_wait -
+							c->cycle); 
 					return;
+				}
 				set_DO(c->motor[i], 0, 0);
-				c->mark[i] = c->cycle;
+				c->mark = c->cycle;
 			}
 		return;
 	}
@@ -119,11 +127,16 @@ cascade_run(struct site_status *s, void *conf)
 				debug2("  motor %i[%i]: %i\n", i,
 					       	c->motor[i],
 					       	get_DO(c->motor[i]));
-				if (c->stage_wait && c->mark[i] > (c->cycle
-							- c->stage_wait))
+				if (c->stage_wait && c->mark > (c->cycle
+							- c->stage_wait)) {
+					debug("   waiting %i cycles\n",
+							c->mark +
+							+ c->stage_wait -
+							c->cycle); 
 					return;
+				}
 				set_DO(c->motor[i], 1, 0);
-				c->mark[i] = c->cycle;
+				c->mark = c->cycle;
 			}
 		return;
 	}
@@ -157,41 +170,65 @@ cascade_run(struct site_status *s, void *conf)
 	}
 	debug2("  cascade: after target go %i\n", go);
 
+	for (i = 0; i < c->motor_count; i++)
+		if (get_DO(c->motor[i]))
+			on++;
+
+	if (on < c->run_min)
+		go = 1;
+	else if (on > c->run_max)
+		go = -1;
+	else if ((on + go) < c->run_min)
+		go = 0;
+	else if ((on + go) > c->run_max)
+		go = 0;
+
+	debug2("  cascade: after limits go %i\n", go);
+
 	if (go == 0)
 		return;
 
 	for (i = 0; i < c->motor_count; i++)
-		if (get_DO(c->motor[i])) {
+		if (get_DO(c->motor[i]))
 			on++;
-			j = i;
-		}
 
 	if (go == -1) {
-		if (on == 1)
-			return;
-		for (i = 0; i < c->motor_count; i++)
-			if (get_DO(c->motor[i])) {
-				if (c->unstage_wait && c->mark[i] > (c->cycle
-							- c->unstage_wait))
+		for (i = 0; i < c->motor_count; i++) {
+			j = (i + c->next_stop) % c->motor_count;
+			if (get_DO(c->motor[j])) {
+				if (c->unstage_wait && c->mark > (c->cycle
+							- c->unstage_wait)) {
+					debug("   waiting %i cycles\n",
+							c->mark +
+							+ c->unstage_wait -
+							c->cycle); 
 					return;
-				set_DO(c->motor[i], 0, 0);
-				c->mark[i] = c->cycle;
+				}
+				set_DO(c->motor[j], 0, 0);
+				c->mark = c->cycle;
+				c->next_stop = j + 1;
 				return;
 			}
+		}
 	}
 
-	if (on == c->motor_count)
-		return;
-	if (on == 0) {
-		gettimeofday(&tv, NULL);
-		j = tv.tv_sec;
+	for (i = 0; i < c->motor_count; i++) {
+		j = (i + c->next_start) % c->motor_count;
+		if (!get_DO(c->motor[j])) {
+			if (c->stage_wait && c->mark > (c->cycle
+						- c->stage_wait)) {
+				debug("   waiting %i cycles\n",
+						c->mark +
+						+ c->stage_wait -
+						c->cycle); 
+				return;
+			}
+			set_DO(c->motor[j], 1, 0);
+			c->mark = c->cycle;
+			c->next_start = j + 1;
+			return;
+		}
 	}
-	i = (j + 1) % c->motor_count;
-	if (c->stage_wait && c->mark[i] > (c->cycle
-				- c->stage_wait))
-		return;
-	set_DO(c->motor[i], 1, 0);
-	c->mark[i] = c->cycle;
 	return;
 }
 
@@ -255,6 +292,9 @@ cascade_init(void *conf)
 
 	c->first_run = 1;
 	c->cycle = c->stage_wait + 1;
+	if (c->run_max > c->motor_count)
+		c->run_max = c->motor_count;
+
 	return &cascade_ops;
 }
 
@@ -312,6 +352,22 @@ set_unblock(void *conf, int value)
 	debug("  cascade: unblock_sp = %i\n", value);
 }
 
+static void
+set_run_min(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->run_min = value;
+	debug("  cascade: run_min = %i\n", value);
+}
+
+static void
+set_run_max(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->run_max = value;
+	debug("  cascade: run_max = %i\n", value);
+}
+
 struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "stage",
@@ -336,6 +392,14 @@ struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "unblock",
 		.set		= set_unblock,
+	},
+	{
+		.name 		= "run min",
+		.set		= set_run_min,
+	},
+	{
+		.name 		= "run max",
+		.set		= set_run_max,
 	},
 	{
 	}
@@ -411,6 +475,7 @@ static void *
 c_alloc(void)
 {
 	struct cascade_config *c = xzalloc(sizeof(*c));
+	c->run_max = 256;
 	return c;
 }
 
