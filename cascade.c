@@ -155,6 +155,7 @@ cascade_run(struct site_status *s, void *conf)
 		else
 			go = 0;
 	}
+	debug2("  cascade: after target go %i\n", go);
 
 	if (go == 0)
 		return;
