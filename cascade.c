@@ -50,7 +50,9 @@ struct cascade_config {
 	int			stage;
 	int			unstage;
 	int			entry;
+	int			entry_type;
 	int			feed;
+	int			feed_type;
 	int			first_run;
 	int			motor[256];
 	int			motor_count;
@@ -70,6 +72,8 @@ cascade_run(struct site_status *s, void *conf)
 	int j = 0;
 	int on = 0;
 	int val;
+	
+	debug("running cascade\n");
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
 		       if (c->unblock_sp > s->T[c->block])
@@ -87,7 +91,7 @@ cascade_run(struct site_status *s, void *conf)
 			       go = 0;
 		}
 	}
-	debug("  cascade: after block go %i\n", go);
+	debug2("  cascade: after block go %i\n", go);
 	if (go == 0)
 		return;
 
@@ -105,8 +109,15 @@ cascade_run(struct site_status *s, void *conf)
 		return;
 	}
 
-	debug("  cascade: target processing\n");
-	val = s->AI[c->feed];
+	if (c->feed_type == AI_MODULE)
+		val = s->AI[c->feed];
+	else if (c->feed_type == TR_MODULE)
+		val = s->T[c->feed];
+	else {
+		error("cascade: bad feed type");
+		return;
+	}
+	debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
 	if (c->has_target & HAS_BEFORE_IO)
 		val -= s->AI[c->entry];
 
@@ -163,6 +174,7 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 	struct cascade_config *c = conf;
 	int b = o;
 	int i;
+	int val;
 
 	if (o == sz)
 		return 0;
@@ -174,9 +186,32 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 		buff[b] = get_DO(c->motor[i]) ? 'M' : '_';
 	}
 	buff[b] = 0;
-	if ((c->has_target & HAS_TARGET) == HAS_TARGET)
-		b += snprintf(&buff[b], sz - b, " I %3i O %3i",
-				s->AI[c->entry], s->AI[c->feed]);
+	if ((c->has_target & HAS_TARGET) != HAS_TARGET)
+		return b - o;
+	if (c->feed_type == AI_MODULE)
+		val = s->AI[c->feed];
+	else if (c->feed_type == TR_MODULE)
+		val = s->T[c->feed];
+	else {
+		error("cascade: bad feed type");
+		return b - o;
+	}
+	b += snprintf(&buff[b], sz - b, " O %3i", val);
+
+	if ((c->has_target & HAS_BEFORE_IO) != HAS_BEFORE_IO)
+		return b - o;
+
+	if (c->entry_type == AI_MODULE)
+		val = s->AI[c->entry];
+	else if (c->entry_type == TR_MODULE)
+		val = s->T[c->entry];
+	else {
+		error("cascade: bad entry type");
+		return b - o;
+	}
+
+	b += snprintf(&buff[b], sz - b, " I %3i", val);
+
 	return b - o;
 }
 
@@ -266,9 +301,10 @@ static void
 set_p_in_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != AI_MODULE)
+	if (type != AI_MODULE && type != TR_MODULE)
 		fatal("cascade: wrong type of entry sensor\n");
 	c->entry = value;
+	c->entry_type = type;
 	c->has_target |= HAS_BEFORE_IO;
 	debug("  cascade: entry io = %i\n", value);
 }
@@ -277,9 +313,10 @@ static void
 set_p_out_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != AI_MODULE)
+	if (type != AI_MODULE && type != TR_MODULE)
 		fatal("cascade: wrong type of feed sensor\n");
 	c->feed = value;
+	c->feed_type = type;
 	c->has_target |= HAS_AFTER_IO;
 	debug("  cascade: feed io = %i\n", value);
 }
