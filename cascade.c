@@ -70,63 +70,6 @@ cascade_run(struct site_status *s, void *conf)
 	int j = 0;
 	int on = 0;
 	int val;
-#if 0
-	int m1 = get_DO(1);
-	int m2 = get_DO(2);
-	int m4 = get_DO(4);
-
-	debug("running cascade\n");
-
-	if (get_DO(3) == 0)
-		set_DO(3, 1, 0);
-	if (s->T[c->block] > 160) {
-		if (m1)
-			set_DO(1, 0, 0);
-		if (m2)
-			set_DO(2, 0, 0);
-		if (m4)
-			set_DO(4, 0, 0);
-		c->m11_int = 0;
-		return;
-	}
-
-	if (s->T[c->block] > 140)
-		return;
-
-	if (!m4)
-		set_DO(4, 1, 0);
-
-	if (!m1 && !m2) {
-		if (s->T[c->block] % 2)
-			set_DO(1, 1, 0);
-		else
-			set_DO(2, 1, 0);
-		c->m11_int = 0;
-		return;
-	}
-
-	if (c->m11_fail > 1) {
-		if (!m1)
-			set_DO(1, 1, 0);
-		if (!m2)
-			set_DO(2, 1, 0);
-		c->m11_int = 0;
-		return;
-	}
-
-	c->m11_int++;
-
-	if (c->m11_int > 10 && (s->AI[c->p_out] - s->AI[c->p_in]) < 40)
-		c->m11_fail++;
-	else
-		c->m11_fail = 0;
-
-	if (c->m11_int > 7 * 24 * 60 * 6) {
-		set_DO(1, !m1, 0);
-		set_DO(2, !m2, 0);
-		c->m11_int = 0;
-	}
-#endif
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
 		       if (c->unblock_sp > s->T[c->block])
