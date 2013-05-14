@@ -387,7 +387,11 @@ unsigned int
 get_DO(int index)
 {
 	index--;
-	return (status.DO[index/8] & 1 << (index % 8)) != 0;
+	debug2("   get_DO: %i = 0x%x 0x%x 0x%x\n", index,
+		       status.DO[index/32] & 1 << (index % 32),
+		       status.DO[index/32],
+		       1 << (index % 32));
+	return (status.DO[index/32] & 1 << (index % 32)) != 0;
 }
 
 void
