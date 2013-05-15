@@ -28,7 +28,7 @@ LDADD				 = libpcs.a
 
 bin_PROGRAMS			 = pcs icp-raw lsicpdas
 
-pcs_LDFLAGS			 = $(YAML_LIBS)
+pcs_LDADD			 = $(LDADD) $(YAML_LIBS)
 
 piddir				 = $(localstatedir)/run
 
