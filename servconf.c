@@ -168,13 +168,13 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
 	case YAML_SCALAR_EVENT:
 		if (!data->in_a_seq)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		if (data->in_a_seq < 8)
@@ -187,13 +187,13 @@ parse_modules(yaml_event_t *event, struct site_config *conf,
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
 		if (data->in_a_seq > 3)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (!data->in_a_seq)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		data->in_a_map++;
@@ -233,7 +233,7 @@ parse_do_nothing(yaml_event_t *event, struct site_config *conf,
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -289,7 +289,7 @@ parse_setpoints(yaml_event_t *event, struct site_config *conf,
 	case YAML_ALIAS_EVENT:
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_SEQUENCE_END_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -414,7 +414,7 @@ parse_io(yaml_event_t *event, struct site_config *conf,
 	case YAML_ALIAS_EVENT:
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_SEQUENCE_END_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -580,7 +580,7 @@ parse_fuzzy(yaml_event_t *event, struct site_config *conf,
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -600,7 +600,7 @@ parse_fuzzy(yaml_event_t *event, struct site_config *conf,
 				       	text);
 		}
 		if (0 != err)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		data->index++;
@@ -614,7 +614,7 @@ parse_fuzzy(yaml_event_t *event, struct site_config *conf,
 			data->fuzzy_clause =
 				xzalloc(sizeof(*data->fuzzy_clause));
 		else
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		break;
@@ -686,7 +686,7 @@ parse_valve(yaml_event_t *event, struct site_config *conf,
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_SEQUENCE_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -694,8 +694,8 @@ parse_valve(yaml_event_t *event, struct site_config *conf,
 		text = (const char *)event->data.scalar.value;
 		if (!data->v_builder) {
 			if (data->in_a_map > 1)
-				fatal("unexpected element at line %i"
-						" column %i\n",
+				fatal("unexpected element at line %zu"
+						" column %zu\n",
 						event->start_mark.line,
 						event->start_mark.column);
 			for (i = 0; v_builders[i].name; i++) {
@@ -706,8 +706,8 @@ parse_valve(yaml_event_t *event, struct site_config *conf,
 				break;
 			}
 			if (!data->v_builder) {
-				fatal("unexpected element at line %i"
-						" column %i\n",
+				fatal("unexpected element at line %zu"
+						" column %zu\n",
 						event->start_mark.line,
 						event->start_mark.column);
 			}
@@ -747,7 +747,7 @@ parse_valve(yaml_event_t *event, struct site_config *conf,
 	v->data = data->conf;
 	v->ops = data->v_builder->ops(data->conf);
 	if (!v->ops || !v->ops->adjust)
-		fatal("bad valve ops at line %i column %i\n",
+		fatal("bad valve ops at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 	data->builder->set_valve(data->p_conf, v);
@@ -780,7 +780,7 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_SEQUENCE_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -833,7 +833,7 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 	pr->config = data->conf;
 	pr->ops = data->builder->ops(data->conf);
 	if (!pr->ops || !pr->ops->run)
-		fatal("bad process ops at line %i column %i\n",
+		fatal("bad process ops at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 	list_add_tail(&pr->process_entry, &conf->process_list);
@@ -884,13 +884,13 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 	case YAML_DOCUMENT_START_EVENT:
 	case YAML_DOCUMENT_END_EVENT:
 	case YAML_ALIAS_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
 	case YAML_SCALAR_EVENT:
 		if (data->in_a_map > 1 || data->in_a_seq > 1)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		for (i = 0; builders[i].name; i++) {
@@ -916,7 +916,7 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_seq != 1)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		data->in_a_map++;
@@ -956,7 +956,7 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 	case YAML_ALIAS_EVENT:
 	case YAML_SEQUENCE_START_EVENT:
 	case YAML_SEQUENCE_END_EVENT:
-		fatal("unexpected element at line %i column %i\n",
+		fatal("unexpected element at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
 		break;
@@ -980,7 +980,7 @@ parse_top_level(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_map)
-			fatal("unexpected element at line %i column %i\n",
+			fatal("unexpected element at line %zu column %zu\n",
 					event->start_mark.line,
 					event->start_mark.column);
 		data->in_a_map = 1;
