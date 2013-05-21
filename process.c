@@ -222,23 +222,15 @@ queue_action(struct action *action)
 }
 
 long
-do_sleep(struct timeval *base, struct timeval *now, long offset)
+do_sleep(struct timeval *base, struct timeval *now)
 {
-	long delay;
-	if (offset > 100000000) {
-		error("offset %li is to high\n", offset);
-		return -1;
-	}
-	debug("delay: %li, %li.%06li %li.%06li\n", offset,
-			now->tv_sec, now->tv_usec, base->tv_sec, base->tv_usec);
-	delay = offset - now->tv_usec + base->tv_usec
-	       	- 1000000 * (now->tv_sec - base->tv_sec);
-	debug("delaying %li of %li usec\n", delay, offset);
-	if (0 >= delay || delay >= 100000000)
+	long delay = base->tv_usec - now->tv_usec + 
+	       	1000000 * (base->tv_sec - now->tv_sec);
+	if (0 >= delay)
 		return 0;
 	usleep(delay);
 	gettimeofday(now, NULL);
-	return offset;
+	return delay;
 }
 
 static struct site_status status = {{0}};
@@ -266,8 +258,9 @@ execute_actions(struct site_status *s)
 			if (!a->digital.delay) {
 				memcpy(&start, &now, sizeof(start));
 			} else {
-				t += do_sleep(&start, &now,
-					       	a->digital.delay);
+				start.tv_sec  += a->digital.delay / 1000000;
+				start.tv_usec += a->digital.delay % 1000000;
+				t += do_sleep(&start, &now);
 			}
 			debug("[%li.%06li] executing action %08x %08x (%li)\n",
 					now.tv_sec,
@@ -467,15 +460,8 @@ log_status(struct site_status *curr)
 void
 process_loop(void)
 {
-	struct timeval start, now;
 	struct process *p;
 
-	signal(SIGTERM, sigterm_handler);
-	signal(SIGQUIT, sigterm_handler);
-	signal(SIGINT, sigterm_handler);
-
-	gettimeofday(&start, NULL);
-	while (!received_sigterm) {
 		while (load_site_status() != 0 && !received_sigterm)
 			sleep (1);
 		if (received_sigterm)
@@ -488,10 +474,66 @@ process_loop(void)
 		}
 		log_status(&status);
 		execute_actions(&status);
-		gettimeofday(&now, NULL);
+}
+
+struct event {
+	struct list_head	event_entry;
+	struct event_ops	* ops;
+	struct timeval		start;
+};
+
+struct event_ops {
+	void			(* free)(struct event *);
+	void			(* run)(void);
+};
+
+LIST_HEAD(event_list);
+
+struct event_ops event_ops = {
+	.run			= process_loop,
+};
+
+void event_wait(struct event *e)
+{
+	struct timeval now;
+
+	gettimeofday(&now, NULL);
+	do_sleep(&e->start, &now);
+}
+
+int event_requeue(struct event *e)
+{
+	e->start.tv_sec += config.interval / 1000000;
+	return 1;
+}
+
+void
+event_loop(void)
+{
+	struct event *e;
+
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGQUIT, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
+
+	e = (void *) xzalloc(sizeof(*e));
+	e->ops = &event_ops;
+	list_add(&e->event_entry, &event_list);
+	gettimeofday(&e->start, NULL);
+
+	while (!received_sigterm) {
+		e = container_of(event_list.next, typeof(*e), event_entry);
+		if (&e->event_entry == &event_list)
+			fatal("no active event\n");
+		event_wait(e);
 		if (received_sigterm)
 			return;
-		do_sleep(&start, &now, config.interval);
-		start.tv_sec += config.interval / 1000000;
+		e->ops->run();
+		if (!event_requeue(e)) {
+			if (e->ops->free)
+				e->ops->free(e);
+			else
+				xfree(e);
+		}
 	}
 }
