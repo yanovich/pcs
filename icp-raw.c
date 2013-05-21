@@ -30,27 +30,35 @@
 
 static void usage(void)
 {
-	fprintf(stderr, "Usage: icp-raw slot command\n");
+	fprintf(stderr, "Usage: icp-raw port slot command\n");
 }
 
 int main(int argc, char *argv[] )
 {
 	int err;
 	char data[MAX_RESPONSE];
+	char port;
 	char slot;
 
-	if (argc < 3) {
+	if (argc < 4) {
 		usage();
 		return 1;
 	}
 
-	slot = argv[1][0] - '0';
-	if (argv[1][1] != 0 || slot < 1 || slot > 8) {
+	port = argv[1][0] - '0';
+	if (argv[1][1] != 0 || port < 0 || port > 1) {
 		usage();
 		return 1;
 	}
 
-	err = icp_serial_exchange(slot, argv[2], MAX_RESPONSE - 1, data);
+	slot = argv[2][0] - '0';
+	if (argv[2][1] != 0 || slot < 1 || slot > 8) {
+		usage();
+		return 1;
+	}
+
+	err = icp_serial_exchange((port << 16) | slot, argv[3],
+		       	MAX_RESPONSE - 1, data);
 	if (err < 0) {
 		error ("Exchage failed\n");
 		return 1;

@@ -31,6 +31,11 @@
 #include "modules.h"
 #include "icp.h"
 
+const char *ports[] = {
+	"/dev/ttySA1",
+	"/dev/ttyS0",
+};
+
 int
 icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 {
@@ -38,7 +43,13 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 	struct termios options;
 	char buff[4];
 	int i = 0;
+	int serial = slot >> 16;
 
+	if (serial >= (sizeof (ports)/ sizeof(ports[0]))) {
+		error("unsupported serial port %i\n", serial);
+		return -1;
+	}
+	slot &= 0xffff;
 	if (slot == 0 || slot > 8) {
 		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
 		return -1;
@@ -49,25 +60,26 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 			       	errno);
 		return -1;
 	}
-	fd = open("/dev/ttySA1", O_RDWR | O_NOCTTY);
+	fd = open(ports[serial], O_RDWR | O_NOCTTY);
 	if (-1 == fd) {
 		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);
 		return -1;
 	}
-	active_port_fd = open("/sys/bus/icpdas/devices/backplane/active_slot",
-			O_RDWR);
-	if (-1 == active_port_fd) {
-		error("%u %s\n", __LINE__, strerror(errno));
-		err = -1;
-		goto close_fd;
+	if (serial == 0) {
+		active_port_fd = open(ICP_ACTIVE_SLOT_FILE, O_RDWR);
+		if (-1 == active_port_fd) {
+			error("%u %s\n", __LINE__, strerror(errno));
+			err = -1;
+			goto close_fd;
+		}
+		err = write(active_port_fd, buff, 2);
+		if (err <= 0) {
+			error("%u %s\n", __LINE__, strerror(errno));
+			goto close_fd;
+		}
+		close(active_port_fd);
 	}
-	err = write(active_port_fd, buff, 2);
-	if (err <= 0) {
-		error("%u %s\n", __LINE__, strerror(errno));
-		goto close_fd;
-	}
-	close(active_port_fd);
 
 	tcgetattr(fd, &options);
 
