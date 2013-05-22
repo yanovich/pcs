@@ -399,6 +399,10 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 			}
 			offset += conf->DI_mod[j].count;
 		}
+	} else if (!strcmp("ds", buff)) {
+		*type = DI_STATUS;
+		*index = block;
+		return 0;
 	}
 	return 1;
 }
