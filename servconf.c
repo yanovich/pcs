@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <sys/time.h>
 #include <yaml.h>
 
 #include "log.h"
@@ -760,6 +761,7 @@ struct process_parser {
 	int			in_a_map;
 	struct process_builder	*builder;
 	void			*conf;
+	struct timeval		start;
 };
 
 int
@@ -845,6 +847,7 @@ struct processes_parser {
 	struct config_node	node;
 	int			in_a_seq;
 	int			in_a_map;
+	struct timeval		start;
 };
 
 struct process_map builders[] = {
@@ -901,6 +904,7 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 			p->node.parse = parse_process;
 			p->builder = builders[i].builder();
 			p->conf = p->builder->alloc();
+			memcpy(&p->start, &data->start, sizeof(p->start));
 			next = &p->node;
 			debug("configuring %s\n", event->data.scalar.value);
 			break;
@@ -913,6 +917,7 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
+		gettimeofday(&data->start, NULL);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_seq != 1)
