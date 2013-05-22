@@ -41,6 +41,7 @@ struct site_status {
 
 typedef enum {
 	INPUT,
+	LOG,
 	PROCESS,
 	ANALOG_OUTPUT,
 	DIGITAL_OUTPUT

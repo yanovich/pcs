@@ -259,6 +259,7 @@ parse_setpoints(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	struct setpoints_parser *data = container_of(node, typeof(*data), node);
+	struct setpoint_map *map = NULL;
 	int value;
 	int i;
 	const char *text;
@@ -290,12 +291,13 @@ parse_setpoints(yaml_event_t *event, struct site_config *conf,
 		for (i = 0; data->builder->setpoint[i].name; i++) {
 			if (strcmp(data->builder->setpoint[i].name, data->buff))
 				continue;
+			map = &data->builder->setpoint[i];
 			break;
 		}
-		if(!data->builder->setpoint[i].name)
+		if(!map)
 			fatal("process does not expect setpoint '%s'\n",
 				       data->buff);
-		data->builder->setpoint[i].set(data->conf, value);
+		map->set(data->conf, value);
 		data->index++;
 		break;
 	case YAML_MAPPING_START_EVENT:
@@ -744,6 +746,24 @@ struct process_parser {
 	int			in_a_map;
 	struct process_builder	*builder;
 	void			*conf;
+	char			buff[256];
+	int			index;
+	int			interval;
+};
+
+static void
+set_process_interval(void *data, int value)
+{
+	struct process_parser *p = data;
+	debug("  interval = %i\n", value);
+	p->interval = value * 1000;
+}
+
+static struct setpoint_map process_setpoint[] = {
+	{
+		.name	= "interval",
+		.set	= set_process_interval,
+	},
 };
 
 int
@@ -751,9 +771,13 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 	       struct config_node *node)
 {
 	struct process_parser *data = container_of(node, typeof(*data), node);
-	struct config_node *next;
+	struct config_node *next = NULL;
+	struct setpoint_map *map = NULL;
 	struct process *pr;
 	const char *text;
+	int value;
+	int i;
+       	char *bad;
 
 	switch (event->type) {
 	case YAML_NO_EVENT:
@@ -795,14 +819,37 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 			p->node.parse = parse_valve;
 			p->p_conf = data->conf;
 			next = &p->node; 
-		} else {
-			empty.in_a_map = 0;
-			next = &empty.node;
 		}
-		list_add(&next->node_entry, &node->node_entry);
+		if (next) {
+			list_add(&next->node_entry, &node->node_entry);
+			break;
+		}
+		data->index++;
+		if ((data->index % 2) == 1) {
+			strncpy(data->buff, text, 255);
+			break;
+		}
+		value = (int) strtol(text, &bad, 0);
+		if (bad[0] != 0)
+			fatal("bad integer near %s\n", bad);
+		for (i = 0; process_setpoint[i].name; i++) {
+			if (strcmp(process_setpoint[i].name, data->buff))
+				continue;
+			map = &process_setpoint[i];
+			break;
+		}
+		if(!map)
+			fatal("process does not expect setting '%s'\n",
+				       data->buff);
+		map->set(data, value);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		data->in_a_map++;
+		if (data->in_a_map > 1)
+			fatal("unexpected element at line %zu column %zu\n",
+					event->start_mark.line,
+					event->start_mark.column);
+		data->index = 0;
 		break;
 	case YAML_MAPPING_END_EVENT:
 		data->in_a_map--;
@@ -821,7 +868,13 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 			       	event->start_mark.line,
 				event->start_mark.column);
 	memcpy(&pr->start, &conf->start, sizeof(pr->start));
-	pr->interval = conf->interval;
+	pr->interval = data->interval;
+	if (pr->interval == 0)
+		pr->interval = conf->interval;
+	else if (pr->interval < conf->input_interval)
+		conf->input_interval = pr->interval;
+	else if (pr->interval > conf->log_interval)
+		conf->log_interval = pr->interval;
 	pr->type = PROCESS;
 	queue_process(pr);
 	xfree(data);
@@ -997,6 +1050,8 @@ load_server_config(const char *filename, struct site_config *conf)
 	struct config_node *node;
 
 	conf->interval = 10000000;
+	conf->input_interval = 10000000;
+	conf->log_interval = 10000000;
 	gettimeofday(&conf->start, NULL);
 	INIT_LIST_HEAD(&top.node.node_entry);
 

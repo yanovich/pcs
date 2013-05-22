@@ -178,7 +178,7 @@ icp_serial_exchange(unsigned int slot, const char *cmd, int size, char *data)
 
 	data[i] = 0;
 	err = i;
-	debug("read: [%s]\n", data);
+	debug2("read: [%s]\n", data);
 close_fd:
 	close(fd);
 	return err;

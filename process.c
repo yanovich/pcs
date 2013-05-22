@@ -276,7 +276,7 @@ load_site_status()
 			error("%s: status data\n", __FILE__);
 			return -1;
 		}
-		debug("DO status 0x%08x\n", config.DO_mod[i].state);
+		debug2("DO status 0x%08x\n", config.DO_mod[i].state);
 		load_DO(offset, config.DO_mod[i].state);
 		offset += config.DO_mod[i].count;
 	}
@@ -356,8 +356,8 @@ set_AO(int index, int value)
 	queue_process(process);
 }
 
-void
-log_status(struct site_status *curr)
+static void
+log_run(struct process *a, struct site_status *s)
 {
 	const int sz = 128;
 	int c = 0;
@@ -367,24 +367,24 @@ log_status(struct site_status *curr)
 	list_for_each_entry(p, &process_list, process_entry) {
 		if (!p->ops->log)
 			continue;
-		c += p->ops->log(curr, p->config, buff, sz, c);
+		c += p->ops->log(s, p->config, buff, sz, c);
 	}
 	logit("%s\n", buff);
 }
 
+static struct process_ops log_ops = {
+	.run			= log_run,
+};
+
 static void
-input_loop(struct process *a, struct site_status *s)
+input_run(struct process *a, struct site_status *s)
 {
 	while (load_site_status() != 0 && !received_sigterm)
 		sleep (1);
-	if (received_sigterm)
-		return;
-
-	log_status(&status);
 }
 
-static struct process_ops process_ops = {
-	.run			= input_loop,
+static struct process_ops input_ops = {
+	.run			= input_run,
 };
 
 static void
@@ -405,6 +405,7 @@ process_requeue(struct process *e)
 	}
 
 	e->start.tv_sec += e->interval / 1000000;
+	e->start.tv_usec += e->interval % 1000000;
 	queue_process(e);
 }
 
@@ -418,9 +419,17 @@ process_loop(void)
 	signal(SIGINT, sigterm_handler);
 
 	e = (void *) xzalloc(sizeof(*e));
-	e->ops = &process_ops;
-	e->interval = config.interval;
+	e->ops = &input_ops;
+	e->interval = config.input_interval;
 	e->type = INPUT;
+	memcpy(&e->start, &config.start, sizeof(e->start));
+
+	queue_process(e);
+
+	e = (void *) xzalloc(sizeof(*e));
+	e->ops = &log_ops;
+	e->interval = config.log_interval;
+	e->type = LOG;
 	memcpy(&e->start, &config.start, sizeof(e->start));
 
 	queue_process(e);

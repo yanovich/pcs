@@ -82,7 +82,7 @@ cascade_run(struct process *p, struct site_status *s)
 	
 	c->cycle++;
 
-	debug("running cascade\n");
+	debug2("running cascade\n");
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
 		       if (c->unblock_sp > s->AI[c->block])
