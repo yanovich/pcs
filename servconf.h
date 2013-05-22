@@ -28,6 +28,7 @@ struct site_config {
 	long			input_interval;
 	long			log_interval;
 	struct DO_mod		DO_mod[256];
+	struct DI_mod		DI_mod[256];
 	struct AI_sensor	AI[256];
 	struct AI_mod		AI_mod[256];
 	struct AO_mod		AO_mod[256];

@@ -241,6 +241,46 @@ icp_get_parallel_name(unsigned int slot, int size, char *data)
 }
 
 static int
+get_parallel_input_status(struct DO_mod *module)
+{
+	int fd, err;
+	unsigned int slot = module->slot;
+	char buff[256];
+	char *p;
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+		       	"/sys/bus/icpdas/devices/slot%02u/input_status", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+			       	errno);
+		return -1;
+	}
+
+	err = read(fd, buff, 256);
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+	module->state = strtoul(buff, &p, 16);
+close_fd:
+	close(fd);
+	return err;
+}
+
+static int
 get_parallel_output_status(struct DO_mod *module)
 {
 	int fd, err;
@@ -507,6 +547,11 @@ static struct DO_mod DO16 = {
 	.count = 16,
 };
 
+static struct DI_mod DI16 = {
+	.read = get_parallel_input_status,
+	.count = 16,
+};
+
 static struct DO_mod DO32 = {
 	.read = get_parallel_output_status,
 	.write = set_parallel_output_status,
@@ -544,6 +589,11 @@ struct module_config mods[] = {
 		.name = "8042",
 		.type = DO_MODULE,
 		.config = &DO16,
+	},
+	{
+		.name = "8042",
+		.type = DI_MODULE,
+		.config = &DI16,
 	},
 	{
 		.name = "87015",

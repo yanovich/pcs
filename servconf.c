@@ -52,50 +52,61 @@ void
 configure_module(struct site_config *conf, struct modules_parser *data,
 		const char *text)
 {
-	int type, more;
-	int i;
+	int type, more = 0;
+	int i, j = 0;
 	int offset = 0;
 	void *mod;
 	switch (data->in_a_seq) {
 	case 1:
 		break;
 	case 2:
-	       	mod = icp_init_module(text, 0, &type, &more);
-		data->last_type = type;
-		switch (type) {
-		case DO_MODULE:
-			for (i = 0; conf->DO_mod[i].count > 0; i++)
-				offset += conf->DO_mod[i].count;
-			data->last_mod = i;
-			conf->DO_mod[i] = *(struct DO_mod *) mod;
-			conf->DO_mod[i].block = data->level[0];
-			conf->DO_mod[i].slot = data->level[1] + 1;
-			break;
-		case AI_MODULE:
-			for (i = 0; conf->AI_mod[i].count > 0; i++)
-				offset += conf->AI_mod[i].count;
-			data->last_mod = i;
-			conf->AI_mod[i] = *(struct AI_mod *) mod;
-			conf->AI_mod[i].block = data->level[0];
-			conf->AI_mod[i].slot = data->level[1] + 1;
-			conf->AI_mod[i].first = offset;
-			break;
-		case AO_MODULE:
-			for (i = 0; conf->AO_mod[i].count > 0; i++)
-				offset += conf->AO_mod[i].count;
-			data->last_mod = i;
-			conf->AO_mod[i] = *(struct AO_mod *) mod;
-			conf->AO_mod[i].block = data->level[0];
-			conf->AO_mod[i].slot = data->level[1] + 1;
-			conf->AO_mod[i].first = offset;
-			break;
-		case DI_MODULE:
-		case NULL_MODULE_TYPE:
-		default:
-			if (text && text[0])
-				fatal("module %s is unsupported\n", text);
-			break;
-		};
+		do {
+			mod = icp_init_module(text, j, &type, &more);
+			j++;
+			data->last_type = type;
+			switch (type) {
+			case DO_MODULE:
+				for (i = 0; conf->DO_mod[i].count > 0; i++)
+					offset += conf->DO_mod[i].count;
+				data->last_mod = i;
+				conf->DO_mod[i] = *(struct DO_mod *) mod;
+				conf->DO_mod[i].block = data->level[0];
+				conf->DO_mod[i].slot = data->level[1] + 1;
+				break;
+			case AI_MODULE:
+				for (i = 0; conf->AI_mod[i].count > 0; i++)
+					offset += conf->AI_mod[i].count;
+				data->last_mod = i;
+				conf->AI_mod[i] = *(struct AI_mod *) mod;
+				conf->AI_mod[i].block = data->level[0];
+				conf->AI_mod[i].slot = data->level[1] + 1;
+				conf->AI_mod[i].first = offset;
+				break;
+			case AO_MODULE:
+				for (i = 0; conf->AO_mod[i].count > 0; i++)
+					offset += conf->AO_mod[i].count;
+				data->last_mod = i;
+				conf->AO_mod[i] = *(struct AO_mod *) mod;
+				conf->AO_mod[i].block = data->level[0];
+				conf->AO_mod[i].slot = data->level[1] + 1;
+				conf->AO_mod[i].first = offset;
+				break;
+			case DI_MODULE:
+				for (i = 0; conf->DI_mod[i].count > 0; i++)
+					offset += conf->DI_mod[i].count;
+				data->last_mod = i;
+				conf->DI_mod[i] = *(struct DI_mod *) mod;
+				conf->DI_mod[i].block = data->level[0];
+				conf->DI_mod[i].slot = data->level[1] + 1;
+				break;
+			case NULL_MODULE_TYPE:
+			default:
+				if (text && text[0])
+					fatal("module %s is unsupported\n",
+						       	text);
+				break;
+			};
+		} while (more);
 		break;
 	case 3:
 		if (!text || !text[0])
@@ -376,6 +387,17 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 				return 0;
 			}
 			offset += conf->AO_mod[j].count;
+		}
+	} else if (!strcmp("di", buff)) {
+		*type = DI_MODULE;
+		for (j = 0; conf->DI_mod[j].count > 0; j++) {
+			if (conf->DI_mod[j].slot == slot) {
+				if (i > conf->DI_mod[j].count)
+					return 1;
+				*index = offset + i;
+				return 0;
+			}
+			offset += conf->DI_mod[j].count;
 		}
 	}
 	return 1;

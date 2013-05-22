@@ -26,12 +26,21 @@ enum {
 	DI_MODULE,
 	AI_MODULE,
 	AO_MODULE,
+	DI_STATUS,
 	NULL_MODULE_TYPE
 };
 
 struct DO_mod {
 	int		(*read)(struct DO_mod *mod);
 	int		(*write)(struct DO_mod *mod);
+	unsigned int	count;
+	unsigned int	state;
+	int		block;
+	int		slot;
+};
+
+struct DI_mod {
+	int		(*read)(struct DO_mod *mod);
 	unsigned int	count;
 	unsigned int	state;
 	int		block;
