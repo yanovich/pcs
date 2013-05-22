@@ -480,6 +480,7 @@ struct event {
 	struct list_head	event_entry;
 	struct event_ops	* ops;
 	struct timeval		start;
+	size_t			interval;
 };
 
 struct event_ops {
@@ -503,7 +504,7 @@ void event_wait(struct event *e)
 
 int event_requeue(struct event *e)
 {
-	e->start.tv_sec += config.interval / 1000000;
+	e->start.tv_sec += e->interval / 1000000;
 	return 1;
 }
 
@@ -518,6 +519,7 @@ event_loop(void)
 
 	e = (void *) xzalloc(sizeof(*e));
 	e->ops = &event_ops;
+	e->interval = config.interval;
 	list_add(&e->event_entry, &event_list);
 	gettimeofday(&e->start, NULL);
 
