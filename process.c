@@ -110,6 +110,9 @@ struct action {
 			unsigned	index;
 		}			analog;
 	};
+	struct event_ops	* ops;
+	struct timeval		start;
+	size_t			interval;
 };
 
 static int
@@ -476,15 +479,8 @@ process_loop(void)
 	execute_actions(&status);
 }
 
-struct event {
-	struct list_head	event_entry;
-	struct event_ops	* ops;
-	struct timeval		start;
-	size_t			interval;
-};
-
 struct event_ops {
-	void			(* free)(struct event *);
+	void			(* free)(struct action *);
 	void			(* run)(void);
 };
 
@@ -494,12 +490,12 @@ struct event_ops event_ops = {
 	.run			= process_loop,
 };
 
-void event_queue(struct event *e)
+void event_queue(struct action *e)
 {
-	list_add(&e->event_entry, &event_list);
+	list_add(&e->action_entry, &event_list);
 }
 
-void event_wait(struct event *e)
+void event_wait(struct action *e)
 {
 	struct timeval now;
 
@@ -507,7 +503,7 @@ void event_wait(struct event *e)
 	do_sleep(&e->start, &now);
 }
 
-int event_requeue(struct event *e)
+int event_requeue(struct action *e)
 {
 	e->start.tv_sec += e->interval / 1000000;
 	return 1;
@@ -516,7 +512,7 @@ int event_requeue(struct event *e)
 void
 event_loop(void)
 {
-	struct event *e;
+	struct action *e;
 
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
@@ -530,8 +526,8 @@ event_loop(void)
 	event_queue(e);
 
 	while (!received_sigterm) {
-		e = container_of(event_list.next, typeof(*e), event_entry);
-		if (&e->event_entry == &event_list)
+		e = container_of(event_list.next, typeof(*e), action_entry);
+		if (&e->action_entry == &event_list)
 			fatal("no active event\n");
 		event_wait(e);
 		if (received_sigterm)
