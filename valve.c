@@ -38,6 +38,7 @@ struct valve_data {
 	int			close;
 	int			open;
 	int			fully_open;
+	int			manual;
 	int			abs;
 	int			pos;
 };
@@ -48,6 +49,10 @@ adjust_2way_valve(int amount, void *data, void *ss)
 	struct valve_data *d = data;
 	struct site_status *s = ss;
 
+	if (d->manual && s->DI[d->manual]) {
+		d->pos = 0;
+		d->abs = 0;
+	}
 	debug("amount %5i pos %6i\n", amount, d->pos);
 	if (-d->min < amount && amount < d->min)
 		return;
@@ -169,7 +174,7 @@ set_open_io(void *conf, int type, int value)
 {
 	struct valve_data *c = conf;
 	if (type != DO_MODULE)
-		fatal("heating: wrong type of open output\n");
+		fatal("valve: wrong type of open output\n");
 	c->open = value;
 	debug("  2way valve: open = %i\n", value);
 }
@@ -179,7 +184,7 @@ set_close_io(void *conf, int type, int value)
 {
 	struct valve_data *c = conf;
 	if (type != DO_MODULE)
-		fatal("heating: wrong type of close output\n");
+		fatal("valve: wrong type of close output\n");
 	c->close = value;
 	debug("  2way valve: close = %i\n", value);
 }
@@ -189,9 +194,19 @@ set_fully_open_io(void *conf, int type, int value)
 {
 	struct valve_data *c = conf;
 	if (type != DI_STATUS)
-		fatal("heating: wrong type of fully open input\n");
+		fatal("valve: wrong type of fully open output\n");
 	c->fully_open = value;
 	debug("  2way valve: fully open = %i\n", value);
+}
+
+static void
+set_manual(void *conf, int type, int value)
+{
+	struct valve_data *c = conf;
+	if (type != DI_MODULE)
+		fatal("valve: wrong type of manual output\n");
+	c->manual = value;
+	debug("  2way valve: manual = %i\n", value);
 }
 
 static struct io_map twv_io[] = {
@@ -206,6 +221,10 @@ static struct io_map twv_io[] = {
 	{
 		.name 		= "fully open",
 		.set		= set_fully_open_io,
+	},
+	{
+		.name 		= "manual",
+		.set		= set_manual,
 	},
 	{
 	}
