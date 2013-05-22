@@ -494,6 +494,11 @@ struct event_ops event_ops = {
 	.run			= process_loop,
 };
 
+void event_queue(struct event *e)
+{
+	list_add(&e->event_entry, &event_list);
+}
+
 void event_wait(struct event *e)
 {
 	struct timeval now;
@@ -520,8 +525,9 @@ event_loop(void)
 	e = (void *) xzalloc(sizeof(*e));
 	e->ops = &event_ops;
 	e->interval = config.interval;
-	list_add(&e->event_entry, &event_list);
 	gettimeofday(&e->start, NULL);
+
+	event_queue(e);
 
 	while (!received_sigterm) {
 		e = container_of(event_list.next, typeof(*e), event_entry);
