@@ -462,18 +462,18 @@ process_loop(void)
 {
 	struct process *p;
 
-		while (load_site_status() != 0 && !received_sigterm)
-			sleep (1);
-		if (received_sigterm)
-			return;
+	while (load_site_status() != 0 && !received_sigterm)
+		sleep (1);
+	if (received_sigterm)
+		return;
 
-		list_for_each_entry(p, &config.process_list, process_entry) {
-			if (! p->ops->run)
-				fatal("process without run\n");
-			p->ops->run(&status, p->config);
-		}
-		log_status(&status);
-		execute_actions(&status);
+	list_for_each_entry(p, &config.process_list, process_entry) {
+		if (! p->ops->run)
+			fatal("process without run\n");
+		p->ops->run(&status, p->config);
+	}
+	log_status(&status);
+	execute_actions(&status);
 }
 
 struct event {
