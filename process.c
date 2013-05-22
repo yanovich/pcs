@@ -88,46 +88,20 @@ v2h(int volts)
 	return (volts * 8) / 10;
 }
 
-LIST_HEAD(action_list);
-
-struct action {
-	process_type			type;
-	struct list_head		action_entry;
-	int				mod;
-	union {
-		struct {
-			long		delay;
-			unsigned	value;
-			unsigned	mask;
-		}			digital;
-		struct {
-			unsigned	value;
-			unsigned	index;
-		}			analog;
-	};
-	struct action_ops	* ops;
-	struct timeval		start;
-	size_t			interval;
-};
-
-struct action_ops {
-	void			(* free)(struct action *);
-	void			(* run)(struct action *, struct site_status *);
-	int			(* update)(struct action *, struct action *);
-};
+LIST_HEAD(process_list);
 
 static struct site_status status = {{0}};
 static struct site_config config = {0};
 
 static void
-action_analog_out_run(struct action *a, struct site_status *s)
+process_analog_out_run(struct process *a, struct site_status *s)
 {
 	config.AO_mod[a->mod].write(&config.AO_mod[a->mod],
 			a->analog.index, a->analog.value);
 }
 
 static int
-action_analog_out_update(struct action *n, struct action *a)
+process_analog_out_update(struct process *n, struct process *a)
 {
 	if (n->mod > a->mod)
 		return 1;
@@ -140,13 +114,13 @@ action_analog_out_update(struct action *n, struct action *a)
 	return 0;
 }
 
-static struct action_ops analog_out_ops = {
-	.run 			= action_analog_out_run,
-	.update 		= action_analog_out_update,
+static struct process_ops analog_out_ops = {
+	.run 			= process_analog_out_run,
+	.update 		= process_analog_out_update,
 };
 
 static void
-action_digital_out_run(struct action *a, struct site_status *s)
+process_digital_out_run(struct process *a, struct site_status *s)
 {
 	config.DO_mod[a->mod].state &= ~a->digital.mask;
 	config.DO_mod[a->mod].state |=  a->digital.value;
@@ -154,7 +128,7 @@ action_digital_out_run(struct action *a, struct site_status *s)
 }
 
 static int
-action_digital_out_update(struct action *n, struct action *a)
+process_digital_out_update(struct process *n, struct process *a)
 {
 	if (n->mod > a->mod)
 		return 1;
@@ -172,13 +146,13 @@ action_digital_out_update(struct action *n, struct action *a)
 	return 0;
 }
 
-static struct action_ops digital_out_ops = {
-	.run	 		= action_digital_out_run,
-	.update 		= action_digital_out_update,
+static struct process_ops digital_out_ops = {
+	.run	 		= process_digital_out_run,
+	.update 		= process_digital_out_update,
 };
 
 static int
-compare_actions(struct action *n, struct action *a)
+compare_processes(struct process *n, struct process *a)
 {
 	long delay = n->start.tv_usec - a->start.tv_usec + 
 	       	1000000 * (n->start.tv_sec - a->start.tv_sec);
@@ -194,7 +168,7 @@ compare_actions(struct action *n, struct action *a)
 }
 
 static void
-action_free(struct action *a)
+process_free(struct process *a)
 {
 	if (a->ops->free)
 		a->ops->free(a);
@@ -203,26 +177,26 @@ action_free(struct action *a)
 }
 
 static void
-queue_action(struct action *n)
+queue_process(struct process *n)
 {
-	struct action *a;
+	struct process *a;
 	int c;
 
-	list_for_each_entry(a, &action_list, action_entry) {
-		c = compare_actions(n, a);
+	list_for_each_entry(a, &process_list, process_entry) {
+		c = compare_processes(n, a);
 		if (c == 0) {
-			action_free(n);
+			process_free(n);
 			return;
 		}
 		if (c == 1)
 			continue;
 		if (c == -1) {
-			list_add_tail(&n->action_entry, &a->action_entry);
+			list_add_tail(&n->process_entry, &a->process_entry);
 			return;
 		}
 	}
-	if (&a->action_entry == &action_list)
-		list_add_tail(&n->action_entry, &action_list);
+	if (&a->process_entry == &process_list)
+		list_add_tail(&n->process_entry, &process_list);
 }
 
 long
@@ -318,7 +292,7 @@ get_DO(int index)
 void
 set_DO(int index, int value, int delay)
 {
-	struct action *action = (void *) xzalloc(sizeof(*action));
+	struct process *process = (void *) xzalloc(sizeof(*process));
 	int i = 0, offset = 0;
 
 	index--;
@@ -326,7 +300,7 @@ set_DO(int index, int value, int delay)
 		fatal("Invalid DO index %i\n", index);
 		return;
 	}
-	action->type = DIGITAL_OUTPUT;
+	process->type = DIGITAL_OUTPUT;
 	while (1) {
 		if (config.DO_mod[i].count == 0) {
 			fatal("Invalid DO index %i\n", index);
@@ -337,30 +311,30 @@ set_DO(int index, int value, int delay)
 			break;
 		i++;
 	}
-	action->mod = i;
-	action->digital.delay = delay;
-	action->digital.mask |= 1 << (index);
+	process->mod = i;
+	process->digital.delay = delay;
+	process->digital.mask |= 1 << (index);
 	if (value)
-		action->digital.value |= 1 << (index);
-	gettimeofday(&action->start, NULL);
-	action->start.tv_usec += delay;
-	action->start.tv_sec  += action->start.tv_usec / 1000000;
-	action->start.tv_usec %= 1000000;
-	action->ops = &digital_out_ops;
-	queue_action(action);
+		process->digital.value |= 1 << (index);
+	gettimeofday(&process->start, NULL);
+	process->start.tv_usec += delay;
+	process->start.tv_sec  += process->start.tv_usec / 1000000;
+	process->start.tv_usec %= 1000000;
+	process->ops = &digital_out_ops;
+	queue_process(process);
 }
 
 void
 set_AO(int index, int value)
 {
-	struct action *action = (void *) xzalloc(sizeof(*action));
+	struct process *process = (void *) xzalloc(sizeof(*process));
 	int i = 0, offset = 0;
 
 	if (index < 0) {
 		fatal("Invalid AO index %i\n", index);
 		return;
 	}
-	action->type = ANALOG_OUTPUT;
+	process->type = ANALOG_OUTPUT;
 	while (1) {
 		if (config.AO_mod[i].count == 0) {
 			fatal("Invalid DO index %i\n", index);
@@ -371,13 +345,13 @@ set_AO(int index, int value)
 			break;
 		i++;
 	}
-	action->mod = i;
-	action->analog.index = index;
-	action->analog.index -= config.AO_mod[i].first;
-	action->analog.value = value;
-	gettimeofday(&action->start, NULL);
-	action->ops = &analog_out_ops;
-	queue_action(action);
+	process->mod = i;
+	process->analog.index = index;
+	process->analog.index -= config.AO_mod[i].first;
+	process->analog.value = value;
+	gettimeofday(&process->start, NULL);
+	process->ops = &analog_out_ops;
+	queue_process(process);
 }
 
 void
@@ -396,8 +370,8 @@ log_status(struct site_status *curr)
 	logit("%s\n", buff);
 }
 
-void
-process_loop(struct action *a, struct site_status *s)
+static void
+input_loop(struct process *a, struct site_status *s)
 {
 	struct process *p;
 
@@ -415,17 +389,17 @@ process_loop(struct action *a, struct site_status *s)
 }
 
 static int
-process_update(struct action *n, struct action *a)
+input_update(struct process *n, struct process *a)
 {
 	return 1;
 }
 
-struct action_ops action_ops = {
-	.run			= process_loop,
-	.update			= process_update,
+struct process_ops process_ops = {
+	.run			= input_loop,
+	.update			= input_update,
 };
 
-void action_wait(struct action *e)
+void process_wait(struct process *e)
 {
 	struct timeval now;
 
@@ -433,43 +407,43 @@ void action_wait(struct action *e)
 	do_sleep(&e->start, &now);
 }
 
-int action_requeue(struct action *e)
+int process_requeue(struct process *e)
 {
 	if (e->interval == 0)
 		return 0;
 
 	e->start.tv_sec += e->interval / 1000000;
-	queue_action(e);
+	queue_process(e);
 	return 1;
 }
 
 void
-action_loop(void)
+process_loop(void)
 {
-	struct action *e;
+	struct process *e;
 
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
 
 	e = (void *) xzalloc(sizeof(*e));
-	e->ops = &action_ops;
+	e->ops = &process_ops;
 	e->interval = config.interval;
 	e->type = PROCESS;
 	gettimeofday(&e->start, NULL);
 
-	queue_action(e);
+	queue_process(e);
 
 	while (!received_sigterm) {
-		e = container_of(action_list.next, typeof(*e), action_entry);
-		if (&e->action_entry == &action_list)
-			fatal("no active action\n");
-		action_wait(e);
+		e = container_of(process_list.next, typeof(*e), process_entry);
+		if (&e->process_entry == &process_list)
+			fatal("no active process\n");
+		process_wait(e);
 		if (received_sigterm)
 			return;
 		e->ops->run(e, &status);
-		list_del(&e->action_entry);
-		if (!action_requeue(e)) {
+		list_del(&e->process_entry);
+		if (!process_requeue(e)) {
 			if (e->ops->free)
 				e->ops->free(e);
 			else
