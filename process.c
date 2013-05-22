@@ -164,6 +164,8 @@ compare_processes(struct process *n, struct process *a)
 		return 1;
 	if (n->type < a->type)
 		return -1;
+	if (a->ops->update == NULL)
+		return 1;
 	return a->ops->update(n, a);
 }
 
@@ -388,15 +390,8 @@ input_loop(struct process *a, struct site_status *s)
 	log_status(&status);
 }
 
-static int
-input_update(struct process *n, struct process *a)
-{
-	return 1;
-}
-
 struct process_ops process_ops = {
 	.run			= input_loop,
-	.update			= input_update,
 };
 
 void process_wait(struct process *e)
