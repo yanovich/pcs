@@ -37,14 +37,16 @@ struct valve_data {
 	int			total;
 	int			close;
 	int			open;
+	int			fully_open;
 	int			abs;
 	int			pos;
 };
 
 static void
-adjust_2way_valve(int amount, void *data, void *s)
+adjust_2way_valve(int amount, void *data, void *ss)
 {
 	struct valve_data *d = data;
+	struct site_status *s = ss;
 
 	debug("amount %5i pos %6i\n", amount, d->pos);
 	if (-d->min < amount && amount < d->min)
@@ -62,6 +64,8 @@ adjust_2way_valve(int amount, void *data, void *s)
 		}
 		else if (amount > d->total) {
 			amount = d->total;
+			if (d->fully_open)
+				s->DS[d->fully_open] = 1;
 		}
 	} else {
 		if (amount < -d->total) {
@@ -73,6 +77,8 @@ adjust_2way_valve(int amount, void *data, void *s)
 			amount = d->total;
 			d->pos = d->total - d->max;
 			d->abs = 1;
+			if (d->fully_open)
+				s->DS[d->fully_open] = 1;
 		}
 	}
 	amount -= d->pos;
@@ -178,6 +184,16 @@ set_close_io(void *conf, int type, int value)
 	debug("  2way valve: close = %i\n", value);
 }
 
+static void
+set_fully_open_io(void *conf, int type, int value)
+{
+	struct valve_data *c = conf;
+	if (type != DI_STATUS)
+		fatal("heating: wrong type of fully open input\n");
+	c->fully_open = value;
+	debug("  2way valve: fully open = %i\n", value);
+}
+
 static struct io_map twv_io[] = {
 	{
 		.name 		= "open",
@@ -186,6 +202,10 @@ static struct io_map twv_io[] = {
 	{
 		.name 		= "close",
 		.set		= set_close_io,
+	},
+	{
+		.name 		= "fully open",
+		.set		= set_fully_open_io,
 	},
 	{
 	}
