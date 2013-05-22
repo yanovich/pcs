@@ -91,6 +91,7 @@ v2h(int volts)
 LIST_HEAD(action_list);
 
 typedef enum {
+	PROCESS,
 	ANALOG_OUTPUT,
 	DIGITAL_OUTPUT
 } action_type;
@@ -442,8 +443,15 @@ process_loop(struct action *a, struct site_status *s)
 	log_status(&status);
 }
 
+static int
+process_update(struct action *n, struct action *a)
+{
+	return 1;
+}
+
 struct event_ops event_ops = {
 	.run			= process_loop,
+	.update			= process_update,
 };
 
 void event_wait(struct action *e)
@@ -476,6 +484,7 @@ event_loop(void)
 	e = (void *) xzalloc(sizeof(*e));
 	e->ops = &event_ops;
 	e->interval = config.interval;
+	e->type = PROCESS;
 	gettimeofday(&e->start, NULL);
 
 	queue_action(e);
