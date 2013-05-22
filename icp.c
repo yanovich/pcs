@@ -311,7 +311,7 @@ set_parallel_output_status(struct DO_mod *module)
 			       	errno);
 		return -1;
 	}
-	debug2("DO %u is %s\n", slot, buff);
+	debug("DO %u is %s\n", slot, buff);
 	err = write(fd, buff, strlen(buff));
 	if(0 > err) {
 		error("%s %u: %s (%i)\n", __FILE__, __LINE__,

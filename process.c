@@ -115,47 +115,96 @@ struct action {
 	size_t			interval;
 };
 
-static int
-compare_actions(struct action *a1, struct action *a2)
+struct event_ops {
+	void			(* free)(struct action *);
+	void			(* run)(struct action *, struct site_status *);
+	int			(* update)(struct action *, struct action *);
+};
+
+static struct site_status status = {{0}};
+static struct site_config config = {0};
+
+static void
+action_analog_out_run(struct action *a, struct site_status *s)
 {
-	if (a1->type > a2->type)
+	config.AO_mod[a->mod].write(&config.AO_mod[a->mod],
+			a->analog.index, a->analog.value);
+}
+
+static int
+action_analog_out_update(struct action *n, struct action *a)
+{
+	if (n->mod > a->mod)
 		return 1;
-	if (a1->type < a2->type)
+	if (n->mod < a->mod)
 		return -1;
-	switch (a1->type) {
-	case ANALOG_OUTPUT:
-		if (a1->mod > a2->mod)
-			return 1;
-		if (a1->mod < a2->mod)
-			return -1;
-		if (a1->analog.index > a2->analog.index)
-			return 1;
-		if (a1->analog.index < a2->analog.index)
-			return -1;
-		return 0;
-	case DIGITAL_OUTPUT:
-		if (a1->digital.delay > a2->digital.delay)
-			return 1;
-		if (a1->digital.delay < a2->digital.delay)
-			return -1;
-		if (a1->mod > a2->mod)
-			return 1;
-		if (a1->mod < a2->mod)
-			return -1;
-		debug("equal action1 %p %08x %08x (%li)\n",
-				a1,
-			       	a1->digital.value,
-				a1->digital.mask,
-				a1->digital.delay);
-		debug("equal action2 %p %08x %08x (%li)\n",
-				a2,
-			       	a2->digital.value,
-				a2->digital.mask,
-				a2->digital.delay);
-		return 0;
-	default:
+	if (n->analog.index > a->analog.index)
+		return 1;
+	if (n->analog.index < a->analog.index)
+		return -1;
+	return 0;
+}
+
+static struct event_ops analog_out_ops = {
+	.run 			= action_analog_out_run,
+	.update 		= action_analog_out_update,
+};
+
+static void
+action_digital_out_run(struct action *a, struct site_status *s)
+{
+	config.DO_mod[a->mod].state &= ~a->digital.mask;
+	config.DO_mod[a->mod].state |=  a->digital.value;
+	config.DO_mod[a->mod].write(&config.DO_mod[a->mod]);
+}
+
+static int
+action_digital_out_update(struct action *n, struct action *a)
+{
+	if (n->mod > a->mod)
+		return 1;
+	if (n->mod < a->mod)
+		return -1;
+	if ((a->digital.mask & n->digital.mask)
+			!= 0) {
+		error("overlapping masks %08x %08x\n",
+				a->digital.mask,
+				n->digital.mask);
 		return 0;
 	}
+	a->digital.mask |= n->digital.mask;
+	a->digital.value |= n->digital.value;
+	return 0;
+}
+
+static struct event_ops digital_out_ops = {
+	.run	 		= action_digital_out_run,
+	.update 		= action_digital_out_update,
+};
+
+static int
+compare_actions(struct action *n, struct action *a)
+{
+	long delay = n->start.tv_usec - a->start.tv_usec + 
+	       	1000000 * (n->start.tv_sec - a->start.tv_sec);
+	if (delay > 1000)
+		return 1;
+	if (delay < -1000)
+		return -1;
+	if (n->type > a->type)
+		return 1;
+	if (n->type < a->type)
+		return -1;
+	return a->ops->update(n, a);
+}
+
+static void
+action_free(struct action *a)
+{
+	if (a->ops->free)
+		a->ops->free(a);
+	else
+		xfree(a);
 }
 
 static void
@@ -164,36 +213,16 @@ queue_action(struct action *n)
 	struct action *a;
 	int c;
 
-	debug("queueing action %08x %08x (%li)\n",
-			n->digital.value,
-			n->digital.mask,
-			n->digital.delay);
 	list_for_each_entry(a, &action_list, action_entry) {
 		c = compare_actions(n, a);
+		if (c == 0) {
+			action_free(n);
+			return;
+		}
 		if (c == 1)
 			continue;
 		if (c == -1) {
 			list_add_tail(&n->action_entry, &a->action_entry);
-			return;
-		}
-		switch (n->type) {
-		case ANALOG_OUTPUT:
-			error("duplicate analog output %u\n",
-					n->analog.index);
-			return;
-		case DIGITAL_OUTPUT:
-			if ((a->digital.mask & n->digital.mask)
-					!= 0) {
-				error("overlapping masks %08x %08x\n",
-						a->digital.mask,
-						n->digital.mask);
-				return;
-			}
-			a->digital.mask |= n->digital.mask;
-			a->digital.value |= n->digital.value;
-			return;
-		default:
-			error("unknown action type %u", n->type);
 			return;
 		}
 	}
@@ -211,55 +240,6 @@ do_sleep(struct timeval *base, struct timeval *now)
 	usleep(delay);
 	gettimeofday(now, NULL);
 	return delay;
-}
-
-static struct site_status status = {{0}};
-static struct site_config config = {0};
-
-unsigned
-execute_actions(struct site_status *s)
-{
-	struct action *a, *n;
-	struct timeval start, now;
-	long t = 0;
-	list_for_each_entry_safe(a, n, &action_list, action_entry) {
-		if (received_sigterm)
-			return 0;
-
-		switch (a->type) {
-		case ANALOG_OUTPUT:
-			config.AO_mod[a->mod].write(&config.AO_mod[a->mod],
-					a->analog.index, a->analog.value);
-			list_del(&a->action_entry);
-			xfree(a);
-			continue;
-		case DIGITAL_OUTPUT:
-			gettimeofday(&now, NULL);
-			if (!a->digital.delay) {
-				memcpy(&start, &now, sizeof(start));
-			} else {
-				start.tv_sec  += a->digital.delay / 1000000;
-				start.tv_usec += a->digital.delay % 1000000;
-				t += do_sleep(&start, &now);
-			}
-			debug("[%li.%06li] executing action %08x %08x (%li)\n",
-					now.tv_sec,
-					now.tv_usec,
-					a->digital.value,
-					a->digital.mask,
-					a->digital.delay);
-			config.DO_mod[a->mod].state &= ~a->digital.mask;
-			config.DO_mod[a->mod].state |=  a->digital.value;
-			config.DO_mod[a->mod].write(&config.DO_mod[a->mod]);
-			list_del(&a->action_entry);
-			xfree(a);
-			continue;
-		default:
-			continue;
-		}
-	}
-	debug("done executing\n");
-	return t;
 }
 
 void
@@ -390,6 +370,11 @@ set_DO(int index, int value, int delay)
 	action->digital.mask |= 1 << (index);
 	if (value)
 		action->digital.value |= 1 << (index);
+	gettimeofday(&action->start, NULL);
+	action->start.tv_usec += delay;
+	action->start.tv_sec  += action->start.tv_usec / 1000000;
+	action->start.tv_usec %= 1000000;
+	action->ops = &digital_out_ops;
 	queue_action(action);
 }
 
@@ -418,6 +403,8 @@ set_AO(int index, int value)
 	action->analog.index = index;
 	action->analog.index -= config.AO_mod[i].first;
 	action->analog.value = value;
+	gettimeofday(&action->start, NULL);
+	action->ops = &analog_out_ops;
 	queue_action(action);
 }
 
@@ -438,7 +425,7 @@ log_status(struct site_status *curr)
 }
 
 void
-process_loop(void)
+process_loop(struct action *a, struct site_status *s)
 {
 	struct process *p;
 
@@ -453,24 +440,11 @@ process_loop(void)
 		p->ops->run(&status, p->config);
 	}
 	log_status(&status);
-	execute_actions(&status);
 }
-
-struct event_ops {
-	void			(* free)(struct action *);
-	void			(* run)(void);
-};
-
-LIST_HEAD(event_list);
 
 struct event_ops event_ops = {
 	.run			= process_loop,
 };
-
-void event_queue(struct action *e)
-{
-	list_add(&e->action_entry, &event_list);
-}
 
 void event_wait(struct action *e)
 {
@@ -482,7 +456,11 @@ void event_wait(struct action *e)
 
 int event_requeue(struct action *e)
 {
+	if (e->interval == 0)
+		return 0;
+
 	e->start.tv_sec += e->interval / 1000000;
+	queue_action(e);
 	return 1;
 }
 
@@ -500,16 +478,17 @@ event_loop(void)
 	e->interval = config.interval;
 	gettimeofday(&e->start, NULL);
 
-	event_queue(e);
+	queue_action(e);
 
 	while (!received_sigterm) {
-		e = container_of(event_list.next, typeof(*e), action_entry);
-		if (&e->action_entry == &event_list)
+		e = container_of(action_list.next, typeof(*e), action_entry);
+		if (&e->action_entry == &action_list)
 			fatal("no active event\n");
 		event_wait(e);
 		if (received_sigterm)
 			return;
-		e->ops->run();
+		e->ops->run(e, &status);
+		list_del(&e->action_entry);
 		if (!event_requeue(e)) {
 			if (e->ops->free)
 				e->ops->free(e);
