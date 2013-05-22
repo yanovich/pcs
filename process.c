@@ -105,12 +105,12 @@ struct action {
 			unsigned	index;
 		}			analog;
 	};
-	struct event_ops	* ops;
+	struct action_ops	* ops;
 	struct timeval		start;
 	size_t			interval;
 };
 
-struct event_ops {
+struct action_ops {
 	void			(* free)(struct action *);
 	void			(* run)(struct action *, struct site_status *);
 	int			(* update)(struct action *, struct action *);
@@ -140,7 +140,7 @@ action_analog_out_update(struct action *n, struct action *a)
 	return 0;
 }
 
-static struct event_ops analog_out_ops = {
+static struct action_ops analog_out_ops = {
 	.run 			= action_analog_out_run,
 	.update 		= action_analog_out_update,
 };
@@ -172,7 +172,7 @@ action_digital_out_update(struct action *n, struct action *a)
 	return 0;
 }
 
-static struct event_ops digital_out_ops = {
+static struct action_ops digital_out_ops = {
 	.run	 		= action_digital_out_run,
 	.update 		= action_digital_out_update,
 };
@@ -443,12 +443,12 @@ process_update(struct action *n, struct action *a)
 	return 1;
 }
 
-struct event_ops event_ops = {
+struct action_ops action_ops = {
 	.run			= process_loop,
 	.update			= process_update,
 };
 
-void event_wait(struct action *e)
+void action_wait(struct action *e)
 {
 	struct timeval now;
 
@@ -456,7 +456,7 @@ void event_wait(struct action *e)
 	do_sleep(&e->start, &now);
 }
 
-int event_requeue(struct action *e)
+int action_requeue(struct action *e)
 {
 	if (e->interval == 0)
 		return 0;
@@ -467,7 +467,7 @@ int event_requeue(struct action *e)
 }
 
 void
-event_loop(void)
+action_loop(void)
 {
 	struct action *e;
 
@@ -476,7 +476,7 @@ event_loop(void)
 	signal(SIGINT, sigterm_handler);
 
 	e = (void *) xzalloc(sizeof(*e));
-	e->ops = &event_ops;
+	e->ops = &action_ops;
 	e->interval = config.interval;
 	e->type = PROCESS;
 	gettimeofday(&e->start, NULL);
@@ -486,13 +486,13 @@ event_loop(void)
 	while (!received_sigterm) {
 		e = container_of(action_list.next, typeof(*e), action_entry);
 		if (&e->action_entry == &action_list)
-			fatal("no active event\n");
-		event_wait(e);
+			fatal("no active action\n");
+		action_wait(e);
 		if (received_sigterm)
 			return;
 		e->ops->run(e, &status);
 		list_del(&e->action_entry);
-		if (!event_requeue(e)) {
+		if (!action_requeue(e)) {
 			if (e->ops->free)
 				e->ops->free(e);
 			else

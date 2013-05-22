@@ -98,7 +98,7 @@ main(int ac, char **av)
 		fclose(f);
 	}
 
-	event_loop();
+	action_loop();
 
 	if (!no_detach_flag)
 		closelog();

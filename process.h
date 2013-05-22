@@ -102,6 +102,6 @@ void
 log_status(struct site_status *site_status);
 
 void
-event_loop(void);
+action_loop(void);
 
 #endif /* PCS_PROCESS_H */
