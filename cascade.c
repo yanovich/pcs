@@ -266,6 +266,8 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 		return b - o;
 	if (c->feed_type == AI_MODULE)
 		val = s->AI[c->feed];
+	else if (c->feed_type == DI_STATUS)
+		val = s->DS[c->feed];
 	else {
 		error("cascade: bad feed type");
 		return b - o;
@@ -459,7 +461,7 @@ static void
 set_p_out_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != AI_MODULE)
+	if (type != AI_MODULE && type != DI_STATUS)
 		fatal("cascade: wrong type of feed sensor\n");
 	c->feed = value;
 	c->feed_type = type;
