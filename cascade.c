@@ -150,30 +150,34 @@ cascade_run(struct process *p, struct site_status *s)
 		return;
 	}
 
-	if (c->feed_type == AI_MODULE)
+	if (c->feed_type == AI_MODULE) {
 		val = s->AI[c->feed];
-	else {
+		debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
+		if (c->has_target & HAS_BEFORE_IO)
+			val -= s->AI[c->entry];
+
+		if (c->unstage > c->stage) {
+			if (c->stage > val)
+				go = 1;
+			else if (val > c->unstage)
+				go = -1;
+			else
+				go = 0;
+		} else if (c->unstage < c->stage) {
+			if (c->stage < val)
+				go = 1;
+			else if (val < c->unstage)
+				go = -1;
+			else
+				go = 0;
+		}
+	} else if (c->feed_type == DI_STATUS) {
+		go = -1;
+		if (s->DS[c->feed_type])
+			go = 1;
+	} else {
 		error("cascade: bad feed type");
 		return;
-	}
-	debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
-	if (c->has_target & HAS_BEFORE_IO)
-		val -= s->AI[c->entry];
-
-	if (c->unstage > c->stage) {
-		if (c->stage > val)
-			go = 1;
-		else if (val > c->unstage)
-			go = -1;
-		else
-			go = 0;
-	} else if (c->unstage < c->stage) {
-		if (c->stage < val)
-			go = 1;
-		else if (val < c->unstage)
-			go = -1;
-		else
-			go = 0;
 	}
 	debug2("  cascade: after target go %i\n", go);
 
