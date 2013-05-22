@@ -44,9 +44,9 @@ struct reference_config {
 };
 
 static void
-reference_run(struct site_status *s, void *conf)
+reference_run(struct process *p, struct site_status *s)
 {
-	struct reference_config *c = conf;
+	struct reference_config *c = p->config;
 	int pct = 10000 * (s->AI[c->reference] - c->low_ref) / (c->high_ref - c->low_ref);
 	int val = c->low + (pct * (c->high - c->low)) / 10000;
 

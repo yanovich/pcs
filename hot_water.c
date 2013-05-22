@@ -48,9 +48,9 @@ struct hot_water_config {
 };
 
 static void
-hot_water_run(struct site_status *s, void *conf)
+hot_water_run(struct process *p, struct site_status *s)
 {
-	struct hot_water_config *c = conf;
+	struct hot_water_config *c = p->config;
 	int vars[2];
 	int v21;
 

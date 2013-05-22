@@ -40,17 +40,39 @@ struct site_status {
 	int			AI[256];
 };
 
-struct process_ops {
-	void	(*run)(struct site_status *, void *);
-	int	(*log)(struct site_status *, void *, char *, const int, int);
-	int	(*free)(void*);
-}; 
+typedef enum {
+	PROCESS,
+	ANALOG_OUTPUT,
+	DIGITAL_OUTPUT
+} process_type;
 
 struct process {
-	struct process_ops	*ops;
-	struct list_head	process_entry;
-	void			*config;
+	struct list_head		process_entry;
+	struct process_ops		*ops;
+	void				*config;
+	process_type			type;
+	struct timeval			start;
+	size_t				interval;
+	int				mod;
+	union {
+		struct {
+			long		delay;
+			unsigned	value;
+			unsigned	mask;
+		}			digital;
+		struct {
+			unsigned	value;
+			unsigned	index;
+		}			analog;
+	};
 };
+
+struct process_ops {
+	void	(* free)(struct process *);
+	void	(* run)(struct process *, struct site_status *);
+	int	(* update)(struct process *, struct process *);
+	int	(* log)(struct site_status *, void *, char *, const int, int);
+}; 
 
 struct process_builder {
 	void			*(*alloc)(void);

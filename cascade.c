@@ -71,9 +71,9 @@ struct cascade_config {
 };
 
 static void
-cascade_run(struct site_status *s, void *conf)
+cascade_run(struct process *p, struct site_status *s)
 {
-	struct cascade_config *c = conf;
+	struct cascade_config *c = p->config;
 	int go = 1;
 	int i;
 	int j = 0;

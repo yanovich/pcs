@@ -55,9 +55,9 @@ struct heating_config {
 };
 
 static void
-heating_run(struct site_status *s, void *conf)
+heating_run(struct process *p, struct site_status *s)
 {
-	struct heating_config *c = conf;
+	struct heating_config *c = p->config;
 	int vars[2];
 	int t11, d11, e12, v11;
 	int street = s->T[c->street];

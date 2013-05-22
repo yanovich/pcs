@@ -90,14 +90,8 @@ v2h(int volts)
 
 LIST_HEAD(action_list);
 
-typedef enum {
-	PROCESS,
-	ANALOG_OUTPUT,
-	DIGITAL_OUTPUT
-} action_type;
-
 struct action {
-	action_type			type;
+	process_type			type;
 	struct list_head		action_entry;
 	int				mod;
 	union {
@@ -438,7 +432,7 @@ process_loop(struct action *a, struct site_status *s)
 	list_for_each_entry(p, &config.process_list, process_entry) {
 		if (! p->ops->run)
 			fatal("process without run\n");
-		p->ops->run(&status, p->config);
+		p->ops->run(p, &status);
 	}
 	log_status(&status);
 }
