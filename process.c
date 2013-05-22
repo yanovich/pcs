@@ -390,11 +390,12 @@ input_loop(struct process *a, struct site_status *s)
 	log_status(&status);
 }
 
-struct process_ops process_ops = {
+static struct process_ops process_ops = {
 	.run			= input_loop,
 };
 
-void process_wait(struct process *e)
+static void
+process_wait(struct process *e)
 {
 	struct timeval now;
 
@@ -402,14 +403,16 @@ void process_wait(struct process *e)
 	do_sleep(&e->start, &now);
 }
 
-int process_requeue(struct process *e)
+static void
+process_requeue(struct process *e)
 {
-	if (e->interval == 0)
-		return 0;
+	if (e->interval == 0) {
+		process_free(e);
+		return;
+	}
 
 	e->start.tv_sec += e->interval / 1000000;
 	queue_process(e);
-	return 1;
 }
 
 void
@@ -438,11 +441,6 @@ process_loop(void)
 			return;
 		e->ops->run(e, &status);
 		list_del(&e->process_entry);
-		if (!process_requeue(e)) {
-			if (e->ops->free)
-				e->ops->free(e);
-			else
-				xfree(e);
-		}
+		process_requeue(e);
 	}
 }
