@@ -26,8 +26,6 @@
 struct site_config {
 	long			interval;
 	struct DO_mod		DO_mod[256];
-	struct TR_sensor	T[256];
-	struct TR_mod		TR_mod[256];
 	struct AI_sensor	AI[256];
 	struct AI_mod		AI_mod[256];
 	struct AO_mod		AO_mod[256];

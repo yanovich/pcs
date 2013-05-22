@@ -60,7 +60,7 @@ heating_run(struct process *p, struct site_status *s)
 	struct heating_config *c = p->config;
 	int vars[2];
 	int t11, d11, e12, v11;
-	int street = s->T[c->street];
+	int street = s->AI[c->street];
 
 	if (street > c->stop)
 		street = c->stop;
@@ -69,17 +69,17 @@ heating_run(struct process *p, struct site_status *s)
 		/ (c->inside - c->street_sp) + c->inside;
 	d11 = (c->feed_sp - c->flowback_sp) * (c->inside - street)
 		/ (c->inside - c->street_sp);
-	if (s->T[c->street] < c->street)
+	if (s->AI[c->street] < c->street)
 		t11 = c->feed_sp;
 	debug(" t11 %i t12 %i\n", t11, t11 - d11);
 
-	e12 = s->T[c->flowback] + d11 - t11;
+	e12 = s->AI[c->flowback] + d11 - t11;
 
 	if (e12 > 0)
 		t11 -= e12;
 	debug(" t11 %i t12 %i\n", t11, t11 - d11);
 
-	vars[0] = s->T[c->feed] - t11;
+	vars[0] = s->AI[c->feed] - t11;
 	if (c->first_run) {
 		c->first_run = 0;
 		c->e11_prev = vars[0];
@@ -114,7 +114,7 @@ heating_log(struct site_status *s, void *conf, char *buff,
 		b++;
 	}
 	b += snprintf(&buff[o + b], sz - o - b, "T %3i T11 %3i T12 %3i ",
-			s->T[c->street], s->T[c->feed], s->T[c->flowback]);
+			s->AI[c->street], s->AI[c->feed], s->AI[c->flowback]);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
@@ -205,7 +205,7 @@ static void
 set_feed_io(void *conf, int type, int value)
 {
 	struct heating_config *c = conf;
-	if (type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("heating: wrong type of feed sensor\n");
 	c->feed = value;
 	debug("  heating: feed io = %i\n", value);
@@ -215,7 +215,7 @@ static void
 set_flowback_io(void *conf, int type, int value)
 {
 	struct heating_config *c = conf;
-	if (type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("heating: wrong type of flowback sensor\n");
 	c->flowback = value;
 	debug("  heating: flowback io = %i\n", value);
@@ -225,7 +225,7 @@ static void
 set_street_io(void *conf, int type, int value)
 {
 	struct heating_config *c = conf;
-	if (type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("heating: wrong type of street sensor\n");
 	c->street = value;
 	debug("  heating: street io = %i\n", value);

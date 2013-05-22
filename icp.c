@@ -425,7 +425,7 @@ parse_signed_input(const char *data, int size, int *raw)
 }
 
 static int
-get_serial_resistance(struct TR_mod *mod, int *buffer)
+get_serial_resistance(struct AI_mod *mod, int *buffer)
 {
 	int err;
 	char data[256];
@@ -513,7 +513,7 @@ static struct DO_mod DO32 = {
 	.count = 32,
 };
 
-static struct TR_mod TR7_S = {
+static struct AI_mod TR7_S = {
 	.read = get_serial_resistance,
 	.count = 7,
 };
@@ -547,12 +547,12 @@ struct module_config mods[] = {
 	},
 	{
 		.name = "87015",
-		.type = TR_MODULE,
+		.type = AI_MODULE,
 		.config = &TR7_S,
 	},
 	{
 		.name = "87015P",
-		.type = TR_MODULE,
+		.type = AI_MODULE,
 		.config = &TR7_S,
 	},
 	{

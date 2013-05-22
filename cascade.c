@@ -85,16 +85,16 @@ cascade_run(struct process *p, struct site_status *s)
 	debug("running cascade\n");
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
-		       if (c->unblock_sp > s->T[c->block])
+		       if (c->unblock_sp > s->AI[c->block])
 			       go = 1;
-		       else if (s->T[c->block] > c->block_sp)
+		       else if (s->AI[c->block] > c->block_sp)
 			       go = -1;
 		       else
 			       go = 0;
 		} else if (c->block_sp < c->unblock_sp) {
-		       if (c->unblock_sp < s->T[c->block])
+		       if (c->unblock_sp < s->AI[c->block])
 			       go = 1;
-		       else if (s->T[c->block] < c->block_sp)
+		       else if (s->AI[c->block] < c->block_sp)
 			       go = -1;
 		       else
 			       go = 0;
@@ -143,8 +143,6 @@ cascade_run(struct process *p, struct site_status *s)
 
 	if (c->feed_type == AI_MODULE)
 		val = s->AI[c->feed];
-	else if (c->feed_type == TR_MODULE)
-		val = s->T[c->feed];
 	else {
 		error("cascade: bad feed type");
 		return;
@@ -255,8 +253,6 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 		return b - o;
 	if (c->feed_type == AI_MODULE)
 		val = s->AI[c->feed];
-	else if (c->feed_type == TR_MODULE)
-		val = s->T[c->feed];
 	else {
 		error("cascade: bad feed type");
 		return b - o;
@@ -268,8 +264,6 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 
 	if (c->entry_type == AI_MODULE)
 		val = s->AI[c->entry];
-	else if (c->entry_type == TR_MODULE)
-		val = s->T[c->entry];
 	else {
 		error("cascade: bad entry type");
 		return b - o;
@@ -409,7 +403,7 @@ static void
 set_block_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("cascade: wrong type of feed sensor\n");
 	c->block = value;
 	c->has_analog_block |= HAS_BLOCK_IO;
@@ -420,7 +414,7 @@ static void
 set_p_in_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != AI_MODULE && type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("cascade: wrong type of entry sensor\n");
 	c->entry = value;
 	c->entry_type = type;
@@ -432,7 +426,7 @@ static void
 set_p_out_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
-	if (type != AI_MODULE && type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("cascade: wrong type of feed sensor\n");
 	c->feed = value;
 	c->feed_type = type;

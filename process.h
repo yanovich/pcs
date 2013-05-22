@@ -36,7 +36,6 @@ set_AO(int index, int value);
 
 struct site_status {
 	unsigned int		DO[256];
-	int			T[256];
 	int			AI[256];
 };
 

@@ -270,29 +270,6 @@ load_site_status()
 	char data[256];
 	int raw[8] = {0};
 
-	for (i = 0; config.TR_mod[i].count > 0; i++) {
-		err = config.TR_mod[i].read(&config.TR_mod[i], raw);
-		if (0 > err) {
-			error("%s:%i bad temp data: %s(%i)\n", __FILE__,
-				       	__LINE__, data, err);
-			return -1;
-		}
-		t = offset;
-		offset += config.TR_mod[i].count;
-		for (j = 0; t < offset; j++, t++) {
-			status.T[t] = PCS_BAD_DATA;
-			if (!config.T[t].convert)
-				continue;
-			status.T[t] = config.T[t].convert(raw[j]);
-			if (PCS_BAD_DATA == status.T[t]) {
-				error("%s:%i bad temp data: %s(%i)\n", __FILE__,
-					       	__LINE__, data, j);
-				error("convert: %p\n", config.T[t].convert);
-				return -1;
-			}
-		}
-	}
-
 	offset = 0;
 	for (i = 0;config.AI_mod[i].count > 0; i++) {
 		err = config.AI_mod[i].read(&config.AI_mod[i], raw);

@@ -71,15 +71,6 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 			conf->DO_mod[i].block = data->level[0];
 			conf->DO_mod[i].slot = data->level[1] + 1;
 			break;
-		case TR_MODULE:
-			for (i = 0; conf->TR_mod[i].count > 0; i++)
-				offset += conf->TR_mod[i].count;
-			data->last_mod = i;
-			conf->TR_mod[i] = *(struct TR_mod *) mod;
-			conf->TR_mod[i].block = data->level[0];
-			conf->TR_mod[i].slot = data->level[1] + 1;
-			conf->TR_mod[i].first = offset;
-			break;
 		case AI_MODULE:
 			for (i = 0; conf->AI_mod[i].count > 0; i++)
 				offset += conf->AI_mod[i].count;
@@ -110,21 +101,13 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 		if (!text || !text[0])
 			break;
 		switch (data->last_type) {
-		case TR_MODULE:
-			i = conf->TR_mod[data->last_mod].first + data->level[2];
-			conf->T[i].mod = data->last_mod;
-			if (!strcmp(text, NI1000_TK5000)) {
-				conf->T[i].convert = ni1000;
-				break;
-			}
-			fatal("conversion '%s' is unsupported for "
-					"module %i-%i\n", text,
-					data->level[0],
-					data->level[1]);
-			break;
 		case AI_MODULE:
 			i = conf->AI_mod[data->last_mod].first + data->level[2];
 			conf->AI[i].mod = data->last_mod;
+			if (!strcmp(text, NI1000_TK5000)) {
+				conf->AI[i].convert = ni1000;
+				break;
+			}
 			if (!strcmp(text, P_0_16BAR_4_20_MA)) {
 				conf->AI[i].convert = b016;
 				break;
@@ -366,13 +349,13 @@ find_io(const char *text, struct site_config *conf, int *type, int *index)
 		}
 
 	} else if (!strcmp("tr", buff)) {
-		*type = TR_MODULE;
-		for (j = 0; conf->TR_mod[j].count > 0; j++) {
-			if (conf->TR_mod[j].slot == slot) {
+		*type = AI_MODULE;
+		for (j = 0; conf->AI_mod[j].count > 0; j++) {
+			if (conf->AI_mod[j].slot == slot) {
 				*index = offset + i - 1;
 				return 0;
 			}
-			offset += conf->TR_mod[j].count;
+			offset += conf->AI_mod[j].count;
 		}
 	} else if (!strcmp("ai", buff)) {
 		*type = AI_MODULE;

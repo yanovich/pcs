@@ -24,7 +24,6 @@
 enum {
 	DO_MODULE,
 	DI_MODULE,
-	TR_MODULE,
 	AI_MODULE,
 	AO_MODULE,
 	NULL_MODULE_TYPE
@@ -37,19 +36,6 @@ struct DO_mod {
 	unsigned int	state;
 	int		block;
 	int		slot;
-};
-
-struct TR_mod {
-	int		(*read)(struct TR_mod *mod, int *buffer);
-	unsigned int	count;
-	unsigned int	first;
-	int		block;
-	int		slot;
-};
-
-struct TR_sensor {
-	int		(*convert)(int ohms);		
-	int		mod;
 };
 
 struct AI_mod {

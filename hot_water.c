@@ -57,11 +57,11 @@ hot_water_run(struct process *p, struct site_status *s)
 	debug("running hot water\n");
 	if (c->first_run) {
 		c->first_run = 0;
-		c->t21_prev = s->T[c->feed_io];
+		c->t21_prev = s->AI[c->feed_io];
 	}
-	vars[0] = s->T[c->feed_io] - c->feed;
-	vars[1] = s->T[c->feed_io] - c->t21_prev;
-	c->t21_prev = s->T[c->feed_io];
+	vars[0] = s->AI[c->feed_io] - c->feed;
+	vars[1] = s->AI[c->feed_io] - c->t21_prev;
+	c->t21_prev = s->AI[c->feed_io];
 
 	v21 = process_fuzzy(&c->fuzzy, &vars[0]);
 	if (!c->valve || !c->valve->ops || !c->valve->ops->adjust)
@@ -84,7 +84,7 @@ hot_water_log(struct site_status *s, void *conf, char *buff,
 		buff[o] = ',';
 		b++;
 	}
-	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->T[c->feed_io]);
+	b += snprintf(&buff[o + b], sz - o - b, "T21 %3i ", s->AI[c->feed_io]);
 	if (c->valve && c->valve->ops && c->valve->ops->log)
 		b += c->valve->ops->log(c->valve->data, &buff[o + b],
 			       	sz, o + b);
@@ -127,7 +127,7 @@ static void
 set_feed_io(void *conf, int type, int value)
 {
 	struct hot_water_config *c = conf;
-	if (type != TR_MODULE)
+	if (type != AI_MODULE)
 		fatal("hot water: wrong type of feed sensor\n");
 	c->feed_io = value;
 	debug("  hot water: feed_io = %i\n", value);
