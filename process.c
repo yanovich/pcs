@@ -163,28 +163,7 @@ queue_action(struct action *action)
 {
 	struct action *a, *n;
 	int c;
-	unsigned value;
 
-	switch (action->type) {
-	case ANALOG_OUTPUT:
-		break;
-	case DIGITAL_OUTPUT:
-		debug("checking action %08x %08x (%li)\n",
-			       	action->digital.value,
-				action->digital.mask,
-				action->digital.delay);
-		value = action->digital.value;
-		value &= ~action->digital.mask;
-		if (action->digital.mask == 0)
-		       return;
-		if (value != 0) {
-			error("invalid action %08x %08x (%li)\n",
-					action->digital.value,
-					action->digital.mask,
-					action->digital.delay);
-			return;
-		}
-	}
 	n = (void *) xmalloc(sizeof(*n));
 	n = memcpy(n, action, sizeof(*n));
 	debug("queueing action %08x %08x (%li)\n",
