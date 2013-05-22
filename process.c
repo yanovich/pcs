@@ -178,7 +178,7 @@ process_free(struct process *a)
 		xfree(a);
 }
 
-static void
+void
 queue_process(struct process *n)
 {
 	struct process *a;
@@ -364,7 +364,7 @@ log_status(struct site_status *curr)
 	char buff[sz];
 	struct process *p;
 	buff[0] = 0;
-	list_for_each_entry(p, &config.process_list, process_entry) {
+	list_for_each_entry(p, &process_list, process_entry) {
 		if (!p->ops->log)
 			continue;
 		c += p->ops->log(curr, p->config, buff, sz, c);
@@ -375,18 +375,11 @@ log_status(struct site_status *curr)
 static void
 input_loop(struct process *a, struct site_status *s)
 {
-	struct process *p;
-
 	while (load_site_status() != 0 && !received_sigterm)
 		sleep (1);
 	if (received_sigterm)
 		return;
 
-	list_for_each_entry(p, &config.process_list, process_entry) {
-		if (! p->ops->run)
-			fatal("process without run\n");
-		p->ops->run(p, &status);
-	}
 	log_status(&status);
 }
 
@@ -427,8 +420,8 @@ process_loop(void)
 	e = (void *) xzalloc(sizeof(*e));
 	e->ops = &process_ops;
 	e->interval = config.interval;
-	e->type = PROCESS;
-	gettimeofday(&e->start, NULL);
+	e->type = INPUT;
+	memcpy(&e->start, &config.start, sizeof(e->start));
 
 	queue_process(e);
 

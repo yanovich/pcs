@@ -744,7 +744,6 @@ struct process_parser {
 	int			in_a_map;
 	struct process_builder	*builder;
 	void			*conf;
-	struct timeval		start;
 };
 
 int
@@ -821,7 +820,10 @@ parse_process(yaml_event_t *event, struct site_config *conf,
 		fatal("bad process ops at line %zu column %zu\n",
 			       	event->start_mark.line,
 				event->start_mark.column);
-	list_add_tail(&pr->process_entry, &conf->process_list);
+	memcpy(&pr->start, &conf->start, sizeof(pr->start));
+	pr->interval = conf->interval;
+	pr->type = PROCESS;
+	queue_process(pr);
 	xfree(data);
 	return 0;
 }
@@ -830,7 +832,6 @@ struct processes_parser {
 	struct config_node	node;
 	int			in_a_seq;
 	int			in_a_map;
-	struct timeval		start;
 };
 
 struct process_map builders[] = {
@@ -887,7 +888,6 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 			p->node.parse = parse_process;
 			p->builder = builders[i].builder();
 			p->conf = p->builder->alloc();
-			memcpy(&p->start, &data->start, sizeof(p->start));
 			next = &p->node;
 			debug("configuring %s\n", event->data.scalar.value);
 			break;
@@ -900,7 +900,6 @@ parse_processes(yaml_event_t *event, struct site_config *conf,
 		break;
 	case YAML_SEQUENCE_START_EVENT:
 		data->in_a_seq++;
-		gettimeofday(&data->start, NULL);
 		break;
 	case YAML_MAPPING_START_EVENT:
 		if (data->in_a_seq != 1)
@@ -998,6 +997,7 @@ load_server_config(const char *filename, struct site_config *conf)
 	struct config_node *node;
 
 	conf->interval = 10000000;
+	gettimeofday(&conf->start, NULL);
 	INIT_LIST_HEAD(&top.node.node_entry);
 
 	if (NULL == f)

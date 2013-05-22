@@ -40,6 +40,7 @@ struct site_status {
 };
 
 typedef enum {
+	INPUT,
 	PROCESS,
 	ANALOG_OUTPUT,
 	DIGITAL_OUTPUT
@@ -99,6 +100,9 @@ load_site_status();
 
 void
 log_status(struct site_status *site_status);
+
+void
+queue_process(struct process *n);
 
 void
 process_loop(void);

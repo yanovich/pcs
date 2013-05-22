@@ -30,6 +30,7 @@ struct site_config {
 	struct AI_mod		AI_mod[256];
 	struct AO_mod		AO_mod[256];
 	struct list_head	process_list;
+	struct timeval		start;
 };
 
 struct config_node {
