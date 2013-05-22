@@ -55,6 +55,8 @@ struct cascade_config {
 	int			entry_type;
 	int			feed;
 	int			feed_type;
+	int			power;
+	int			manual;
 	int			first_run;
 	int			motor[256];
 	int			motor_count;
@@ -83,6 +85,13 @@ cascade_run(struct process *p, struct site_status *s)
 	c->cycle++;
 
 	debug2("running cascade\n");
+	if ((c->power && s->DI[c->power]) ||
+		       	(c->manual && s->DI[c->manual])) {
+		debug("overide detected\n");
+		for (i = 0; i < c->motor_count; i++)
+			if (get_DO(c->motor[i]))
+				set_DO(c->motor[i], 0, 0);
+	}
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
 		       if (c->unblock_sp > s->AI[c->block])
@@ -411,6 +420,26 @@ set_block_io(void *conf, int type, int value)
 }
 
 static void
+set_power_io(void *conf, int type, int value)
+{
+	struct cascade_config *c = conf;
+	if (type != DI_MODULE)
+		fatal("cascade: wrong type of power sensor\n");
+	c->power = value;
+	debug("  cascade: power io = %i\n", value);
+}
+
+static void
+set_manual_io(void *conf, int type, int value)
+{
+	struct cascade_config *c = conf;
+	if (type != DI_MODULE)
+		fatal("cascade: wrong type of manual sensor\n");
+	c->manual = value;
+	debug("  cascade: manual io = %i\n", value);
+}
+
+static void
 set_p_in_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
@@ -448,6 +477,14 @@ struct io_map cascade_io[] = {
 	{
 		.name 		= "block",
 		.set		= set_block_io,
+	},
+	{
+		.name 		= "power",
+		.set		= set_power_io,
+	},
+	{
+		.name 		= "manual",
+		.set		= set_manual_io,
 	},
 	{
 		.name 		= "entry",
