@@ -159,17 +159,15 @@ compare_actions(struct action *a1, struct action *a2)
 }
 
 static void
-queue_action(struct action *action)
+queue_action(struct action *n)
 {
-	struct action *a, *n;
+	struct action *a;
 	int c;
 
-	n = (void *) xmalloc(sizeof(*n));
-	n = memcpy(n, action, sizeof(*n));
 	debug("queueing action %08x %08x (%li)\n",
-			action->digital.value,
-			action->digital.mask,
-			action->digital.delay);
+			n->digital.value,
+			n->digital.mask,
+			n->digital.delay);
 	list_for_each_entry(a, &action_list, action_entry) {
 		c = compare_actions(n, a);
 		if (c == 1)
@@ -368,7 +366,7 @@ get_DO(int index)
 void
 set_DO(int index, int value, int delay)
 {
-	struct action action = {0};
+	struct action *action = (void *) xzalloc(sizeof(*action));
 	int i = 0, offset = 0;
 
 	index--;
@@ -376,7 +374,7 @@ set_DO(int index, int value, int delay)
 		fatal("Invalid DO index %i\n", index);
 		return;
 	}
-	action.type = DIGITAL_OUTPUT;
+	action->type = DIGITAL_OUTPUT;
 	while (1) {
 		if (config.DO_mod[i].count == 0) {
 			fatal("Invalid DO index %i\n", index);
@@ -387,25 +385,25 @@ set_DO(int index, int value, int delay)
 			break;
 		i++;
 	}
-	action.mod = i;
-	action.digital.delay = delay;
-	action.digital.mask |= 1 << (index);
+	action->mod = i;
+	action->digital.delay = delay;
+	action->digital.mask |= 1 << (index);
 	if (value)
-		action.digital.value |= 1 << (index);
-	queue_action(&action);
+		action->digital.value |= 1 << (index);
+	queue_action(action);
 }
 
 void
 set_AO(int index, int value)
 {
-	struct action action = {0};
+	struct action *action = (void *) xzalloc(sizeof(*action));
 	int i = 0, offset = 0;
 
 	if (index < 0) {
 		fatal("Invalid AO index %i\n", index);
 		return;
 	}
-	action.type = ANALOG_OUTPUT;
+	action->type = ANALOG_OUTPUT;
 	while (1) {
 		if (config.AO_mod[i].count == 0) {
 			fatal("Invalid DO index %i\n", index);
@@ -416,11 +414,11 @@ set_AO(int index, int value)
 			break;
 		i++;
 	}
-	action.mod = i;
-	action.analog.index = index;
-	action.analog.index -= config.AO_mod[i].first;
-	action.analog.value = value;
-	queue_action(&action);
+	action->mod = i;
+	action->analog.index = index;
+	action->analog.index -= config.AO_mod[i].first;
+	action->analog.value = value;
+	queue_action(action);
 }
 
 void
