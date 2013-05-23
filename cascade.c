@@ -85,12 +85,16 @@ cascade_run(struct process *p, struct site_status *s)
 	c->cycle++;
 
 	debug2("running cascade\n");
-	if ((c->power && s->DI[c->power]) ||
-		       	(c->manual && s->DI[c->manual])) {
-		debug("overide detected\n");
+	if ((c->power && get_DI(c->power)) ||
+		       	(c->manual && get_DI(c->manual))) {
 		for (i = 0; i < c->motor_count; i++)
-			if (get_DO(c->motor[i]))
+			if (get_DO(c->motor[i])) {
 				set_DO(c->motor[i], 0, 0);
+				j++;
+			}
+		if (j)
+			debug("overide detected\n");
+		return;
 	}
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
@@ -118,7 +122,7 @@ cascade_run(struct process *p, struct site_status *s)
 			if (get_DO(c->motor[i])) {
 				if (c->unstage_wait && c->mark > (c->cycle
 							- c->unstage_wait)) {
-					debug("   waiting %i cycles\n",
+					debug2("   waiting %i cycles\n",
 							c->mark +
 							+ c->unstage_wait -
 							c->cycle); 
@@ -138,7 +142,7 @@ cascade_run(struct process *p, struct site_status *s)
 					       	get_DO(c->motor[i]));
 				if (c->stage_wait && c->mark > (c->cycle
 							- c->stage_wait)) {
-					debug("   waiting %i cycles\n",
+					debug2("   waiting %i cycles\n",
 							c->mark +
 							+ c->stage_wait -
 							c->cycle); 
@@ -209,7 +213,7 @@ cascade_run(struct process *p, struct site_status *s)
 			if (get_DO(c->motor[j])) {
 				if (c->unstage_wait && c->mark > (c->cycle
 							- c->unstage_wait)) {
-					debug("   waiting %i cycles\n",
+					debug2("   waiting %i cycles\n",
 							c->mark +
 							+ c->unstage_wait -
 							c->cycle); 
@@ -228,7 +232,7 @@ cascade_run(struct process *p, struct site_status *s)
 		if (!get_DO(c->motor[j])) {
 			if (c->stage_wait && c->mark > (c->cycle
 						- c->stage_wait)) {
-				debug("   waiting %i cycles\n",
+				debug2("   waiting %i cycles\n",
 						c->mark +
 						+ c->stage_wait -
 						c->cycle); 

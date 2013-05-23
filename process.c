@@ -237,6 +237,21 @@ load_DO(int offset, unsigned int value)
 	status.DO[index + 1] = value >> shift;
 }
 
+void
+load_DI(int offset, unsigned int value)
+{
+	int shift = offset % 32;
+	int index = offset / 32;
+
+	if (shift == 0) {
+		status.DI[index] = value;
+		return;
+	}
+	status.DI[index] &= (1 << shift) - 1;
+	status.DI[index] |= value << shift;
+	status.DI[index + 1] = value >> shift;
+}
+
 int
 load_site_status()
 {
@@ -281,6 +296,18 @@ load_site_status()
 		offset += config.DO_mod[i].count;
 	}
 
+	offset = 0;
+	for (i = 0; config.DI_mod[i].count > 0; i++) {
+		err = config.DI_mod[i].read(&config.DI_mod[i]);
+		if (0 != err) {
+			error("%s: status data\n", __FILE__);
+			return -1;
+		}
+		debug2("DI status 0x%08x\n", config.DI_mod[i].state);
+		load_DI(offset, config.DI_mod[i].state);
+		offset += config.DI_mod[i].count;
+	}
+
 	return 0;
 }
 
@@ -289,6 +316,15 @@ get_DO(int index)
 {
 	index--;
 	return (status.DO[index/32] & 1 << (index % 32)) != 0;
+}
+
+unsigned int
+get_DI(int index)
+{
+	index--;
+	if (index < 0)
+		return 0;
+	return (status.DI[index/32] & 1 << (index % 32)) != 0;
 }
 
 void

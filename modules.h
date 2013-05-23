@@ -40,7 +40,7 @@ struct DO_mod {
 };
 
 struct DI_mod {
-	int		(*read)(struct DO_mod *mod);
+	int		(*read)(struct DI_mod *mod);
 	unsigned int	count;
 	unsigned int	state;
 	int		block;

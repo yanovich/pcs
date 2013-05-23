@@ -241,7 +241,7 @@ icp_get_parallel_name(unsigned int slot, int size, char *data)
 }
 
 static int
-get_parallel_input_status(struct DO_mod *module)
+get_parallel_input_status(struct DI_mod *module)
 {
 	int fd, err;
 	unsigned int slot = module->slot;
@@ -259,7 +259,7 @@ get_parallel_input_status(struct DO_mod *module)
 			       	errno);
 		return -1;
 	}
-	fd = open(buff, O_RDWR);
+	fd = open(buff, O_RDONLY);
 	if (-1 == fd) {
 		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
 			       	errno);

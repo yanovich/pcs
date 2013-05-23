@@ -26,6 +26,9 @@
 unsigned int
 get_DO(int index);
 
+unsigned int
+get_DI(int index);
+
 void
 set_DO(int index, int value, int delay);
 
