@@ -63,6 +63,7 @@ adjust_2way_valve(int amount, void *data, void *ss)
 		amount = -d->max;
 
 	amount += d->pos;
+	s->DS[d->fully_open] = 0;
 	if (d->abs == 1) {
 		if (amount < 0) {
 			amount = 0;
