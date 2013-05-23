@@ -79,6 +79,7 @@ cascade_run(struct process *p, struct site_status *s)
 	struct cascade_config *c = p->config;
 	int go = 1;
 	int shutdown = 0;
+	char *reason;
 	int i;
 	int j = 0;
 	int on = 0;
@@ -89,15 +90,18 @@ cascade_run(struct process *p, struct site_status *s)
 	debug2("running cascade\n");
 	if ((c->power && get_DI(c->power))) {
 		shutdown = 1;
-		logit("power failed\n");
+		reason = "power failed\n";
+		debug2("%s", reason);
 	}
 	if ((c->manual && get_DI(c->manual))) {
 		shutdown = 1;
-		logit("manual override\n");
+		reason = "manual override\n";
+		debug2("%s", reason);
 	}
 	if ((c->remote_manual && get_DI(c->remote_manual))) {
 		shutdown = 1;
-		logit("remote manual override\n");
+		reason = "remote manual override\n";
+		debug2("%s", reason);
 	}
 	if (shutdown) {
 		for (i = 0; i < c->motor_count; i++)
@@ -106,6 +110,7 @@ cascade_run(struct process *p, struct site_status *s)
 				j++;
 			}
 		if (j)
+			logit("%s", reason);
 		return;
 	}
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
