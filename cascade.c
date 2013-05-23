@@ -57,6 +57,7 @@ struct cascade_config {
 	int			feed_type;
 	int			power;
 	int			manual;
+	int			remote_manual;
 	int			first_run;
 	int			motor[256];
 	int			motor_count;
@@ -77,6 +78,7 @@ cascade_run(struct process *p, struct site_status *s)
 {
 	struct cascade_config *c = p->config;
 	int go = 1;
+	int shutdown = 0;
 	int i;
 	int j = 0;
 	int on = 0;
@@ -85,15 +87,25 @@ cascade_run(struct process *p, struct site_status *s)
 	c->cycle++;
 
 	debug2("running cascade\n");
-	if ((c->power && get_DI(c->power)) ||
-		       	(c->manual && get_DI(c->manual))) {
+	if ((c->power && get_DI(c->power))) {
+		shutdown = 1;
+		logit("power failed\n");
+	}
+	if ((c->manual && get_DI(c->manual))) {
+		shutdown = 1;
+		logit("manual override\n");
+	}
+	if ((c->remote_manual && get_DI(c->remote_manual))) {
+		shutdown = 1;
+		logit("remote manual override\n");
+	}
+	if (shutdown) {
 		for (i = 0; i < c->motor_count; i++)
 			if (get_DO(c->motor[i])) {
 				set_DO(c->motor[i], 0, 0);
 				j++;
 			}
 		if (j)
-			debug("overide detected\n");
 		return;
 	}
 	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
@@ -450,6 +462,16 @@ set_manual_io(void *conf, int type, int value)
 }
 
 static void
+set_remote_manual_io(void *conf, int type, int value)
+{
+	struct cascade_config *c = conf;
+	if (type != DI_MODULE)
+		fatal("cascade: wrong type of remote manual sensor\n");
+	c->remote_manual = value;
+	debug("  cascade: remote_manual io = %i\n", value);
+}
+
+static void
 set_p_in_io(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
@@ -495,6 +517,10 @@ struct io_map cascade_io[] = {
 	{
 		.name 		= "manual",
 		.set		= set_manual_io,
+	},
+	{
+		.name 		= "remote manual",
+		.set		= set_remote_manual_io,
 	},
 	{
 		.name 		= "entry",
