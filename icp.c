@@ -510,6 +510,30 @@ get_serial_analog_input(struct AI_mod *mod, int *buffer)
 	return 0;
 }
 
+static int
+get_serial_digital_input(struct DI_mod *mod)
+{
+	int err;
+	char data[256];
+	char *p;
+
+	err = icp_serial_exchange(mod->slot, "@00", 256, &data[0]);
+	if (0 > err) {
+		error("%s: temp data read failure\n", __FILE__);
+		return err;
+	}
+	if ('>' != data[0]) {
+		error("%s: bad temp data: %s\n", __FILE__, data);
+		return -1;
+	}
+	mod->state = strtoul(&data[1], &p, 16);
+	if (p[0] != 0) {
+		error("%s: bad DI data: %s\n", __FILE__, data);
+		return -1;
+	}
+	return 0;
+}
+
 #define MAX_RESPONSE 256
 #define REQUEST_NAME	"$00M"
 
@@ -550,6 +574,11 @@ static struct DO_mod DO16 = {
 static struct DI_mod DI16 = {
 	.read = get_parallel_input_status,
 	.count = 16,
+};
+
+static struct DI_mod DI32_S = {
+	.read = get_serial_digital_input,
+	.count = 32,
 };
 
 static struct DO_mod DO32 = {
@@ -609,6 +638,11 @@ struct module_config mods[] = {
 		.name = "87017",
 		.type = AI_MODULE,
 		.config = &AI8_S,
+	},
+	{
+		.name = "87040",
+		.type = DI_MODULE,
+		.config = &DI32_S,
 	},
 	{
 	}
