@@ -18,6 +18,7 @@ libpcs_a_SOURCES		 = \
 				   log.c	\
 				   process.c	\
 				   reference.c	\
+				   relay.c	\
 				   servconf.c	\
 				   valve.c	\
 				   xmalloc.c

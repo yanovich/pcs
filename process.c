@@ -331,7 +331,7 @@ void
 set_DO(int index, int value, int delay)
 {
 	struct process *process = (void *) xzalloc(sizeof(*process));
-	int i = 0, offset = 0;
+	int i = 0, offset = 0, next;
 
 	index--;
 	if (index < 0) {
@@ -344,16 +344,17 @@ set_DO(int index, int value, int delay)
 			fatal("Invalid DO index %i\n", index);
 			return;
 		}
-		offset += config.DO_mod[i].count;
-		if (offset > index)
+		next = offset + config.DO_mod[i].count;
+		if (next > index)
 			break;
+		offset = next;
 		i++;
 	}
 	process->mod = i;
 	process->digital.delay = delay;
-	process->digital.mask |= 1 << (index);
+	process->digital.mask |= 1 << (index - offset);
 	if (value)
-		process->digital.value |= 1 << (index);
+		process->digital.value |= 1 << (index - offset);
 	gettimeofday(&process->start, NULL);
 	process->start.tv_usec += delay;
 	process->start.tv_sec  += process->start.tv_usec / 1000000;

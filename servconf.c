@@ -33,6 +33,7 @@
 #include "heating.h"
 #include "cascade.h"
 #include "reference.h"
+#include "relay.h"
 #include "servconf.h"
 
 struct modules_parser {
@@ -929,6 +930,10 @@ struct process_map builders[] = {
 	{
 		.name		= "reference",
 		.builder	= load_reference_builder,
+	},
+	{
+		.name		= "relay",
+		.builder	= load_relay_builder,
 	},
 	{
 	}
