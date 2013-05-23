@@ -39,6 +39,7 @@ struct valve_data {
 	int			open;
 	int			fully_open;
 	int			manual;
+	int			remote_manual;
 	int			abs;
 	int			pos;
 };
@@ -48,10 +49,25 @@ adjust_2way_valve(int amount, void *data, void *ss)
 {
 	struct valve_data *d = data;
 	struct site_status *s = ss;
+	int reset = 0;
+	char *reason = "";
 
-	if (d->manual && s->DI[d->manual]) {
+	if (d->manual && get_DI(d->manual)) {
+		reset = 1;
+		reason = "manual override detected\n";
+		debug2("%s", reason);
+	}
+	if (d->remote_manual && get_DI(d->remote_manual)) {
+		reset = 1;
+		reason = "remote manual override detected\n";
+		debug2("%s", reason);
+	}
+	if (reset) {
+		if (d->abs || d->pos)
+			logit("%s", reason);
 		d->pos = 0;
 		d->abs = 0;
+		return;
 	}
 	debug("amount %5i pos %6i\n", amount, d->pos);
 	if (-d->min < amount && amount < d->min)
@@ -210,6 +226,16 @@ set_manual(void *conf, int type, int value)
 	debug("  2way valve: manual = %i\n", value);
 }
 
+static void
+set_remote_manual_io(void *conf, int type, int value)
+{
+	struct valve_data *c = conf;
+	if (type != DI_MODULE)
+		fatal("valve: wrong type of remote manual sensor\n");
+	c->remote_manual = value;
+	debug("  valve: remote_manual io = %i\n", value);
+}
+
 static struct io_map twv_io[] = {
 	{
 		.name 		= "open",
@@ -226,6 +252,10 @@ static struct io_map twv_io[] = {
 	{
 		.name 		= "manual",
 		.set		= set_manual,
+	},
+	{
+		.name 		= "remote manual",
+		.set		= set_remote_manual_io,
 	},
 	{
 	}
