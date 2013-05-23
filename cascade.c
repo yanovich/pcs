@@ -189,7 +189,9 @@ cascade_run(struct process *p, struct site_status *s)
 		}
 	} else if (c->feed_type == DI_STATUS) {
 		go = -1;
-		if (s->DS[c->feed_type])
+		val = s->DS[c->feed];
+		debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
+		if (val)
 			go = 1;
 	} else {
 		error("cascade: bad feed type");
