@@ -33,6 +33,9 @@
 #include "relay.h"
 
 struct relay_config {
+	int			pulse;
+	int			delay;
+	int			state;
 	int			block[256];
 	int			block_count;
 	int			unblock[256];
@@ -47,25 +50,45 @@ static void
 relay_off(struct relay_config *c)
 {
 	int i;
+	int delay = c->delay;
+	if (!c->state)
+		return;
+	c->state = 0;
 	for (i = 0; i < c->no_count; i++)
 		if (get_DO(c->no[i]))
 			set_DO(c->no[i], 0, 0);
 	for (i = 0; i < c->nc_count; i++)
-		if (! get_DO(c->nc[i]))
-			set_DO(c->nc[i], 1, 0);
+		if (! get_DO(c->nc[i])) {
+			set_DO(c->nc[i], 1, delay);
+			delay += c->pulse;
+			if (c->pulse) {
+				set_DO(c->nc[i], 0, delay);
+				delay += c->pulse;
+			}
+		}
 }
 
 static void
 relay_on(struct relay_config *c)
 {
 	int i;
+	int delay = c->delay;
+	if (c->state)
+		return;
+	c->state = 1;
 	debug2("relay on\n");
 	for (i = 0; i < c->nc_count; i++)
 		if (get_DO(c->nc[i]))
 			set_DO(c->nc[i], 0, 0);
 	for (i = 0; i < c->no_count; i++)
-		if (! get_DO(c->no[i]))
-			set_DO(c->no[i], 1, 0);
+		if (! get_DO(c->no[i])) {
+			set_DO(c->no[i], 1, delay);
+			delay += c->pulse;
+			if (c->pulse) {
+				set_DO(c->no[i], 0, delay);
+				delay += c->pulse;
+			}
+		}
 }
 
 static void
@@ -136,7 +159,31 @@ relay_init(void *conf)
 	return &relay_ops;
 }
 
+static void
+set_pulse(void *conf, int value)
+{
+	struct relay_config *c = conf;
+	c->pulse = value * 1000;
+	debug("  relay: pulse = %i\n", value);
+}
+
+static void
+set_delay(void *conf, int value)
+{
+	struct relay_config *c = conf;
+	c->delay = value * 1000;
+	debug("  relay: delay = %i\n", value);
+}
+
 struct setpoint_map relay_setpoints[] = {
+	{
+		.name 		= "pulse",
+		.set		= set_pulse,
+	},
+	{
+		.name 		= "delay",
+		.set		= set_delay,
+	},
 	{
 	}
 };
@@ -210,6 +257,7 @@ static void *
 c_alloc(void)
 {
 	struct relay_config *c = xzalloc(sizeof(*c));
+	c->state = 0;
 	return c;
 }
 
