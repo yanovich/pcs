@@ -111,8 +111,8 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 		goto close_fd;
 	}
 
-	while (i < 2) {
-		err = read(fd, &data[i], 2);
+	while (i < 3) {
+		err = read(fd, &data[i], 3 - i);
 		if(0 > err) {
 			error("%s:%u: %s (E%i)\n", __FILE__, __LINE__,
 				       	strerror(errno), errno);
@@ -140,6 +140,13 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 	if (n >= size) {
 		error("%s:%u: response is too long (%i), expected %i\n",
 			       	__FILE__, __LINE__, n, size);
+		err = -1;
+		goto close_fd;
+	}
+
+	if (data[2] != cmd[2]) {
+		error("%s:%u: bad address 0x%02x, expected 0x%02x\n",
+			       	__FILE__, __LINE__, data[2], cmd[2]);
 		err = -1;
 		goto close_fd;
 	}
