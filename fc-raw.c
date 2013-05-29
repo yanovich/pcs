@@ -34,6 +34,7 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 	int fd, err;
 	struct termios options;
 	int i = 0;
+	char crc = 0;
 	int n, t = 50;
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
@@ -160,8 +161,16 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 		i += err;
 	}
 
-	data[i] = 0;
-	err = i;
+	n--;
+	for (i = 0; i < n; i++)
+		crc ^= data[i];
+	if (data[i] != crc) {
+		error("%s:%u: bad response CRC (0x%02x), expected 0x%02x\n",
+			       	__FILE__, __LINE__, data[i], crc);
+		err = -1;
+		goto close_fd;
+	}
+	err = i + 1;
 close_fd:
 	close(fd);
 	return err;
