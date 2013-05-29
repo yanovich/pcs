@@ -27,7 +27,11 @@ libpcs_a_CPPFLAGS		 = $(AM_CPPFLAGS) $(YAML_CFLAGS)
 
 LDADD				 = libpcs.a
 
-bin_PROGRAMS			 = pcs icp-raw lsicpdas
+bin_PROGRAMS			 = \
+				   pcs \
+				   fc-raw \
+				   icp-raw \
+				   lsicpdas
 
 pcs_LDADD			 = $(LDADD) $(YAML_LIBS)
 
