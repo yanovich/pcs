@@ -33,8 +33,8 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 {
 	int fd, err;
 	struct termios options;
-	char buff[4];
 	int i = 0;
+	int n, t = 50;
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	if (-1 == fd) {
@@ -83,7 +83,7 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 	options.c_cc[VERASE] = 0;
 	options.c_cc[VKILL] = 0;
 	options.c_cc[VEOF] = 4;
-	options.c_cc[VTIME] = 10;
+	options.c_cc[VTIME] = 1;
 	options.c_cc[VMIN] = 0;
 	options.c_cc[VSWTC] = 0;
 	options.c_cc[VSTART] = 0;
@@ -110,22 +110,54 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 		goto close_fd;
 	}
 
-	while (1) {
-		err = read(fd, buff, 1);
+	while (i < 2) {
+		err = read(fd, &data[i], 2);
 		if(0 > err) {
 			error("%s:%u: %s (E%i)\n", __FILE__, __LINE__,
 				       	strerror(errno), errno);
 			goto close_fd;
 		} else if (0 == err) {
-			break;
+			printf("t %i\n", t);
+			if (--t <= 0) {
+				error("%s:%u: timed out\n",
+					       	__FILE__, __LINE__);
+				err = -1;
+				goto close_fd;
+			}
 		}
-		data[i++] = buff[0];
-		if (i == size) {
-			error("%s %u: too much data %i\n", __FILE__, __LINE__,
-					i);
-			err = -1;
+		i += err;
+	}
+
+	if (data[0] != 0x02) {
+		error("%s:%u: bad response 0x%02x, expected 0x02\n",
+			       	__FILE__, __LINE__, data[0]);
+		err = -1;
+		goto close_fd;
+	}
+
+	n = 2 + data[1];
+	if (n >= size) {
+		error("%s:%u: response is too long (%i), expected %i\n",
+			       	__FILE__, __LINE__, n, size);
+		err = -1;
+		goto close_fd;
+	}
+
+	while (i < n) {
+		err = read(fd, &data[i], n - i);
+		if(0 > err) {
+			error("%s:%u: %s (E%i)\n", __FILE__, __LINE__,
+				       	strerror(errno), errno);
 			goto close_fd;
+		} else if (0 == err) {
+			if (--t <= 0) {
+				error("%s:%u: timed out\n",
+					       	__FILE__, __LINE__);
+				err = -1;
+				goto close_fd;
+			}
 		}
+		i += err;
 	}
 
 	data[i] = 0;
