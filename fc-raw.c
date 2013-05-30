@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "log.h"
+#include "fc_type.h"
 
 int
 fc_serial_exchange(const char *cmd, int size, char *data)
@@ -183,54 +184,99 @@ close_fd:
 	return err;
 }
 
-static void usage(void)
+static void usage(int ret)
 {
-	fprintf(stderr, "Usage: fc-raw param\n");
+	fprintf(stderr, "Usage:\n"
+" fc-raw [-c CTW] [-p param [-i index] [-w write_value]]\n");
+	exit(ret);
 }
 
 #define MAX_RESPONSE		256
 
-int main(int argc, char *argv[] )
+static void
+fc_status(unsigned long control)
 {
 	int err;
 	int i;
 	char data[MAX_RESPONSE];
 	char cmd[MAX_RESPONSE];
-	char *bad;
-	unsigned long param;
 
-	if (argc < 2) {
-		usage();
-		return 1;
+	cmd[0] = 0x02;
+	cmd[1] =    6;
+	cmd[2] = 0x01;
+	/* PCD1 */
+	cmd[3] = (control >> 24) & 0xff;
+	cmd[4] = (control >> 16) & 0xff;
+	/* PCD2 */
+	cmd[5] = (control >> 8) & 0xff;
+	cmd[6] = control & 0xff;
+	/* BCC */
+	cmd[7] = 0x00;
+	printf("S: ");
+	for (i = 0; i < 7; i++) {
+		printf("%02x", cmd[i]);
+		cmd[7] ^= cmd[i];
+	}
+	printf("%02x\n", cmd[7]);
+	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	if (err < 0) {
+		error ("fc: exchage failed\n");
+		return;
 	}
 
-	param = strtoul(argv[1], &bad, 0);
-	if (bad[0] != 0) {
-		usage();
-		return 1;
+	printf("R: ");
+	for (i = 0; i < err; i++) {
+		printf("%02x", data[i]);
 	}
+	printf("\n");
+}
 
+static void
+fc_param(unsigned long control, unsigned long param, unsigned long index,
+		unsigned long val, int do_write)
+{
+	int err;
+	int i;
+	char data[MAX_RESPONSE];
+	char cmd[MAX_RESPONSE];
+	unsigned flag = 0x10;
+
+	if (do_write) {
+		switch (fc_type[param]) {
+		case 3:
+		case 5:
+		case 6:
+			flag = 0xe0;
+			break;
+		case 4:
+		case 7:
+			flag = 0xd0;
+			break;
+		default:
+			fatal("unsupported param type\n");
+		};
+	}
 	cmd[0] = 0x02;
 	cmd[1] =   14;
 	cmd[2] = 0x01;
 	/* PKE */
-	cmd[3] = 0x10 | ((param >> 8) & 0x3f);
+	cmd[3] = flag | ((param >> 8) & 0x3f);
 	cmd[4] = param & 0xff;
 	/* IND */
-	cmd[5] = 0x00;
-	cmd[6] = 0x00;
+	cmd[5] = (index >> 8) & 0xff;
+	cmd[6] = index & 0xff;
 	/* PWE1 */
-	cmd[7] = 0x00;
-	cmd[8] = 0x00;
+	cmd[7] = (val >> 24) & 0xff;
+	cmd[8] = (val >> 16) & 0xff;
 	/* PWE2 */
-	cmd[9] = 0x00;
-	cmd[10] = 0x00;
+	cmd[9] = (val >> 8) & 0xff;
+	cmd[10] = val & 0xff;
 	/* PCD1 */
-	cmd[11] = 0x00;
-	cmd[12] = 0x00;
+	cmd[11] = (control >> 24) & 0xff;
+	cmd[12] = (control >> 16) & 0xff;
 	/* PCD2 */
-	cmd[13] = 0x00;
-	cmd[14] = 0x00;
+	cmd[13] = (control >> 8) & 0xff;
+	cmd[14] = control & 0xff;
 	/* BCC */
 	cmd[15] = 0x00;
 	printf("S: ");
@@ -242,7 +288,7 @@ int main(int argc, char *argv[] )
 	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
 	if (err < 0) {
 		error ("fc: exchage failed\n");
-		return 1;
+		return;
 	}
 
 	printf("R: ");
@@ -250,5 +296,75 @@ int main(int argc, char *argv[] )
 		printf("%02x", data[i]);
 	}
 	printf("\n");
+}
+
+int main(int ac, char *av[] )
+{
+	int opt;
+	char *bad;
+	unsigned long control = 0x0;
+	unsigned long param = 0;
+	unsigned long index = 0;
+	unsigned long val = 0;
+	int do_write = 0;
+	int log_level = LOG_NOTICE;
+
+	while ((opt = getopt(ac, av, "c:p:i:w:dh")) != -1) {
+		switch (opt) {
+                case 'c': 
+			control = strtoul(optarg, &bad, 0);
+			if (bad[0] != 0)
+				usage(1);
+			break;
+		case 'p':
+			if (param != 0)
+				usage(1);
+			param = strtoul(optarg, &bad, 0);
+			if (bad[0] != 0)
+				usage(1);
+			if (param == 0)
+				usage(1);
+			break;
+		case 'i':
+			if (param == 0)
+				usage(1);
+			index = strtoul(optarg, &bad, 0);
+			if (bad[0] != 0)
+				usage(1);
+			break;
+		case 'w':
+			if (param == 0)
+				usage(1);
+			if (fc_type[param] == 3 || fc_type[param] == 4)
+				val = (unsigned long) strtol(optarg, &bad, 0);
+			else if (fc_type[param] >= 5 || fc_type[param] <= 7)
+				val = strtoul(optarg, &bad, 0);
+			else
+				fatal("unsupported param type %i(%lu)\n",
+					       fc_type[param], param);
+			if (bad[0] != 0)
+				usage(1);
+			do_write = 1;
+			break;
+		case 'd':
+			if (log_level >= LOG_DEBUG)
+				log_level++;
+			else
+				log_level = LOG_DEBUG;
+			break;
+		case 'h':
+			usage(0);
+			break;
+		default:
+			usage(1);
+			break;
+		}
+	}
+
+	if (param)
+		fc_param(control, param, index, val, do_write);
+	else
+		fc_status(control);
+
 	return 0;
 }
