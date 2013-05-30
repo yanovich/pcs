@@ -236,7 +236,7 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 		unsigned long val, int do_write)
 {
 	int err;
-	int i;
+	int i = 0;
 	char data[MAX_RESPONSE];
 	char cmd[MAX_RESPONSE];
 	unsigned flag = 0x10;
@@ -256,35 +256,97 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 			fatal("unsupported param type\n");
 		};
 	}
-	cmd[0] = 0x02;
-	cmd[1] =   14;
-	cmd[2] = 0x01;
+	cmd[i++] = 0x02;
+	cmd[i++] =   14;
+	cmd[i++] = 0x01;
 	/* PKE */
-	cmd[3] = flag | ((param >> 8) & 0x3f);
-	cmd[4] = param & 0xff;
+	cmd[i++] = flag | ((param >> 8) & 0x3f);
+	cmd[i++] = param & 0xff;
 	/* IND */
-	cmd[5] = (index >> 8) & 0xff;
-	cmd[6] = index & 0xff;
+	cmd[i++] = (index >> 8) & 0xff;
+	cmd[i++] = index & 0xff;
 	/* PWE1 */
-	cmd[7] = (val >> 24) & 0xff;
-	cmd[8] = (val >> 16) & 0xff;
+	cmd[i++] = (val >> 24) & 0xff;
+	cmd[i++] = (val >> 16) & 0xff;
 	/* PWE2 */
-	cmd[9] = (val >> 8) & 0xff;
-	cmd[10] = val & 0xff;
+	cmd[i++] = (val >> 8) & 0xff;
+	cmd[i++] = val & 0xff;
 	/* PCD1 */
-	cmd[11] = (control >> 24) & 0xff;
-	cmd[12] = (control >> 16) & 0xff;
+	cmd[i++] = (control >> 24) & 0xff;
+	cmd[i++] = (control >> 16) & 0xff;
 	/* PCD2 */
-	cmd[13] = (control >> 8) & 0xff;
-	cmd[14] = control & 0xff;
+	cmd[i++] = (control >> 8) & 0xff;
+	cmd[i++] = control & 0xff;
 	/* BCC */
-	cmd[15] = 0x00;
+	cmd[i++] = 0x00;
+
 	printf("S: ");
 	for (i = 0; i < 15; i++) {
 		printf("%02x", cmd[i]);
 		cmd[15] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[15]);
+	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	if (err < 0) {
+		error ("fc: exchage failed\n");
+		return;
+	}
+
+	printf("R: ");
+	for (i = 0; i < err; i++) {
+		printf("%02x", data[i]);
+	}
+	printf("\n");
+}
+
+static void
+fc_text(unsigned long control, unsigned long param, unsigned long index,
+		char *val, int do_write)
+{
+	int err;
+	int i = 0;
+	int j = 0;
+	int n;
+	char data[MAX_RESPONSE];
+	char cmd[MAX_RESPONSE];
+
+	if (do_write) {
+		index += 0x500;
+		n = strlen(val);
+	} else {
+		index += 0x400;
+		n = 4;
+		val = (char *) &index;
+	}
+
+	cmd[i++] = 0x02;
+	cmd[i++] = 10 + n;
+	cmd[i++] = 0x01;
+	/* PKE */
+	cmd[i++] = 0xf0 | ((param >> 8) & 0x3f);
+	cmd[i++] = param & 0xff;
+	/* IND */
+	cmd[i++] = (index >> 8) & 0xff;
+	cmd[i++] = index & 0xff;
+	index = 0;
+	/* PWE */
+	while (j < n)
+		cmd[i++] = val[j++];
+	/* PCD1 */
+	cmd[i++] = (control >> 24) & 0xff;
+	cmd[i++] = (control >> 16) & 0xff;
+	/* PCD2 */
+	cmd[i++] = (control >> 8) & 0xff;
+	cmd[i++] = control & 0xff;
+	/* BCC */
+	cmd[i] = 0x00;
+	n = i;
+	printf("S: ");
+	for (i = 0; i < n; i++) {
+		printf("%02x", cmd[i]);
+		cmd[n] ^= cmd[i];
+	}
+	printf("%02x\n", cmd[n]);
 	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
 	if (err < 0) {
 		error ("fc: exchage failed\n");
@@ -306,6 +368,7 @@ int main(int ac, char *av[] )
 	unsigned long param = 0;
 	unsigned long index = 0;
 	unsigned long val = 0;
+	char *text = NULL;
 	int do_write = 0;
 	int log_level = LOG_NOTICE;
 
@@ -339,6 +402,8 @@ int main(int ac, char *av[] )
 				val = (unsigned long) strtol(optarg, &bad, 0);
 			else if (fc_type[param] >= 5 || fc_type[param] <= 7)
 				val = strtoul(optarg, &bad, 0);
+			else if (fc_type[param] == 9)
+				text = optarg;
 			else
 				fatal("unsupported param type %i(%lu)\n",
 					       fc_type[param], param);
@@ -361,7 +426,9 @@ int main(int ac, char *av[] )
 		}
 	}
 
-	if (param)
+	if (param && fc_type[param] == 9)
+		fc_text(control, param, index, text, do_write);
+	else if (param)
 		fc_param(control, param, index, val, do_write);
 	else
 		fc_status(control);
