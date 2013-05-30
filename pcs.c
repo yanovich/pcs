@@ -42,13 +42,13 @@ const char *config_file_name = PCS_CONF_FILE_PATH;
 int no_detach_flag = 0;
 
 static void
-usage(void)
+usage(int ret)
 {
 	fprintf(stderr, "%s, version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 	fprintf(stderr,
 "usage: pcs [-D] [-f config_file]\n"
 	);
-	exit(1);
+	exit(ret);
 }
 
 int
@@ -77,8 +77,10 @@ main(int ac, char **av)
 			test_config = 1;
 			break;
 		case 'h':
+			usage(0);
+			break;
 		default:
-			usage();
+			usage(1);
 			break;
 		}
 	}
