@@ -58,6 +58,7 @@ struct cascade_config {
 	int			power;
 	int			manual;
 	int			remote_manual;
+	int			status;
 	int			first_run;
 	int			motor[256];
 	int			motor_count;
@@ -109,6 +110,8 @@ cascade_run(struct process *p, struct site_status *s)
 				set_DO(c->motor[i], 0, 0);
 				j++;
 			}
+		if (c->status && get_DO(c->status))
+			set_DO(c->status, 0, 0);
 		if (j)
 			logit("%s", reason);
 		return;
@@ -219,6 +222,14 @@ cascade_run(struct process *p, struct site_status *s)
 
 	debug2("  cascade: after limits go %i\n", go);
 
+	if ((on + go) > 0) {
+		if (c->status && !get_DO(c->status))
+			set_DO(c->status, 1, 0);
+	} else {
+		if (c->status && get_DO(c->status))
+			set_DO(c->status, 0, 0);
+	}
+
 	if (go == 0) {
 		c->mark = c->cycle;
 		return;
@@ -283,6 +294,8 @@ cascade_log(struct site_status *s, void *conf, char *buff,
 		buff[o] = ',';
 		b++;
 	}
+	if (c->status)
+		buff[b++] = get_DO(c->status) ? 'S' : '_';
 	for (i = 0; (i < c->motor_count) && (b < sz); i++, b++) {
 		buff[b] = get_DO(c->motor[i]) ? 'M' : '_';
 	}
@@ -505,6 +518,16 @@ set_p_out_io(void *conf, int type, int value)
 }
 
 static void
+add_status(void *conf, int type, int value)
+{
+	struct cascade_config *c = conf;
+	if (type != DO_MODULE)
+		fatal("cascade: wrong type of status output\n");
+	c->status = value;
+	debug("  cascade: status = %i\n", value);
+}
+
+static void
 add_motor(void *conf, int type, int value)
 {
 	struct cascade_config *c = conf;
@@ -538,6 +561,10 @@ struct io_map cascade_io[] = {
 	{
 		.name 		= "feed",
 		.set		= set_p_out_io,
+	},
+	{
+		.name 		= "status",
+		.set		= add_status,
 	},
 	{
 		.name 		= "motor",
