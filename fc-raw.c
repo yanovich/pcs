@@ -29,8 +29,8 @@
 #include "log.h"
 #include "fc_type.h"
 
-int
-fc_serial_exchange(const char *cmd, int size, char *data)
+static int
+fc_raw_serial_exchange(const char *cmd, int size, char *data)
 {
 	int fd, err;
 	struct termios options;
@@ -218,7 +218,7 @@ fc_status(unsigned long control)
 		cmd[7] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[7]);
-	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
@@ -286,7 +286,7 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 		cmd[15] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[15]);
-	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
@@ -347,7 +347,7 @@ fc_text(unsigned long control, unsigned long param, unsigned long index,
 		cmd[n] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[n]);
-	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
