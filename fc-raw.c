@@ -141,14 +141,14 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 	if (n >= size) {
 		error("%s:%u: response is too long (%i), expected %i\n",
 			       	__FILE__, __LINE__, n, size);
-		err = -1;
+		err = 1;
 		goto close_fd;
 	}
 
 	if (data[2] != cmd[2]) {
 		error("%s:%u: bad address 0x%02x, expected 0x%02x\n",
 			       	__FILE__, __LINE__, data[2], cmd[2]);
-		err = -1;
+		err = 2;
 		goto close_fd;
 	}
 
@@ -175,7 +175,7 @@ fc_serial_exchange(const char *cmd, int size, char *data)
 	if (data[i] != crc) {
 		error("%s:%u: bad response CRC (0x%02x), expected 0x%02x\n",
 			       	__FILE__, __LINE__, data[i], crc);
-		err = -1;
+		err = 3;
 		goto close_fd;
 	}
 	err = i + 1;
@@ -219,7 +219,7 @@ fc_status(unsigned long control)
 	}
 	printf("%02x\n", cmd[7]);
 	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
-	if (err < 0) {
+	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
 	}
@@ -287,7 +287,7 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 	}
 	printf("%02x\n", cmd[15]);
 	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
-	if (err < 0) {
+	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
 	}
@@ -348,7 +348,7 @@ fc_text(unsigned long control, unsigned long param, unsigned long index,
 	}
 	printf("%02x\n", cmd[n]);
 	err = fc_serial_exchange(cmd, MAX_RESPONSE - 1, data);
-	if (err < 0) {
+	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
 	}

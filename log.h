@@ -16,6 +16,7 @@
 #include <syslog.h>
 #include <stdarg.h>
 
+int      log_get_level(void);
 void     log_init(char *, int, int, int);
 
 void     fatal(const char *, ...) __attribute__((noreturn))

@@ -51,6 +51,12 @@ static int log_level = LOG_NOTICE;
 static int log_on_stderr = 1;
 static char *argv0;
 
+int
+log_get_level(void)
+{
+	return log_level;
+}
+
 /* Report fatal message, never return */
 void
 fatal(const char *fmt,...)
