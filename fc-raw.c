@@ -30,7 +30,7 @@
 #include "fc_type.h"
 
 static int
-fc_raw_serial_exchange(const char *cmd, int size, char *data)
+fc_raw_serial_exchange(const char *cmd, char *data)
 {
 	int fd, err;
 	struct termios options;
@@ -138,9 +138,9 @@ fc_raw_serial_exchange(const char *cmd, int size, char *data)
 	}
 
 	n = 2 + data[1];
-	if (n >= size) {
-		error("%s:%u: response is too long (%i), expected %i\n",
-			       	__FILE__, __LINE__, n, size);
+	if (n <= 0) {
+		error("%s:%u: bad response length (%i)",
+			       	__FILE__, __LINE__, n);
 		err = 1;
 		goto close_fd;
 	}
@@ -218,7 +218,7 @@ fc_status(unsigned long control)
 		cmd[7] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[7]);
-	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
@@ -286,7 +286,7 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 		cmd[15] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[15]);
-	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
@@ -347,7 +347,7 @@ fc_text(unsigned long control, unsigned long param, unsigned long index,
 		cmd[n] ^= cmd[i];
 	}
 	printf("%02x\n", cmd[n]);
-	err = fc_raw_serial_exchange(cmd, MAX_RESPONSE - 1, data);
+	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
 		return;
