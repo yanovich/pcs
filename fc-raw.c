@@ -118,7 +118,7 @@ fc_raw_serial_exchange(char *cmd, char *data)
 	}
 	cmd[n] = crc;
 	sprintf(&buff[b], "%02x", cmd[n]);
-	logit("%s\n", buff);
+	debug2("%s\n", buff);
 
 	err = write(fd, cmd, cmd[1] + 2);
 	if(0 > err) {
@@ -187,8 +187,14 @@ fc_raw_serial_exchange(char *cmd, char *data)
 
 	n--;
 	crc = 0;
-	for (i = 0; i < n; i++)
+	b = sprintf(buff, "R: ");
+	for (i = 0; i < n; i++) {
 		crc ^= data[i];
+		b += sprintf(&buff[b], "%02x", data[i]);
+	}
+	sprintf(&buff[b], "%02x", data[n]);
+	debug2("%s\n", buff);
+
 	if (data[i] != crc) {
 		error("%s:%u: bad response CRC (0x%02x), expected 0x%02x\n",
 			       	__FILE__, __LINE__, data[i], crc);
@@ -212,7 +218,6 @@ static void
 fc_status(unsigned long control)
 {
 	int err;
-	int i;
 	char data[MAX_RESPONSE];
 	char cmd[MAX_RESPONSE];
 
@@ -233,12 +238,6 @@ fc_status(unsigned long control)
 		error ("fc: exchage failed\n");
 		return;
 	}
-
-	printf("R: ");
-	for (i = 0; i < err; i++) {
-		printf("%02x", data[i]);
-	}
-	printf("\n");
 }
 
 static void
@@ -295,12 +294,6 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 		error ("fc: exchage failed\n");
 		return;
 	}
-
-	printf("R: ");
-	for (i = 0; i < err; i++) {
-		printf("%02x", data[i]);
-	}
-	printf("\n");
 }
 
 static void
@@ -350,12 +343,6 @@ fc_text(unsigned long control, unsigned long param, unsigned long index,
 		error ("fc: exchage failed\n");
 		return;
 	}
-
-	printf("R: ");
-	for (i = 0; i < err; i++) {
-		printf("%02x", data[i]);
-	}
-	printf("\n");
 }
 
 int main(int ac, char *av[] )
@@ -424,6 +411,7 @@ int main(int ac, char *av[] )
 		}
 	}
 
+	log_init(av[0], log_level, LOG_DAEMON, 1);
 	if (param && fc_type[param] == 9)
 		fc_text(control, param, index, text, do_write);
 	else if (param)
