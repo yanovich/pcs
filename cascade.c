@@ -219,8 +219,10 @@ cascade_run(struct process *p, struct site_status *s)
 
 	debug2("  cascade: after limits go %i\n", go);
 
-	if (go == 0)
+	if (go == 0) {
+		c->mark = c->cycle;
 		return;
+	}
 
 	for (i = 0; i < c->motor_count; i++)
 		if (get_DO(c->motor[i]))
