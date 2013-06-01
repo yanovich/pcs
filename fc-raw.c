@@ -29,14 +29,18 @@
 #include "log.h"
 #include "fc_type.h"
 
+#define MAX_RESPONSE		256
+
 static int
-fc_raw_serial_exchange(const char *cmd, char *data)
+fc_raw_serial_exchange(char *cmd, char *data)
 {
 	int fd, err;
 	struct termios options;
 	int i = 0;
 	char crc = 0;
 	int n, t = 50;
+	char buff[MAX_RESPONSE << 1];
+	int b;
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	if (-1 == fd) {
@@ -105,6 +109,17 @@ fc_raw_serial_exchange(const char *cmd, char *data)
 		goto close_fd;
 	}
 
+	n = 1 + cmd[1];
+	crc = 0;
+	b = sprintf(buff, "S: ");
+	for (i = 0; i < n; i++) {
+		b += sprintf(&buff[b], "%02x", cmd[i]);
+		crc ^= cmd[i];
+	}
+	cmd[n] = crc;
+	sprintf(&buff[b], "%02x", cmd[n]);
+	logit("%s\n", buff);
+
 	err = write(fd, cmd, cmd[1] + 2);
 	if(0 > err) {
 		error("%s:%u: %s (E%i)\n", __FILE__, __LINE__, strerror(errno),
@@ -112,6 +127,7 @@ fc_raw_serial_exchange(const char *cmd, char *data)
 		goto close_fd;
 	}
 
+	i = 0;
 	while (i < 3) {
 		err = read(fd, &data[i], 3 - i);
 		if(0 > err) {
@@ -170,6 +186,7 @@ fc_raw_serial_exchange(const char *cmd, char *data)
 	}
 
 	n--;
+	crc = 0;
 	for (i = 0; i < n; i++)
 		crc ^= data[i];
 	if (data[i] != crc) {
@@ -191,8 +208,6 @@ static void usage(int ret)
 	exit(ret);
 }
 
-#define MAX_RESPONSE		256
-
 static void
 fc_status(unsigned long control)
 {
@@ -212,12 +227,7 @@ fc_status(unsigned long control)
 	cmd[6] = control & 0xff;
 	/* BCC */
 	cmd[7] = 0x00;
-	printf("S: ");
-	for (i = 0; i < 7; i++) {
-		printf("%02x", cmd[i]);
-		cmd[7] ^= cmd[i];
-	}
-	printf("%02x\n", cmd[7]);
+
 	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
@@ -280,12 +290,6 @@ fc_param(unsigned long control, unsigned long param, unsigned long index,
 	/* BCC */
 	cmd[i++] = 0x00;
 
-	printf("S: ");
-	for (i = 0; i < 15; i++) {
-		printf("%02x", cmd[i]);
-		cmd[15] ^= cmd[i];
-	}
-	printf("%02x\n", cmd[15]);
 	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
@@ -340,13 +344,7 @@ fc_text(unsigned long control, unsigned long param, unsigned long index,
 	cmd[i++] = control & 0xff;
 	/* BCC */
 	cmd[i] = 0x00;
-	n = i;
-	printf("S: ");
-	for (i = 0; i < n; i++) {
-		printf("%02x", cmd[i]);
-		cmd[n] ^= cmd[i];
-	}
-	printf("%02x\n", cmd[n]);
+
 	err = fc_raw_serial_exchange(cmd, data);
 	if (err < 4) {
 		error ("fc: exchage failed\n");
