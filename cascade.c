@@ -222,14 +222,6 @@ cascade_run(struct process *p, struct site_status *s)
 
 	debug2("  cascade: after limits go %i\n", go);
 
-	if ((on + go) > 0) {
-		if (c->status && !get_DO(c->status))
-			set_DO(c->status, 1, 0);
-	} else {
-		if (c->status && get_DO(c->status))
-			set_DO(c->status, 0, 0);
-	}
-
 	if (go == 0) {
 		c->mark = c->cycle;
 		return;
@@ -251,6 +243,11 @@ cascade_run(struct process *p, struct site_status *s)
 							c->cycle); 
 					return;
 				}
+				if ((on + go) == 0) {
+					if (c->status && get_DO(c->status))
+						set_DO(c->status, 0, 0);
+				}
+
 				set_DO(c->motor[j], 0, 0);
 				c->mark = c->cycle;
 				c->next_stop = j + 1;
@@ -270,6 +267,11 @@ cascade_run(struct process *p, struct site_status *s)
 						c->cycle); 
 				return;
 			}
+			if ((on + go) > 0) {
+				if (c->status && !get_DO(c->status))
+					set_DO(c->status, 1, 0);
+			}
+
 			set_DO(c->motor[j], 1, 0);
 			c->mark = c->cycle;
 			c->next_start = j + 1;
