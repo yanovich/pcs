@@ -75,6 +75,38 @@ ni1000(int ohm)
 }
 
 int
+pt1000(int ohm)
+{
+	const int o[] =  { 8031 , 8427 , 8822 , 9216 , 9609 , 10000 , 10390 ,
+		10779 , 11167 , 11554 , 11940 , 12324 , 12700 , 13089 ,
+	       	13470 , 13850 , 14220 , 14606 , 14982 , 15358 , 15731};
+
+	int i = sizeof(o) / (2 * sizeof(*o));
+	int l = (sizeof(o) / sizeof (*o)) - 2;
+	int f = 0;
+	do {
+		if (o[i] <= ohm)
+			if (o[i + 1] > ohm) {
+				return (100 * (ohm - o[i])) /
+					(o[i + 1] - o[i]) + i * 100 -  500;
+			}
+			else if (i == l)
+				return 0x80000000;
+			else {
+				f = i;
+				i = i + 1 + (l - i - 1) / 2;
+			}
+		else
+			if (i == f)
+				return 0x80000000;
+			else {
+				l = i;
+				i = i - 1 - (i - 1 - f) / 2;
+			}
+	} while (1);
+}
+
+int
 b016(int apm)
 {
 	if (apm < 3937 || apm > 19685)

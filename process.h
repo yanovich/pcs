@@ -93,6 +93,9 @@ int
 ni1000(int ohm);
 
 int
+pt1000(int ohm);
+
+int
 b016(int apm);
 
 int

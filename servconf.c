@@ -46,6 +46,7 @@ struct modules_parser {
 };
 
 #define NI1000_TK5000		"ni1000 tk5000"
+#define PT1000			"pt1000"
 #define P_0_16BAR_4_20_MA	"0-16 bar 4-20 mA"
 #define VOLTS_TO_HEX		"0-8000 0-10 V"
 
@@ -118,6 +119,10 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 			conf->AI[i].mod = data->last_mod;
 			if (!strcmp(text, NI1000_TK5000)) {
 				conf->AI[i].convert = ni1000;
+				break;
+			}
+			if (!strcmp(text, PT1000)) {
+				conf->AI[i].convert = pt1000;
 				break;
 			}
 			if (!strcmp(text, P_0_16BAR_4_20_MA)) {
