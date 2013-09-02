@@ -101,6 +101,9 @@ b016(int apm);
 int
 v2h(int volts);
 
+int
+v2h2(int volts);
+
 void
 load_site_config(const char *config_file);
 

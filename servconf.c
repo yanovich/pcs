@@ -49,6 +49,7 @@ struct modules_parser {
 #define PT1000			"pt1000"
 #define P_0_16BAR_4_20_MA	"0-16 bar 4-20 mA"
 #define VOLTS_TO_HEX		"0-8000 0-10 V"
+#define VOLTS_TO_HEX_2		"1600-8000 2-10 V"
 
 void
 configure_module(struct site_config *conf, struct modules_parser *data,
@@ -131,6 +132,10 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 			}
 			if (!strcmp(text, VOLTS_TO_HEX)) {
 				conf->AI[i].convert = v2h;
+				break;
+			}
+			if (!strcmp(text, VOLTS_TO_HEX_2)) {
+				conf->AI[i].convert = v2h2;
 				break;
 			}
 			fatal("conversion '%s' is unsupported for "

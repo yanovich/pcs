@@ -120,6 +120,12 @@ v2h(int volts)
 	return (volts * 8) / 10;
 }
 
+int
+v2h2(int volts)
+{
+	return volts - 2000;
+}
+
 LIST_HEAD(process_list);
 
 static struct site_status status = {{0}};
