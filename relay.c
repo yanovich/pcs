@@ -44,6 +44,7 @@ struct relay_config {
 	int			no_count;
 	int			nc[256];
 	int			nc_count;
+	int			cycle;
 };
 
 static void
@@ -51,9 +52,11 @@ relay_off(struct relay_config *c)
 {
 	int i;
 	int delay = c->delay;
-	if (!c->state)
-		return;
-	c->state = 0;
+	if (c->pulse) {
+		if (!c->state)
+			return;
+		c->state = 0;
+	}
 	for (i = 0; i < c->no_count; i++)
 		if (get_DO(c->no[i]))
 			set_DO(c->no[i], 0, 0);
@@ -73,13 +76,29 @@ relay_on(struct relay_config *c)
 {
 	int i;
 	int delay = c->delay;
-	if (c->state)
-		return;
-	c->state = 1;
+	if (c->pulse) {
+		if (c->state)
+			return;
+		c->state = 1;
+	}
 	debug2("relay on\n");
 	for (i = 0; i < c->nc_count; i++)
 		if (get_DO(c->nc[i]))
 			set_DO(c->nc[i], 0, 0);
+	if (c->pulse == 0) {
+		if (c->state == 0) {
+			c->state = 1;
+			c->cycle = 0;
+		}
+		if (c->cycle < c->delay) {
+			c->cycle++;
+			return;
+		}
+		for (i = 0; i < c->no_count; i++)
+			if (! get_DO(c->no[i]))
+				set_DO(c->no[i], 1, 0);
+		return;
+	}
 	for (i = 0; i < c->no_count; i++)
 		if (! get_DO(c->no[i])) {
 			set_DO(c->no[i], 1, delay);
