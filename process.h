@@ -96,7 +96,13 @@ int
 pt1000(int ohm);
 
 int
+b013(int apm);
+
+int
 b016(int apm);
+
+int
+b031(int apm);
 
 int
 v2h(int volts);

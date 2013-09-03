@@ -107,11 +107,27 @@ pt1000(int ohm)
 }
 
 int
+b013(int apm)
+{
+	if (apm < 3937 || apm > 19685)
+		return 0x80000000;
+	return (1300 * (apm - 3937)) / (19685 - 3937);
+}
+
+int
 b016(int apm)
 {
 	if (apm < 3937 || apm > 19685)
 		return 0x80000000;
 	return (1600 * (apm - 3937)) / (19685 - 3937);
+}
+
+int
+b031(int apm)
+{
+	if (apm < 3937 || apm > 19685)
+		return 0x80000000;
+	return (3100 * (apm - 3937)) / (19685 - 3937);
 }
 
 int
