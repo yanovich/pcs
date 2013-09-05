@@ -80,8 +80,8 @@ relay_on(struct relay_config *c)
 		if (c->state)
 			return;
 		c->state = 1;
+		debug("relay on\n");
 	}
-	debug2("relay on\n");
 	for (i = 0; i < c->nc_count; i++)
 		if (get_DO(c->nc[i]))
 			set_DO(c->nc[i], 0, 0);
@@ -89,9 +89,11 @@ relay_on(struct relay_config *c)
 		if (c->state == 0) {
 			c->state = 1;
 			c->cycle = 0;
+			debug("relay on\n");
 		}
 		if (c->cycle < c->delay) {
 			c->cycle++;
+			debug("relay wait %i of %i\n", c->cycle, c->delay);
 			return;
 		}
 		for (i = 0; i < c->no_count; i++)
@@ -183,6 +185,7 @@ set_pulse(void *conf, int value)
 {
 	struct relay_config *c = conf;
 	c->pulse = value * 1000;
+	c->delay *= 1000;
 	debug("  relay: pulse = %i\n", value);
 }
 
@@ -190,7 +193,9 @@ static void
 set_delay(void *conf, int value)
 {
 	struct relay_config *c = conf;
-	c->delay = value * 1000;
+	c->delay = value;
+	if (c->pulse)
+		c->delay *= 1000;
 	debug("  relay: delay = %i\n", value);
 }
 
