@@ -84,6 +84,14 @@ av_init(void *conf)
 }
 
 static void
+set_pos(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->pos = value;
+	debug("  analog pos: low = %i\n", value);
+}
+
+static void
 set_low(void *conf, int value)
 {
 	struct valve_data *c = conf;
@@ -100,6 +108,10 @@ set_high(void *conf, int value)
 }
 
 static struct setpoint_map av_setpoints[] = {
+	{
+		.name 		= "pos",
+		.set		= set_pos,
+	},
 	{
 		.name 		= "low",
 		.set		= set_low,
