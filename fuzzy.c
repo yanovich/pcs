@@ -54,7 +54,7 @@ Dm(int a, int b, int c, unsigned h, struct fuzzy_result *result)
 unsigned
 Sh(int a, int b, int c, int x)
 {
-	if (x < a || x > c || a > b || b > c)
+	if (x < a || a > b || b > c)
 		return 0;
 	if (x >= b)
 		return 0x10000;
@@ -65,7 +65,7 @@ Sh(int a, int b, int c, int x)
 unsigned
 Zh(int a, int b, int c, int x)
 {
-	if (x < a || x > c || a > b || b > c)
+	if (x > c || a > b || b > c)
 		return 0;
 	if (x <= b)
 		return 0x10000;
@@ -87,7 +87,7 @@ process_fuzzy(struct list_head *fuzzy, int *vars)
 	list_for_each_entry(f, fuzzy, fuzzy_entry) {
 		h = ha[f->h_f](f->h_a, f->h_b, f->h_c, vars[f->var]);
 		ma[f->m_f](f->m_a, f->m_b, f->m_c, h, &r);
-		debug2("    %4i %6u %6i\n", vars[f->var], r.mass, r.value);
+		debug2("    %4i %6u %6i %i\n", vars[f->var], r.mass, r.value, h);
 	}
 	return r.value;
 }
