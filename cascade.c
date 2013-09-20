@@ -80,7 +80,7 @@ cascade_run(struct process *p, struct site_status *s)
 	struct cascade_config *c = p->config;
 	int go = 1;
 	int shutdown = 0;
-	char *reason;
+	char *reason = 0;
 	int i;
 	int j = 0;
 	int on = 0;
@@ -104,55 +104,39 @@ cascade_run(struct process *p, struct site_status *s)
 		reason = "remote manual override\n";
 		debug2("%s", reason);
 	}
-	if (shutdown) {
-		for (i = 0; i < c->motor_count; i++)
-			if (get_DO(c->motor[i])) {
-				set_DO(c->motor[i], 0, 0);
-				j++;
-			}
-		if (c->status && get_DO(c->status))
-			set_DO(c->status, 0, 0);
-		if (j)
-			logit("%s", reason);
-		return;
-	}
-	if ((c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
+	if (!shutdown && (c->has_analog_block & HAS_BLOCK) == HAS_BLOCK) {
 		if (c->block_sp > c->unblock_sp) {
 		       if (c->unblock_sp > s->AI[c->block])
 			       go = 1;
 		       else if (s->AI[c->block] > c->block_sp)
-			       go = -1;
+			       shutdown = 1;
 		       else
 			       go = 0;
 		} else if (c->block_sp < c->unblock_sp) {
 		       if (c->unblock_sp < s->AI[c->block])
 			       go = 1;
 		       else if (s->AI[c->block] < c->block_sp)
-			       go = -1;
+			       shutdown = 1;
 		       else
 			       go = 0;
 		}
 	}
+	if (shutdown) {
+		for (i = 0; i < c->motor_count; i++)
+			if (get_DO(c->motor[i])) {
+				set_DO(c->motor[i], 0, 0);
+				j++;
+				c->mark = c->cycle;
+			}
+		if (c->status && get_DO(c->status))
+			set_DO(c->status, 0, 0);
+		if (j && reason)
+			logit("%s", reason);
+		return;
+	}
 	debug2("  cascade: after block go %i\n", go);
 	if (go == 0)
 		return;
-
-	if (go == -1) {
-		for (i = 0; i < c->motor_count; i++)
-			if (get_DO(c->motor[i])) {
-				if (c->unstage_wait && c->mark > (c->cycle
-							- c->unstage_wait)) {
-					debug2("   waiting %i cycles\n",
-							c->mark +
-							+ c->unstage_wait -
-							c->cycle); 
-					return;
-				}
-				set_DO(c->motor[i], 0, 0);
-				c->mark = c->cycle;
-			}
-		return;
-	}
 
 	if ((c->has_target & HAS_TARGET) != HAS_TARGET) {
 		for (i = 0; i < c->motor_count; i++)
