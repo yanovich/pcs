@@ -11,7 +11,9 @@ noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
 				   analog_valve.c	\
 				   cascade.c	\
+				   counter.c	\
 				   fuzzy.c	\
+				   evaporation.c	\
 				   heating.c	\
 				   hot_water.c	\
 				   icp.c	\

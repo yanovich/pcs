@@ -29,11 +29,13 @@
 #include "process.h"
 #include "icp.h"
 #include "fuzzy.h"
+#include "evaporation.h"
 #include "hot_water.h"
 #include "heating.h"
 #include "cascade.h"
 #include "reference.h"
 #include "relay.h"
+#include "counter.h"
 #include "servconf.h"
 
 struct modules_parser {
@@ -47,11 +49,18 @@ struct modules_parser {
 
 #define NI1000_TK5000		"ni1000 tk5000"
 #define PT1000			"pt1000"
+#define DIRECT			"direct"
 #define P_0_13BAR_4_20_MA	"0-13 bar 4-20 mA"
 #define P_0_16BAR_4_20_MA	"0-16 bar 4-20 mA"
 #define P_0_31BAR_4_20_MA	"0-31 bar 4-20 mA"
 #define VOLTS_TO_HEX		"0-8000 0-10 V"
 #define VOLTS_TO_HEX_2		"1600-8000 2-10 V"
+
+static int
+direct(int x)
+{
+	return x;
+}
 
 void
 configure_module(struct site_config *conf, struct modules_parser *data,
@@ -120,6 +129,10 @@ configure_module(struct site_config *conf, struct modules_parser *data,
 		case AI_MODULE:
 			i = conf->AI_mod[data->last_mod].first + data->level[2];
 			conf->AI[i].mod = data->last_mod;
+			if (!strcmp(text, DIRECT)) {
+				conf->AI[i].convert = direct;
+				break;
+			}
 			if (!strcmp(text, NI1000_TK5000)) {
 				conf->AI[i].convert = ni1000;
 				break;
@@ -944,6 +957,10 @@ struct process_map builders[] = {
 		.builder	= load_hot_water_builder,
 	},
 	{
+		.name		= "evaporation",
+		.builder	= load_evaporation_builder,
+	},
+	{
 		.name		= "cascade",
 		.builder	= load_cascade_builder,
 	},
@@ -954,6 +971,10 @@ struct process_map builders[] = {
 	{
 		.name		= "relay",
 		.builder	= load_relay_builder,
+	},
+	{
+		.name		= "counter",
+		.builder	= load_counter_builder,
 	},
 	{
 	}
