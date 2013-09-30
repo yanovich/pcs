@@ -51,6 +51,8 @@ struct cascade_config {
 	int			unstage;
 	int			stage_wait;
 	int			unstage_wait;
+	int			stage_int;
+	int			unstage_int;
 	int			entry;
 	int			entry_type;
 	int			feed;
@@ -66,8 +68,10 @@ struct cascade_config {
 	unsigned		has_target;
 	int			m11_fail;
 	int			m11_int;
-	int			cycle;
-	int			mark;
+	int			stage_mark;
+	int			unstage_mark;
+	int			stage_mark_int;
+	int			unstage_mark_int;
 	int			next_stop;
 	int			next_start;
 	int			run_min;
@@ -80,13 +84,26 @@ cascade_run(struct process *p, struct site_status *s)
 	struct cascade_config *c = p->config;
 	int go = 1;
 	int shutdown = 0;
-	char *reason = 0;
+	char *reason = "shutdown\n";
 	int i;
 	int j = 0;
 	int on = 0;
 	int val;
+	int last_stage_mark = c->stage_mark;
+	int last_unstage_mark = c->unstage_mark;
 	
-	c->cycle++;
+	c->stage_mark = c->stage_wait;
+	c->unstage_mark = c->unstage_wait;
+
+	if (c->stage_mark_int)
+		c->stage_mark_int--;
+	if (c->unstage_mark_int)
+		c->unstage_mark_int--;
+
+	if (last_stage_mark)
+		last_stage_mark--;
+	if (last_unstage_mark)
+		last_unstage_mark--;
 
 	debug2("running cascade\n");
 	if ((c->power && get_DI(c->power))) {
@@ -126,7 +143,7 @@ cascade_run(struct process *p, struct site_status *s)
 			if (get_DO(c->motor[i])) {
 				set_DO(c->motor[i], 0, 0);
 				j++;
-				c->mark = c->cycle;
+				c->unstage_mark_int = c->unstage_int;
 			}
 		if (c->status && get_DO(c->status))
 			set_DO(c->status, 0, 0);
@@ -144,50 +161,50 @@ cascade_run(struct process *p, struct site_status *s)
 				debug2("  motor %i[%i]: %i\n", i,
 					       	c->motor[i],
 					       	get_DO(c->motor[i]));
-				if (c->stage_wait && c->mark > (c->cycle
-							- c->stage_wait)) {
-					debug2("   waiting %i cycles\n",
-							c->mark +
-							+ c->stage_wait -
-							c->cycle); 
+				if (c->stage_mark_int) {
+					debug("   waiting %i cycles\n",
+							c->stage_mark_int);
+					return;
+				}
+				c->stage_mark = last_stage_mark;
+				if (c->stage_mark) {
+					debug("   waiting %i cycles\n",
+							c->stage_mark);
 					return;
 				}
 				set_DO(c->motor[i], 1, 0);
-				c->mark = c->cycle;
+				c->stage_mark_int = c->stage_int;
 			}
 		return;
 	}
 
 	if (c->feed_type == AI_MODULE) {
 		val = s->AI[c->feed];
-		debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
 		if (c->has_target & HAS_BEFORE_IO)
 			val -= s->AI[c->entry];
 
-		if (c->unstage > c->stage) {
-			if (c->stage > val)
-				go = 1;
-			else if (val > c->unstage)
-				go = -1;
-			else
-				go = 0;
-		} else if (c->unstage < c->stage) {
-			if (c->stage < val)
-				go = 1;
-			else if (val < c->unstage)
-				go = -1;
-			else
-				go = 0;
-		}
 	} else if (c->feed_type == DI_STATUS) {
-		go = -1;
 		val = s->DS[c->feed];
-		debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
-		if (val)
-			go = 1;
 	} else {
 		error("cascade: bad feed type");
 		return;
+	}
+
+	debug2("  cascade: target processing %i (%i)\n", val, c->feed_type);
+	if (c->unstage > c->stage) {
+		if (c->stage >= val)
+			go = 1;
+		else if (val >= c->unstage)
+			go = -1;
+		else
+			go = 0;
+	} else if (c->unstage < c->stage) {
+		if (c->stage <= val)
+			go = 1;
+		else if (val <= c->unstage)
+			go = -1;
+		else
+			go = 0;
 	}
 	debug2("  cascade: after target go %i\n", go);
 
@@ -206,10 +223,8 @@ cascade_run(struct process *p, struct site_status *s)
 
 	debug2("  cascade: after limits go %i\n", go);
 
-	if (go == 0) {
-		c->mark = c->cycle;
+	if (go == 0)
 		return;
-	}
 
 	for (i = 0; i < c->motor_count; i++)
 		if (get_DO(c->motor[i]))
@@ -219,12 +234,15 @@ cascade_run(struct process *p, struct site_status *s)
 		for (i = 0; i < c->motor_count; i++) {
 			j = (i + c->next_stop) % c->motor_count;
 			if (get_DO(c->motor[j])) {
-				if (c->unstage_wait && c->mark > (c->cycle
-							- c->unstage_wait)) {
-					debug2("   waiting %i cycles\n",
-							c->mark +
-							+ c->unstage_wait -
-							c->cycle); 
+				if (c->unstage_mark_int) {
+					debug("   waiting %i cycles\n",
+							c->unstage_mark_int); 
+					return;
+				}
+				c->unstage_mark = last_unstage_mark;
+				if (c->unstage_mark) {
+					debug("   waiting %i cycles\n",
+							c->unstage_mark); 
 					return;
 				}
 				if ((on + go) == 0) {
@@ -233,9 +251,8 @@ cascade_run(struct process *p, struct site_status *s)
 				}
 
 				set_DO(c->motor[j], 0, 0);
-				c->mark = c->cycle;
+				c->unstage_mark_int = c->unstage_int;
 				c->next_stop = j + 1;
-				return;
 			}
 		}
 	}
@@ -243,12 +260,15 @@ cascade_run(struct process *p, struct site_status *s)
 	for (i = 0; i < c->motor_count; i++) {
 		j = (i + c->next_start) % c->motor_count;
 		if (!get_DO(c->motor[j])) {
-			if (c->stage_wait && c->mark > (c->cycle
-						- c->stage_wait)) {
-				debug2("   waiting %i cycles\n",
-						c->mark +
-						+ c->stage_wait -
-						c->cycle); 
+			if (c->stage_mark_int) {
+				debug("   waiting %i cycles\n",
+						c->stage_mark_int);
+				return;
+			}
+			c->stage_mark = last_stage_mark;
+			if (c->stage_mark) {
+				debug("   waiting %i cycles\n",
+						c->stage_mark);
 				return;
 			}
 			if ((on + go) > 0) {
@@ -257,12 +277,10 @@ cascade_run(struct process *p, struct site_status *s)
 			}
 
 			set_DO(c->motor[j], 1, 0);
-			c->mark = c->cycle;
+			c->stage_mark_int = c->stage_int;
 			c->next_start = j + 1;
-			return;
 		}
 	}
-	return;
 }
 
 static int
@@ -324,7 +342,6 @@ cascade_init(void *conf)
 	struct cascade_config *c = conf;
 
 	c->first_run = 1;
-	c->cycle = c->stage_wait + 1;
 	if (c->run_max > c->motor_count)
 		c->run_max = c->motor_count;
 
@@ -354,8 +371,7 @@ set_stage_wait(void *conf, int value)
 {
 	struct cascade_config *c = conf;
 	c->stage_wait = value;
-	c->has_target |= HAS_STAGE_SP;
-	debug("  cascade: stage = %i\n", value);
+	debug("  cascade: stage wait = %i\n", value);
 }
 
 static void
@@ -363,8 +379,23 @@ set_unstage_wait(void *conf, int value)
 {
 	struct cascade_config *c = conf;
 	c->unstage_wait = value;
-	c->has_target |= HAS_UNSTAGE_SP;
-	debug("  cascade: unstage = %i\n", value);
+	debug("  cascade: unstage wait = %i\n", value);
+}
+
+static void
+set_stage_wait_int(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->stage_int = value;
+	debug("  cascade: stage interval = %i\n", value);
+}
+
+static void
+set_unstage_wait_int(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	c->unstage_int = value;
+	debug("  cascade: unstage interval = %i\n", value);
 }
 
 static void
@@ -417,6 +448,14 @@ struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "unstage wait",
 		.set		= set_unstage_wait,
+	},
+	{
+		.name 		= "stage interval",
+		.set		= set_stage_wait_int,
+	},
+	{
+		.name 		= "unstage interval",
+		.set		= set_unstage_wait_int,
 	},
 	{
 		.name 		= "block",
