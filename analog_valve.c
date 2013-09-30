@@ -68,7 +68,7 @@ log_analog_valve(void *data, char *buff, const int sz, int c)
 	if (c == sz)
 		return 0;
 
-	return snprintf(buff, sz - c, "A %4i",
+	return snprintf(buff, sz - c, "A%4i",
 		       	((d->pos - d->low) * 1000) / (d->high - d->low));
 }
 
