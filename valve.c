@@ -35,6 +35,8 @@ struct valve_data {
 	int			min;
 	int			max;
 	int			total;
+	int			low;
+	int			correction;
 	int			close;
 	int			open;
 	int			fully_open;
@@ -73,35 +75,48 @@ adjust_2way_valve(int amount, void *data, void *ss)
 	if (-d->min < amount && amount < d->min)
 		return;
 
+	if (d->correction > 150) {
+		if (d->pos > (d->total * 150) / d->correction) {
+			amount *= d->correction;
+			amount /= 100;
+			amount *= d->pos;
+			amount /= d->total;
+			debug("corrected amount %5i\n", amount);
+		}
+	}
+
 	if (amount > d->max)
 		amount = d->max;
 	if (amount < -d->max)
 		amount = -d->max;
 
 	amount += d->pos;
-	s->DS[d->fully_open] = 0;
 	if (d->abs == 1) {
 		if (amount < 0) {
 			amount = 0;
 		}
 		else if (amount > d->total) {
 			amount = d->total;
-			if (d->fully_open)
-				s->DS[d->fully_open] = 1;
 		}
 	} else {
-		if (amount < -d->total) {
+		if (amount <= -d->total) {
 			d->pos = d->max;
 			amount = 0;
 			d->abs = 1;
 		}
-		else if (amount > d->total) {
+		else if (amount >= d->total) {
 			amount = d->total;
 			d->pos = d->total - d->max;
 			d->abs = 1;
-			if (d->fully_open)
-				s->DS[d->fully_open] = 1;
 		}
+	}
+	if (d->fully_open && d->abs) {
+		if (amount <= d->low)
+			s->DS[d->fully_open] = 0;
+		else if (amount == d->total)
+			s->DS[d->fully_open] = 2;
+		else
+			s->DS[d->fully_open] = 1;
 	}
 	amount -= d->pos;
 
@@ -169,6 +184,22 @@ set_total(void *conf, int value)
 	debug("  2way valve: total = %i\n", value);
 }
 
+static void
+set_low(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->low = value;
+	debug("  2way valve: low = %i\n", value);
+}
+
+static void
+set_correction(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->correction = value;
+	debug("  2way valve: correction = %i\n", value);
+}
+
 static struct setpoint_map twv_setpoints[] = {
 	{
 		.name 		= "min",
@@ -181,6 +212,14 @@ static struct setpoint_map twv_setpoints[] = {
 	{
 		.name 		= "total",
 		.set		= set_total,
+	},
+	{
+		.name 		= "low",
+		.set		= set_low,
+	},
+	{
+		.name 		= "correction",
+		.set		= set_correction,
 	},
 	{
 	}
@@ -265,6 +304,7 @@ static void *
 twv_alloc(void)
 {
 	struct valve_data *c = xzalloc(sizeof(*c));
+	c->correction = 100;
 	return c;
 }
 
