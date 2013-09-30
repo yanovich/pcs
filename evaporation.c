@@ -83,8 +83,10 @@ struct evaporation_config {
 	int			p_sensor_high;
 	int			p_low;
 	int			p_high;
+	int			safety;
 	int			temperature_io;
 	int			pressure_io;
+	int			safety_io;
 	struct list_head	fuzzy;
 	int			first_run;
 	int			e_prev;
@@ -98,14 +100,24 @@ evaporation_run(struct process *p, struct site_status *s)
 {
 	struct evaporation_config *c = p->config;
 	int vars[2];
-	int pr, v;
+	int pr, v, overheat;
 
 	debug("running evaporation\n");
 	c->t = s->AI[c->temperature_io];
 	pr = linear(c->p_sensor_low, c->p_sensor_high, c->p_low, c->p_high,
 			s->AI[c->pressure_io]);
 	c->p = r404(pr);
-	vars[0] = c->t - c->p - c->overheat;
+	overheat = c->t - c->p;
+	vars[0] = overheat - c->overheat;
+	if (c->safety_io) {
+		if (overheat > c->safety) {
+			if (!get_DO(c->safety_io))
+				set_DO(c->safety_io, 1, 0);
+		} else {
+			if (get_DO(c->safety_io))
+				set_DO(c->safety_io, 0, 0);
+		}
+	}
 	debug("  evaporation: %i %i (%i) %i\n", c->t, c->p, pr, vars[0]);
 	if (c->first_run) {
 		c->first_run = 0;
@@ -197,6 +209,14 @@ set_pressure_high(void *conf, int value)
 	debug("  evaporation: pressure high = %i\n", value);
 }
 
+static void
+set_safety(void *conf, int value)
+{
+	struct evaporation_config *c = conf;
+	c->safety = value;
+	debug("  evaporation: safety = %i\n", value);
+}
+
 struct setpoint_map evaporation_setpoints[] = {
 	{
 		.name 		= "overheat",
@@ -217,6 +237,10 @@ struct setpoint_map evaporation_setpoints[] = {
 	{
 		.name 		= "pressure high",
 		.set		= set_pressure_high,
+	},
+	{
+		.name 		= "min overheat",
+		.set		= set_safety,
 	},
 	{
 	}
@@ -242,6 +266,16 @@ set_pressure_io(void *conf, int type, int value)
 	debug("  evaporation: pressure_io = %i\n", value);
 }
 
+static void
+set_safety_io(void *conf, int type, int value)
+{
+	struct evaporation_config *c = conf;
+	if (type != DO_MODULE)
+		fatal("evaporation: wrong type of safety out\n");
+	c->safety_io = value;
+	debug("  evaporation: safety_io = %i\n", value);
+}
+
 struct io_map evaporation_io[] = {
 	{
 		.name 		= "temperature",
@@ -250,6 +284,10 @@ struct io_map evaporation_io[] = {
 	{
 		.name 		= "pressure",
 		.set		= set_pressure_io,
+	},
+	{
+		.name 		= "safety",
+		.set		= set_safety_io,
 	},
 	{
 	}
