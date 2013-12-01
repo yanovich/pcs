@@ -114,8 +114,10 @@ evaporation_run(struct process *p, struct site_status *s)
 			if (!get_DO(c->safety_io))
 				set_DO(c->safety_io, 1, 0);
 		} else {
-			if (get_DO(c->safety_io))
+			if (get_DO(c->safety_io)) {
 				set_DO(c->safety_io, 0, 0);
+				warn("safety block %i\n", c->safety_io);
+			}
 		}
 	}
 	debug("  evaporation: %i %i (%i) %i\n", c->t, c->p, pr, vars[0]);

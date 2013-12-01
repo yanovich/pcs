@@ -69,8 +69,6 @@ heating_run(struct process *p, struct site_status *s)
 		/ (c->inside - c->street_sp) + c->inside;
 	d11 = (c->feed_sp - c->flowback_sp) * (c->inside - street)
 		/ (c->inside - c->street_sp);
-	if (s->AI[c->street] < c->street)
-		t11 = c->feed_sp;
 	debug(" t11 %i t12 %i\n", t11, t11 - d11);
 
 	e12 = s->AI[c->flowback] + d11 - t11;

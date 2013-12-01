@@ -36,6 +36,7 @@
 struct valve_data {
 	int			low;
 	int			high;
+	int			correction;
 	int			output;
 	int			feedback;
 	unsigned		status;
@@ -51,6 +52,16 @@ adjust_analog_valve(int amount, void *data, void *s)
 	if (d->status & HAS_FEEDBACK)
 		d->pos = ss->AI[d->feedback];
 	debug(" analog valve: amount %i pos %i\n", amount, d->pos);
+	if (d->correction > 150) {
+		if (d->pos > (d->high * 150) / d->correction) {
+			amount *= d->correction;
+			amount /= 100;
+			amount *= d->pos;
+			amount /= d->high;
+			debug("  corrected amount %5i\n", amount);
+		}
+	}
+
 	d->pos += amount;
 	if (d->pos > d->high)
 		d->pos = d->high;
@@ -107,6 +118,14 @@ set_high(void *conf, int value)
 	debug("  analog valve: high = %i\n", value);
 }
 
+static void
+set_correction(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	c->correction = value;
+	debug("  analog valve: correction = %i\n", value);
+}
+
 static struct setpoint_map av_setpoints[] = {
 	{
 		.name 		= "pos",
@@ -119,6 +138,10 @@ static struct setpoint_map av_setpoints[] = {
 	{
 		.name 		= "high",
 		.set		= set_high,
+	},
+	{
+		.name 		= "correction",
+		.set		= set_correction,
 	},
 	{
 	}

@@ -452,7 +452,7 @@ set_AO(int index, int value)
 static void
 log_run(struct process *a, struct site_status *s)
 {
-	const int sz = 128;
+	const int sz = 1024;
 	int c = 0;
 	char buff[sz];
 	struct process *p;
