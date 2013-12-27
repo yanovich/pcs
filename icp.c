@@ -32,8 +32,8 @@
 #include "icp.h"
 
 const char *ports[] = {
-	"/dev/ttySA1",
-	"/dev/ttyS0",
+	"/dev/ttyS1",
+	"/dev/ttyS3",
 };
 
 int
