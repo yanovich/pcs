@@ -41,6 +41,7 @@ struct valve_data {
 	int			open;
 	int			fully_open;
 	int			manual;
+	unsigned int		manual_inverted;
 	int			remote_manual;
 	int			abs;
 	int			pos;
@@ -54,7 +55,7 @@ adjust_2way_valve(int amount, void *data, void *ss)
 	int reset = 0;
 	char *reason = "";
 
-	if (d->manual && get_DI(d->manual)) {
+	if (d->manual && (get_DI(d->manual) ^ d->manual_inverted)) {
 		reset = 1;
 		reason = "manual override detected\n";
 		debug2("%s", reason);
@@ -200,6 +201,17 @@ set_correction(void *conf, int value)
 	debug("  2way valve: correction = %i\n", value);
 }
 
+static void
+set_manual_inverted(void *conf, int value)
+{
+	struct valve_data *c = conf;
+	if (value != 0 && value != 1)
+		warn("%s:%i -- unexpected boolean value %i\n",
+				__FILE__, __LINE__, value);
+	c->manual_inverted = (value != 0);
+	debug("  cascade: run_max = %i\n", value);
+}
+
 static struct setpoint_map twv_setpoints[] = {
 	{
 		.name 		= "min",
@@ -220,6 +232,10 @@ static struct setpoint_map twv_setpoints[] = {
 	{
 		.name 		= "correction",
 		.set		= set_correction,
+	},
+	{
+		.name 		= "manual inverted",
+		.set		= set_manual_inverted,
 	},
 	{
 	}

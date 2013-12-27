@@ -59,6 +59,7 @@ struct cascade_config {
 	int			feed_type;
 	int			power;
 	int			manual;
+	unsigned int		manual_inverted;
 	int			remote_manual;
 	int			status;
 	int			first_run;
@@ -111,7 +112,7 @@ cascade_run(struct process *p, struct site_status *s)
 		reason = "power failed\n";
 		debug2("%s", reason);
 	}
-	if ((c->manual && get_DI(c->manual))) {
+	if (c->manual && (get_DI(c->manual) ^ c->manual_inverted)) {
 		shutdown = 1;
 		reason = "manual override\n";
 		debug2("%s", reason);
@@ -432,6 +433,17 @@ set_run_max(void *conf, int value)
 	debug("  cascade: run_max = %i\n", value);
 }
 
+static void
+set_manual_inverted(void *conf, int value)
+{
+	struct cascade_config *c = conf;
+	if (value != 0 && value != 1)
+		warn("%s:%i -- unexpected boolean value %i\n",
+				__FILE__, __LINE__, value);
+	c->manual_inverted = (value != 0);
+	debug("  cascade: run_max = %i\n", value);
+}
+
 struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "stage",
@@ -472,6 +484,10 @@ struct setpoint_map cascade_setpoints[] = {
 	{
 		.name 		= "run max",
 		.set		= set_run_max,
+	},
+	{
+		.name 		= "manual inverted",
+		.set		= set_manual_inverted,
 	},
 	{
 	}
