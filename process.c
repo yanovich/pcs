@@ -314,15 +314,14 @@ load_site_status()
 	int err;
 	int i, j, t;
 	int offset = 0;
-	char data[256];
 	int raw[8] = {0};
 
 	offset = 0;
 	for (i = 0;config.AI_mod[i].count > 0; i++) {
 		err = config.AI_mod[i].read(&config.AI_mod[i], raw);
 		if (0 > err) {
-			error("%s: bad analog data: %s(%i)\n", __FILE__,
-				       	data, err);
+			error("%s:%i: error %i reading analog mod %i\n",
+					__FILE__, __LINE__, err, i);
 			return -1;
 		}
 		t = offset;
@@ -333,8 +332,8 @@ load_site_status()
 				continue;
 			status.AI[t] = config.AI[t].convert(raw[j]);
 			if (PCS_BAD_DATA == status.AI[t]) {
-				error("%s: bad analog data: %s(%i)\n", __FILE__,
-					       	data, j);
+				error("%s:%i: bad analog data sensor %i %i\n",
+						__FILE__, __LINE__, t, raw[j]);
 				return -1;
 			}
 		}
