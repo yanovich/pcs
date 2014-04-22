@@ -10,11 +10,18 @@ depcomp
 install-sh
 missing
 .deps
+.dirstamp
 autom4te.cache
 config.h
 config.log
 config.status
 stamp-h1
+
+compile
+test-driver
+test-suite.log
+t/*.log
+t/*.trs
 
 pcs
 test
@@ -22,3 +29,5 @@ icp-raw
 libpcs.a
 lsicpdas
 fc-raw
+
+t/test-fuzzy
