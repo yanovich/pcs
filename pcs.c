@@ -17,9 +17,9 @@
  * Boston, MA 02111-1307, USA.
  */   
 
-#include <stdio.h>
+#include "includes.h"
+
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "block.h"
@@ -37,7 +37,7 @@ next_tick(struct server_state *s)
 	delay = s->start.tv_usec - now.tv_usec +
 		1000000 * (s->start.tv_sec - now.tv_sec);
 	if (0 >= delay) {
-		printf("missed tick by %li usec\n", -delay);
+		warn("missed tick by %li usec\n", -delay);
 		return;
 	}
 	usleep(delay);
@@ -50,13 +50,14 @@ int main()
 	struct block *b;
 
 	INIT_LIST_HEAD(&c.block_list);
+	log_init("pcs", LOG_NOTICE, LOG_DAEMON, 1);
 	load_server_config(NULL, &c);
 	gettimeofday(&s.start, NULL);
 
 	while (1) {
 		list_for_each_entry(b, &c.block_list, block_entry) {
 			if (!b || !b->ops || !b->ops->run) {
-				printf("bad block 0x%p\n", b);
+				error("bad block 0x%p\n", b);
 			}
 			b->ops->run(b, &s);
 		}

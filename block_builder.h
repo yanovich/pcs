@@ -1,4 +1,4 @@
-/* serverconf.c -- process server configuration
+/* block_builder.h -- process block builder definitions
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -15,23 +15,14 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- */   
+ */
+
+#ifndef _PCS_BLOCK_BUILDER_H
+#define _PCS_BLOCK_BUILDER_H
 
 #include "block.h"
-#include "list.h"
-#include "mark.h"
-#include "serverconf.h"
-#include "state.h"
-#include "xmalloc.h"
 
-void
-load_server_config(const char const *filename, struct server_config *conf)
-{
-	struct block_builder *builder = load_mark_builder();
-	struct block *b = xzalloc(sizeof(*b));
-
-	conf->tick.tv_sec = 1;
-	conf->tick.tv_usec = 0;
-	b->ops = builder->ops();
-	list_add(&b->block_entry, &conf->block_list);
-}
+struct block_builder {
+	struct block_ops	*(*ops)(void);
+};
+#endif

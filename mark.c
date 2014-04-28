@@ -1,4 +1,4 @@
-/* serverconf.c -- process server configuration
+/* mark.c -- mark block and its builder
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -15,23 +15,44 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- */   
+ */
+
+#include "includes.h"
+
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "block.h"
-#include "list.h"
 #include "mark.h"
-#include "serverconf.h"
 #include "state.h"
-#include "xmalloc.h"
 
-void
-load_server_config(const char const *filename, struct server_config *conf)
+static void
+mark_run(struct block *b, struct server_state *s)
 {
-	struct block_builder *builder = load_mark_builder();
-	struct block *b = xzalloc(sizeof(*b));
+	char buff[24];
+	struct tm tm = *localtime(&s->start.tv_sec);
+	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
+	logit("%s Greetings, world!\n", buff);
+}
 
-	conf->tick.tv_sec = 1;
-	conf->tick.tv_usec = 0;
-	b->ops = builder->ops();
-	list_add(&b->block_entry, &conf->block_list);
+static struct block_ops mark_ops = {
+	.run		= mark_run,
+};
+
+static struct block_ops *
+mark_init(void)
+{
+	return &mark_ops;
+}
+
+static struct block_builder mark_builder = {
+	.ops		= mark_init,
+};
+
+struct block_builder *
+load_mark_builder(void)
+{
+	return &mark_builder;
 }

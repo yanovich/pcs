@@ -17,6 +17,8 @@
 #ifndef _LINUX_LIST_H
 #define _LINUX_LIST_H
 
+#include <unistd.h>
+
 /**
  * @name from other kernel headers
  */
