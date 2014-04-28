@@ -18,5 +18,9 @@ AC_CHECK_HEADERS(\
 		 unistd.h \
 		 ,[],[AC_MSG_ERROR([a required header is missing])])
 
+AC_CHECK_FUNCS([\
+		getopt\
+])
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

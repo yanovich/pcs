@@ -1,4 +1,4 @@
-/* pcs.c -- process control service
+/* serverconf.c -- process server configuration
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -28,41 +28,27 @@
 #include "state.h"
 
 void
-next_tick(struct server_state *s)
+mark_run(struct block *b, struct server_state *s)
 {
-	struct timeval now;
-	long delay;
-
-	gettimeofday(&now, NULL);
-	delay = s->start.tv_usec - now.tv_usec +
-		1000000 * (s->start.tv_sec - now.tv_sec);
-	if (0 >= delay) {
-		printf("missed tick by %li usec\n", -delay);
-		return;
-	}
-	usleep(delay);
+	char buff[24];
+	struct tm tm = *localtime(&s->start.tv_sec);
+	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
+	printf("%s Greetings, world!\n", buff);
+	usleep(100000);
 }
 
-int main()
+struct block_ops mark_ops = {
+	.run		= mark_run,
+};
+
+struct block mark = {
+	.ops		= &mark_ops,
+};
+
+void
+load_server_config(const char const *filename, struct server_config *conf)
 {
-	struct server_config c;
-	struct server_state s;
-	struct block *b;
-
-	INIT_LIST_HEAD(&c.block_list);
-	load_server_config(NULL, &c);
-	gettimeofday(&s.start, NULL);
-
-	while (1) {
-		list_for_each_entry(b, &c.block_list, block_entry) {
-			if (!b || !b->ops || !b->ops->run) {
-				printf("bad block 0x%p\n", b);
-			}
-			b->ops->run(b, &s);
-		}
-		timeradd(&s.start, &c.tick, &s.start);
-		next_tick(&s);
-	}
-
-	return 0;
+	conf->tick.tv_sec = 1;
+	conf->tick.tv_usec = 0;
+	list_add(&mark.block_entry, &conf->block_list);
 }

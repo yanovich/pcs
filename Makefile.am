@@ -4,5 +4,11 @@ AM_MAKEFLAGS			 = --no-print-directory
 
 AM_CFLAGS			 = -Wall
 
+noinst_LIBRARIES		 = libpcs.a
+libpcs_a_SOURCES		 = \
+				   serverconf.c
+
 bin_PROGRAMS			 = \
 				   pcs
+
+pcs_LDADD			 = libpcs.a
