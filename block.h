@@ -26,6 +26,7 @@
 struct block {
 	struct list_head	block_entry;
 	struct block_ops	*ops;
+	const char		*name;
 };
 
 struct block_ops {

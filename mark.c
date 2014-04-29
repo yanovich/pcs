@@ -34,7 +34,7 @@ mark_run(struct block *b, struct server_state *s)
 	char buff[24];
 	struct tm tm = *localtime(&s->start.tv_sec);
 	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	logit("%s Greetings, world!\n", buff);
+	logit("%s %s: Greetings, world!\n", buff, b->name);
 }
 
 static struct block_ops mark_ops = {

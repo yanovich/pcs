@@ -33,5 +33,6 @@ load_server_config(const char const *filename, struct server_config *conf)
 	conf->tick.tv_sec = 1;
 	conf->tick.tv_usec = 0;
 	b->ops = builder->ops();
+	b->name = "mark1";
 	list_add(&b->block_entry, &conf->block_list);
 }
