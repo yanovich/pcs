@@ -43,14 +43,29 @@ next_tick(struct server_state *s)
 	usleep(delay);
 }
 
-int main()
+int main(int argc, char **argv)
 {
+	int log_level = LOG_NOTICE;
 	struct server_config c;
 	struct server_state s;
 	struct block *b;
+	int opt;
+
+	while ((opt = getopt(argc, argv, "d")) != -1) {
+		switch (opt) {
+		case 'd':
+			if (log_level >= LOG_DEBUG)
+				log_level++;
+			else
+				log_level = LOG_DEBUG;
+			break;
+		default:
+			break;
+		}
+	}
 
 	INIT_LIST_HEAD(&c.block_list);
-	log_init("pcs", LOG_NOTICE, LOG_DAEMON, 1);
+	log_init("pcs", log_level, LOG_DAEMON, 1);
 	load_server_config(NULL, &c);
 	gettimeofday(&s.start, NULL);
 
