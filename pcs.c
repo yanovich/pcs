@@ -47,12 +47,13 @@ int main(int argc, char **argv)
 {
 	const char *config_file_name = SYSCONFDIR "/pcs.conf";
 	int log_level = LOG_NOTICE;
+	int test_only = 0;
 	struct server_config c;
 	struct server_state s;
 	struct block *b;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "df:")) != -1) {
+	while ((opt = getopt(argc, argv, "df:t")) != -1) {
 		switch (opt) {
 		case 'd':
 			if (log_level >= LOG_DEBUG)
@@ -62,6 +63,9 @@ int main(int argc, char **argv)
 			break;
 		case 'f':
 			config_file_name = optarg;
+			break;
+		case 't':
+			test_only = 1;
 			break;
 		default:
 			break;
@@ -73,6 +77,8 @@ int main(int argc, char **argv)
 	load_server_config(config_file_name, &c);
 	if (&c.block_list == c.block_list.next)
 		fatal("Nothing to do. Exiting\n");
+	if (test_only)
+		return 0;
 	gettimeofday(&s.start, NULL);
 
 	while (1) {
