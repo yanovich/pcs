@@ -15,3 +15,9 @@ bin_PROGRAMS			 = \
 				   pcs
 
 pcs_LDADD			 = libpcs.a
+
+TESTS				 = \
+				   t/t0001.sh
+
+EXTRA_DIST			 = \
+				   t/t0001.sh

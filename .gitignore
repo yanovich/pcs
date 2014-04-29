@@ -15,4 +15,7 @@ install-sh
 missing
 pcs
 stamp-h1
-
+t/t*.log
+t/t*.trs
+test-driver
+test-suite.log
