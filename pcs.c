@@ -45,19 +45,23 @@ next_tick(struct server_state *s)
 
 int main(int argc, char **argv)
 {
+	const char *config_file_name = SYSCONFDIR "/pcs.conf";
 	int log_level = LOG_NOTICE;
 	struct server_config c;
 	struct server_state s;
 	struct block *b;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "d")) != -1) {
+	while ((opt = getopt(argc, argv, "df:")) != -1) {
 		switch (opt) {
 		case 'd':
 			if (log_level >= LOG_DEBUG)
 				log_level++;
 			else
 				log_level = LOG_DEBUG;
+			break;
+		case 'f':
+			config_file_name = optarg;
 			break;
 		default:
 			break;
@@ -66,7 +70,9 @@ int main(int argc, char **argv)
 
 	INIT_LIST_HEAD(&c.block_list);
 	log_init("pcs", log_level, LOG_DAEMON, 1);
-	load_server_config(NULL, &c);
+	load_server_config(config_file_name, &c);
+	if (&c.block_list == c.block_list.next)
+		fatal("Nothing to do. Exiting\n");
 	gettimeofday(&s.start, NULL);
 
 	while (1) {
