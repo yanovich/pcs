@@ -27,6 +27,7 @@
 #include "block.h"
 #include "i-8042.h"
 #include "list.h"
+#include "map.h"
 #include "mark.h"
 #include "serverconf.h"
 
@@ -61,7 +62,7 @@ struct pcs_parser_map {
 	const char		*key;
 	int			(*handler)(
 			struct pcs_parser_node *node, yaml_event_t *event);
-	void				*data;
+	void			*data;
 };
 
 static int
@@ -225,10 +226,13 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
+	long value;
+
 	if (YAML_SCALAR_EVENT != event->type)
 		return unexpected_event(node, event);
 
-	debug(" %s\n", event->data.scalar.value);
+	value = long_value(node, event);
+	debug(" %li\n", value);
 	remove_parser_node(node);
 	return 1;
 }
@@ -250,19 +254,14 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
-struct loader_map {
-	const char		*key;
-	struct block_builder	*(*loader)(void);
-};
-
-struct loader_map loaders[] = {
+struct pcs_map loaders[] = {
 	{
-		.key           = "i-8042",
-		.loader        = load_i_8042_builder,
+		.key		= "i-8042",
+		.value		= load_i_8042_builder,
 	}
 	,{
-		.key           = "mark",
-		.loader        = load_mark_builder,
+		.key		= "mark",
+		.value		= load_mark_builder,
 	}
 	,{
 	}
@@ -272,20 +271,18 @@ static int
 new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	const char *key = (const char *) &node[1];
+	struct block_builder *(*loader)(void) = NULL;
 	struct block_builder *builder = NULL;
 	struct block *b;
-	int i;
 
 	if (YAML_MAPPING_START_EVENT != event->type)
 		return unexpected_event(node, event);
 
-	for (i = 0; loaders[i].key; i++) {
-		if (strcmp(key, loaders[i].key))
-			continue;
-		builder = loaders[i].loader();
-		break;
-	}
+	loader = pcs_lookup(loaders, key);
+	if (!loader)
+		return unexpected_key(node, event, (const char *) &node[1]);
 
+	builder = loader();
 	if (!builder)
 		return unexpected_key(node, event, (const char *) &node[1]);
 
