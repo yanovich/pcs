@@ -12,7 +12,9 @@ AC_PROG_MKDIR_P
 AC_PROG_RANLIB
 
 AC_CHECK_HEADERS(\
+		 errno.h \
 		 stdio.h \
+		 string.h \
 		 sys/time.h \
 		 time.h \
 		 unistd.h \
@@ -21,6 +23,8 @@ AC_CHECK_HEADERS(\
 AC_CHECK_FUNCS([\
 		getopt\
 ])
+
+PKG_CHECK_MODULES(YAML, yaml-0.1 >= 0.1)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
