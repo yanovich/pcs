@@ -119,6 +119,17 @@ debug_event(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
+unexpected_key(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	fatal("unexpected key %s in %s at line %zu column %zu\n",
+			(const char *) &node[1],
+			node->state->filename,
+			event->start_mark.line,
+			event->start_mark.column);
+	return 0;
+}
+
+static int
 unexpected_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	fatal("unexpected %s in %s at line %zu column %zu\n",
@@ -216,11 +227,44 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+struct loader_map {
+       const char              *key;
+       struct block_builder    *(*loader)(void);
+};
+
+struct loader_map loaders[] = {
+       {
+               .key           = "mark",
+               .loader        = load_mark_builder,
+       }
+       ,{
+       }
+};
+
 static int
 new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
+	const char *key = (const char *) &node[1];
+	struct block_builder *builder = NULL;
+	struct block *b;
+	int i;
+
 	if (YAML_MAPPING_START_EVENT != event->type)
 		return unexpected_event(node, event);
+
+	for (i = 0; loaders[i].key; i++) {
+		if (strcmp(key, loaders[i].key))
+			continue;
+		builder = loaders[i].loader();
+		break;
+	}
+
+	if (!builder)
+		return unexpected_key(node, event);
+
+	b = xzalloc(sizeof(*b));
+	b->ops = builder->ops();
+	list_add(&b->block_entry, &node->state->conf->block_list);
 
 	node->handler[YAML_SCALAR_EVENT] = NULL;
 	node->handler[YAML_SEQUENCE_START_EVENT] = NULL;
@@ -352,6 +396,7 @@ parse_config(const char *filename, struct server_config *conf)
 		run = handler(node, &event);
 	}
 
+	yaml_parser_delete(&parser);
 	fclose(f);
 }
 

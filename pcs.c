@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	while (1) {
 		list_for_each_entry(b, &c.block_list, block_entry) {
 			if (!b || !b->ops || !b->ops->run) {
-				error("bad block 0x%p\n", b);
+				fatal("bad block %p\n", b);
 			}
 			b->ops->run(b, &s);
 		}

@@ -23,10 +23,12 @@
 #include "list.h"
 #include "state.h"
 
+#define PCS_MAX_NAME_LENGTH	64
+
 struct block {
 	struct list_head	block_entry;
 	struct block_ops	*ops;
-	const char		*name;
+	char			name[PCS_MAX_NAME_LENGTH];
 };
 
 struct block_ops {
