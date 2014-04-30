@@ -8,6 +8,7 @@ AM_CPPFLAGS			 += -DSYSCONFDIR='"$(sysconfdir)"'
 
 noinst_LIBRARIES		 = libpcs.a
 libpcs_a_SOURCES		 = \
+				   i-8042.c \
 				   log.c \
 				   mark.c \
 				   serverconf.c \

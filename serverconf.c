@@ -25,6 +25,7 @@
 #include <yaml.h>
 
 #include "block.h"
+#include "i-8042.h"
 #include "list.h"
 #include "mark.h"
 #include "serverconf.h"
@@ -107,10 +108,11 @@ remove_parser_node(struct pcs_parser_node *node)
 }
 
 static int
-unexpected_key(struct pcs_parser_node *node, yaml_event_t *event)
+unexpected_key(struct pcs_parser_node *node, yaml_event_t *event,
+		const char *key)
 {
 	fatal("unexpected key %s in %s at line %zu column %zu\n",
-			(const char *) &node[1],
+			key,
 			node->state->filename,
 			event->start_mark.line,
 			event->start_mark.column);
@@ -181,6 +183,9 @@ scalar_key_event(struct pcs_parser_node *node, yaml_event_t *event)
 	i = handler_from_map(key, map);
 	handler = map[i].handler;
 
+	if (!handler)
+		return unexpected_key(node, event, key);
+
 	n->handler[YAML_SCALAR_EVENT] = handler;
 	n->handler[YAML_SEQUENCE_START_EVENT] = handler;
 	n->handler[YAML_MAPPING_START_EVENT] = handler;
@@ -218,6 +223,17 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
+new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	debug(" %s\n", event->data.scalar.value);
+	remove_parser_node(node);
+	return 1;
+}
+
+static int
 block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	struct block *b = list_entry(node->state->conf->block_list.prev,
@@ -241,6 +257,10 @@ struct loader_map {
 
 struct loader_map loaders[] = {
 	{
+		.key           = "i-8042",
+		.loader        = load_i_8042_builder,
+	}
+	,{
 		.key           = "mark",
 		.loader        = load_mark_builder,
 	}
@@ -267,7 +287,7 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 	}
 
 	if (!builder)
-		return unexpected_key(node, event);
+		return unexpected_key(node, event, (const char *) &node[1]);
 
 	b = xzalloc(sizeof(*b));
 	b->ops = builder->ops();
@@ -305,10 +325,23 @@ struct pcs_parser_map options_map[] = {
 	}
 };
 
+struct pcs_parser_map setpoints_map[] = {
+	{
+		.handler		= new_setpoint_event,
+	}
+	,{
+	}
+};
+
 struct pcs_parser_map block_map[] = {
 	{
 		.key			= "name",
 		.handler		= block_name_event,
+	}
+	,{
+		.key			= "setpoints",
+		.handler		= map_start_event,
+		.data			= &setpoints_map,
 	}
 	,{
 	}
