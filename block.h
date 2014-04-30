@@ -29,6 +29,8 @@ struct block {
 	struct list_head	block_entry;
 	struct block_ops	*ops;
 	char			name[PCS_MAX_NAME_LENGTH];
+	struct block_builder	*builder;
+	void			*data;
 };
 
 struct block_ops {

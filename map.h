@@ -20,15 +20,20 @@
 #ifndef _PCS_MAP_H
 #define _PCS_MAP_H
 
+#include <string.h>
+
 struct pcs_map {
 	const char		*key;
 	void			*value;
 };
 
-void *
+static inline void *
 pcs_lookup(struct pcs_map *map, const char *key)
 {
 	int i;
+
+	if (!map)
+		return NULL;
 
 	for (i = 0; map[i].key; i++) {
 		if (strcmp(key, map[i].key))

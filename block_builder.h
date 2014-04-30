@@ -23,6 +23,8 @@
 #include "block.h"
 
 struct block_builder {
+	void			*(*alloc)(void);
 	struct block_ops	*(*ops)(void);
+	struct pcs_map		*setpoints;
 };
 #endif

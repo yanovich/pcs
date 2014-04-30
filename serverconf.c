@@ -226,13 +226,22 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	const char *key = (const char *) &node[1];
 	long value;
+	int (*setter)(void *, long);
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return unexpected_event(node, event);
 
 	value = long_value(node, event);
+	setter = pcs_lookup(b->builder->setpoints, key);
+	if (!setter)
+		return unexpected_key(node, event, key);
+
 	debug(" %li\n", value);
+	setter(b->data, value);
 	remove_parser_node(node);
 	return 1;
 }
@@ -287,6 +296,10 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 		return unexpected_key(node, event, (const char *) &node[1]);
 
 	b = xzalloc(sizeof(*b));
+	b->builder = builder;
+	if (builder->alloc)
+		b->data = builder->alloc();
+
 	b->ops = builder->ops();
 	list_add(&b->block_entry, &node->state->conf->block_list);
 
