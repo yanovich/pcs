@@ -107,18 +107,6 @@ remove_parser_node(struct pcs_parser_node *node)
 }
 
 static int
-debug_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	if (YAML_SCALAR_EVENT != event->type)
-		debug("%s\n", yaml_event_type[event->type]);
-	else {
-		debug(" %s\n", event->data.scalar.value);
-		remove_parser_node(node);
-	}
-	return 1;
-}
-
-static int
 unexpected_key(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	fatal("unexpected key %s in %s at line %zu column %zu\n",
@@ -177,6 +165,7 @@ scalar_key_event(struct pcs_parser_node *node, yaml_event_t *event)
 	const char *key = (const char*) event->data.scalar.value;
 	size_t len = event->data.scalar.length;
 	int i;
+	char *s;
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return unexpected_event(node, event);
@@ -186,7 +175,8 @@ scalar_key_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	len += sizeof(int *) - len % sizeof(int *);
 	n = new_parser_node(node->state, &node->node_entry, len);
-	strncpy(n->data, key, len);
+	s = (char *) &n[1];
+	strncpy(s, key, len);
 
 	i = handler_from_map(key, map);
 	handler = map[i].handler;
@@ -227,18 +217,35 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+static int
+block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	const char *name = (const char *) event->data.scalar.value;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	strncpy(b->name, name, PCS_MAX_NAME_LENGTH);
+	b->name[PCS_MAX_NAME_LENGTH - 1] = 0;
+	debug(" %s\n", name);
+	remove_parser_node(node);
+	return 1;
+}
+
 struct loader_map {
-       const char              *key;
-       struct block_builder    *(*loader)(void);
+	const char		*key;
+	struct block_builder	*(*loader)(void);
 };
 
 struct loader_map loaders[] = {
-       {
-               .key           = "mark",
-               .loader        = load_mark_builder,
-       }
-       ,{
-       }
+	{
+		.key           = "mark",
+		.loader        = load_mark_builder,
+	}
+	,{
+	}
 };
 
 static int
@@ -301,7 +308,7 @@ struct pcs_parser_map options_map[] = {
 struct pcs_parser_map block_map[] = {
 	{
 		.key			= "name",
-		.handler		= debug_event,
+		.handler		= block_name_event,
 	}
 	,{
 	}
