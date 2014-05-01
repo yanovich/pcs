@@ -54,8 +54,8 @@ i_8042_run(struct block *b, struct server_state *s)
 		error("bad i-8042 output slot %u\n", d->slot);
 
 	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	debug("%s %s: i-8042.slot%u di 0x%04lx do 0x%04lx\n",
-			buff, b->name, d->slot, di16, do16);
+	debug("%s %s: i-8042 di 0x%04lx do 0x%04lx\n",
+			buff, b->name, di16, do16);
 }
 
 int
