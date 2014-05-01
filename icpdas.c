@@ -28,7 +28,89 @@
 
 #include "icpdas.h"
 
+#define ICP_SLOT_COUNT_FILE  "/sys/bus/icpdas/devices/backplane/slot_count"
 #define ICP_ACTIVE_SLOT_FILE "/sys/bus/icpdas/devices/backplane/active_slot"
+
+static int
+icpdas_module_count(void)
+{
+	int fd;
+	char buff[256];
+	size_t sz;
+
+	fd = open(ICP_SLOT_COUNT_FILE, O_RDONLY);
+	if (-1 == fd) {
+		error("%s: %s\n", ICP_SLOT_COUNT_FILE, strerror(errno));
+		return -1;
+	}
+	sz = read(fd, buff, 255);
+	close(fd);
+	if (0 == sz || 255 <= sz) {
+		error("%s: %s\n", ICP_SLOT_COUNT_FILE, strerror(errno));
+		return -1;
+	}
+
+	return atoi(buff);
+}
+
+static int
+icpdas_get_parallel_name(unsigned int slot, int size, char *data)
+{
+	int fd, err;
+	char buff[256];
+	size_t sz;
+
+	if (slot == 0 || slot > 8) {
+		error("%s: bad slot (%u)\n", __FUNCTION__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+			"/sys/bus/icpdas/devices/slot%02u/model", slot);
+	if (err >= sizeof(buff)) {
+		error("%s:%u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	fd = open(buff, O_RDONLY);
+	if (-1 == fd)
+		return -1;
+
+	sz = read(fd, data, size);
+	close(fd);
+	if (0 >= sz) {
+		error("%s: %s (%i)\n", buff, strerror(errno), errno);
+		return -1;
+	}
+	data[sz - 1] = 0;
+
+	return 0;
+}
+
+#define MAX_RESPONSE	256
+#define REQUEST_NAME	"$00M"
+void
+icpdas_list_modules(void (*callback)(unsigned int, const char *))
+{
+	char buff[MAX_RESPONSE];
+	int slot_count, slot;
+
+	slot_count = icpdas_module_count();
+	if (slot_count < 0)
+		return;
+
+	for (slot = 1; slot <= slot_count; slot++) {
+		char *name = buff;
+		if (icpdas_get_parallel_name(slot, MAX_RESPONSE, name) != 0) {
+			if (icpdas_serial_exchange("/dev/ttyS1", slot,
+						REQUEST_NAME,
+						MAX_RESPONSE - 1, name) < 3)
+				name = NULL;
+			else
+				name = &buff[3];
+		}
+		callback(slot, name);
+	}
+}
 
 int
 icpdas_get_parallel_input(unsigned int slot, unsigned long *out)

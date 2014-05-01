@@ -13,6 +13,7 @@ configure
 depcomp
 icp-raw
 install-sh
+lsicpdas
 missing
 pcs
 stamp-h1

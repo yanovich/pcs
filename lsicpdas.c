@@ -1,4 +1,4 @@
-/* icpdas.h -- exchange data with ICP DAS I-8(7) modules
+/* lsicpdas.c -- list present ICP DAS I-8(7) modules
  * Copyright (C) 2014 Sergey Yanovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -17,19 +17,24 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef _PCS_ICPDAS_H
-#define _PCS_ICPDAS_H
+#include "includes.h"
 
-void
-icpdas_list_modules(void (*callback)(unsigned int, const char *));
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-int
-icpdas_get_parallel_input(unsigned int slot, unsigned long *out);
+#include "icpdas.h"
 
-int
-icpdas_get_parallel_output(unsigned int slot, unsigned long *out);
+void print_module(unsigned int slot, const char *name)
+{
+	printf("slot %i ... %s\n", slot, name ? name : "empty");
+}
 
-int
-icpdas_serial_exchange(const char const *device, unsigned int slot,
-		const char const *cmd, int size, char *data);
-#endif /* _PCS_ICPDAS_H */
+int main(int argc, char *argv[])
+{
+	log_init("lsicpdas", LOG_NOTICE, LOG_DAEMON, 1);
+
+	icpdas_list_modules(print_module);
+
+	return 0;
+}
