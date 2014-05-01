@@ -6,18 +6,30 @@ AM_CFLAGS			 = -Wall
 AM_CPPFLAGS			 = -I /usr/include
 AM_CPPFLAGS			 += -DSYSCONFDIR='"$(sysconfdir)"'
 
-noinst_LIBRARIES		 = libpcs.a
+noinst_LIBRARIES		 = \
+				   libicpdas.a \
+				   libpcs.a \
+				   libtools.a
+
+libicpdas_a_SOURCES		 = \
+				   icpdas.c
+
 libpcs_a_SOURCES		 = \
 				   i-8042.c \
-				   log.c \
 				   mark.c \
-				   serverconf.c \
+				   serverconf.c
+
+libtools_a_SOURCES		 = \
+				   log.c \
 				   xmalloc.c
+
+LDADD				 = \
+				   libtools.a
 
 bin_PROGRAMS			 = \
 				   pcs
 
-pcs_LDADD			 = libpcs.a $(YAML_LIBS)
+pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
 				   t/t0001.sh
