@@ -26,4 +26,7 @@ icpdas_get_parallel_input(unsigned int slot, unsigned long *out);
 int
 icpdas_get_parallel_output(unsigned int slot, unsigned long *out);
 
+int
+icpdas_serial_exchange(const char const *device, unsigned int slot,
+		const char const *cmd, int size, char *data);
 #endif /* _PCS_ICPDAS_H */
