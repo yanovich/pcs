@@ -16,6 +16,7 @@ libicpdas_a_SOURCES		 = \
 
 libpcs_a_SOURCES		 = \
 				   i-8042.c \
+				   i-87015.c \
 				   mark.c \
 				   serverconf.c
 

@@ -345,3 +345,73 @@ close_fd:
 	close(fd);
 	return err;
 }
+
+static int
+parse_signed_input(const char const *data, int size, long *buffer)
+{
+	int i = 0, point = 0, val = 0, sign;
+	const char *p = data;
+
+	if ('+' == *p)
+		sign = 0;
+	else if ('-' == *p)
+		sign = 1;
+	else
+		return 0;
+
+	p++;
+	while (1) {
+		if (*p >= '0' && *p <= '9') {
+			val *= 10;
+			val += *p - '0';
+		} else if ('.' == *p) {
+			if (point)
+				return i;
+			point = 1;
+		} else if ('+' == *p || '-' == *p || 0 == *p) {
+			if (i >= size)
+				return size + 1;
+			if (sign)
+				val = -val;
+			buffer[i++] = val;
+			if (!*p)
+				return i;
+			val = 0;
+			point = 0;
+			if ('+' == *p)
+				sign = 0;
+			else
+				sign = 1;
+		} else {
+			return i;
+		}
+		p++;
+	}
+}
+
+int
+icpdas_get_serial_analog_input(const char const *device, unsigned int slot,
+		int size, long *out)
+{
+	int err;
+	char data[256];
+
+	err = icpdas_serial_exchange(device, slot, "#00", 256, &data[0]);
+	if (0 > err) {
+		error("%s: read failure on %s slot %i\n", __FUNCTION__,
+				device, slot);
+		return err;
+	}
+	if ('>' != data[0]) {
+		error("%s: malformed data on %s slot %i\n", __FUNCTION__,
+				device, slot);
+		return -1;
+	}
+	err = parse_signed_input(&data[1], size, out);
+	if (size != err) {
+		error("%s: only %i of %i parsed in %s\n", __FUNCTION__, err,
+				size, data);
+		return -1;
+	}
+	return 0;
+}

@@ -26,6 +26,7 @@
 
 #include "block.h"
 #include "i-8042.h"
+#include "i-87015.h"
 #include "list.h"
 #include "map.h"
 #include "mark.h"
@@ -282,6 +283,10 @@ struct pcs_map loaders[] = {
 	{
 		.key		= "i-8042",
 		.value		= load_i_8042_builder,
+	}
+	,{
+		.key		= "i-87015",
+		.value		= load_i_87015_builder,
 	}
 	,{
 		.key		= "mark",

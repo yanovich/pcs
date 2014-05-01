@@ -1,5 +1,5 @@
-/* icpdas.h -- exchange data with ICP DAS I-8(7) modules
- * Copyright (C) 2014 Sergey Yanovich <ynvich@gmail.com>
+/* i-87015.h -- I-87015 analog IO module block loader
+ * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,22 +17,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef _PCS_ICPDAS_H
-#define _PCS_ICPDAS_H
+#ifndef _PCS_I_87015_H
+#define _PCS_I_87015_H
 
-void
-icpdas_list_modules(void (*callback)(unsigned int, const char *));
+#include "block_builder.h"
 
-int
-icpdas_get_parallel_input(unsigned int slot, unsigned long *out);
-
-int
-icpdas_get_parallel_output(unsigned int slot, unsigned long *out);
-
-int
-icpdas_get_serial_analog_input(const char const *device, unsigned int slot,
-		int size, long *out);
-int
-icpdas_serial_exchange(const char const *device, unsigned int slot,
-		const char const *cmd, int size, char *data);
-#endif /* _PCS_ICPDAS_H */
+struct block_builder *
+load_i_87015_builder(void);
+#endif
