@@ -36,7 +36,9 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t0002.sh \
 				   t/t0001.sh
 
 EXTRA_DIST			 = \
+				   t/t0002.sh \
 				   t/t0001.sh
