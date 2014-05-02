@@ -26,6 +26,7 @@ libtools_a_SOURCES		 = \
 				   xmalloc.c
 
 LDADD				 = \
+				   libpcs.a \
 				   libtools.a
 
 bin_PROGRAMS			 = \
@@ -38,9 +39,13 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t2001 \
 				   t/t0003.sh \
 				   t/t0002.sh \
 				   t/t0001.sh
+
+noinst_PROGRAMS			 = \
+				   t/t2001
 
 EXTRA_DIST			 = \
 				   t/t0003.sh \

@@ -1,5 +1,6 @@
 *.[oa]
 .deps
+.dirstamp
 Makefile
 Makefile.in
 aclocal.m4
@@ -17,6 +18,7 @@ lsicpdas
 missing
 pcs
 stamp-h1
+t/t2001
 t/t*.log
 t/t*.trs
 test-driver

@@ -31,9 +31,60 @@
 
 #define PCS_BLOCK	"ni1000tk5000"
 
-struct ni1000tk5000_state {
-	unsigned		slot;
+static const long ni1000tk5000[] = {
+	7909, /*  -50 */
+	8308, /*  -40 */
+	8717, /*  -30 */
+	9135, /*  -20 */
+	9562, /*  -10 */
+	10000, /*  0 */
+	10448, /*  10 */
+	10907, /*  20 */
+	11376, /*  30 */
+	11857, /*  40 */
+	12350, /*  50 */
+	12854, /*  60 */
+	13371, /*  70 */
+	13901, /*  80 */
+	14444, /*  90 */
+	15000, /* 100 */
+	15570, /* 110 */
+	16154, /* 120 */
+	16752, /* 130 */
+	17365, /* 140 */
+	17993  /* 150 */
 };
+
+struct ni1000tk5000_state {
+	long			*input;
+};
+
+int
+bsearch_interval(const long *o, int size, long v)
+{
+	int i = size / 2;
+	int l = size - 2;
+	int f = 0;
+	do {
+		if (o[i] <= v)
+			if (o[i + 1] > v) {
+				return i;
+			}
+			else if (i == l)
+				return size;
+			else {
+				f = i;
+				i = i + 1 + (l - i - 1) / 2;
+			}
+		else
+			if (i == f)
+				return -1;
+			else {
+				l = i;
+				i = i - 1 - (i - 1 - f) / 2;
+			}
+	} while (1);
+}
 
 static void
 ni1000tk5000_run(struct block *b, struct server_state *s)
@@ -41,37 +92,59 @@ ni1000tk5000_run(struct block *b, struct server_state *s)
 	char buff[24];
 	struct tm tm = *localtime(&s->start.tv_sec);
 	struct ni1000tk5000_state *d = b->data;
-	long result = 0;
-	int err;
+	int i;
+
+	if (!d->input)
+		return;
+	i = bsearch_interval(ni1000tk5000, sizeof(ni1000tk5000), *d->input);
+	if (i >=0 && i < sizeof(ni1000tk5000))
+		b->outputs[0] = (100 * (*d->input - ni1000tk5000[i])) /
+			(ni1000tk5000[i + 1] - ni1000tk5000[i]) + i * 100 - 500;
 
 	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	debug("%s %s: ni1000tk5000 %li\n",
-			buff, b->name, result);
+	debug("%s %s: ni1000tk5000 %li from %li\n",
+			buff, b->name, b->outputs[0], *d->input);
 }
 
+static void
+set_input(void *data, long *input)
+{
+	struct ni1000tk5000_state *d = data;
+	d->input = input;
+}
+
+static struct pcs_map inputs[] = {
+	{
+		.key			= NULL,
+		.value			= set_input,
+	}
+};
+
 static void *
-ni1000tk5000_alloc(void)
+alloc(void)
 {
 	return xzalloc(sizeof(struct ni1000tk5000_state));
 }
 
-static struct block_ops ni1000tk5000_ops = {
+static struct block_ops ops = {
 	.run		= ni1000tk5000_run,
 };
 
 static struct block_ops *
-ni1000tk5000_init(void)
+init(void)
 {
-	return &ni1000tk5000_ops;
+	return &ops;
 }
 
-static struct block_builder ni1000tk5000_builder = {
-	.alloc		= ni1000tk5000_alloc,
-	.ops		= ni1000tk5000_init,
+static struct block_builder builder = {
+	.alloc		= alloc,
+	.ops		= init,
+	.inputs		= inputs,
+	.outputs	= 1,
 };
 
 struct block_builder *
 load_ni1000tk5000_builder(void)
 {
-	return &ni1000tk5000_builder;
+	return &builder;
 }
