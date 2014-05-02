@@ -341,6 +341,9 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 		b->data = builder->alloc();
 
 	b->ops = builder->ops();
+	if (!b->ops || !b->ops->run)
+		fatal("bad ops for block '%s'\n", key);
+
 	list_add_tail(&b->block_entry, &node->state->conf->block_list);
 
 	node->handler[YAML_SCALAR_EVENT] = NULL;
