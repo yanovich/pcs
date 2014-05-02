@@ -27,6 +27,7 @@
 #include "block.h"
 #include "i-8042.h"
 #include "i-87015.h"
+#include "ni1000tk5000.h"
 #include "list.h"
 #include "map.h"
 #include "mark.h"
@@ -263,6 +264,21 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
+block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	const char *input = (const char *) event->data.scalar.value;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	debug(" %s TODO: actually set input\n", input);
+	remove_parser_node(node);
+	return 1;
+}
+
+static int
 block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	struct block *b = list_entry(node->state->conf->block_list.prev,
@@ -287,6 +303,10 @@ struct pcs_map loaders[] = {
 	,{
 		.key		= "i-87015",
 		.value		= load_i_87015_builder,
+	}
+	,{
+		.key		= "ni1000tk5000",
+		.value		= load_ni1000tk5000_builder,
 	}
 	,{
 		.key		= "mark",
@@ -360,6 +380,10 @@ struct pcs_parser_map setpoints_map[] = {
 
 struct pcs_parser_map block_map[] = {
 	{
+		.key			= "input",
+		.handler		= block_input_event,
+	}
+	,{
 		.key			= "name",
 		.handler		= block_name_event,
 	}

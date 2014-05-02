@@ -17,6 +17,7 @@ libicpdas_a_SOURCES		 = \
 libpcs_a_SOURCES		 = \
 				   i-8042.c \
 				   i-87015.c \
+				   ni1000tk5000.c \
 				   mark.c \
 				   serverconf.c
 
@@ -37,9 +38,11 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t0003.sh \
 				   t/t0002.sh \
 				   t/t0001.sh
 
 EXTRA_DIST			 = \
+				   t/t0003.sh \
 				   t/t0002.sh \
 				   t/t0001.sh
