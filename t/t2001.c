@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	if (bb->inputs[0].key)
 		fatal("t2001: bad ni1000tk5000 input key\n");
 
-	if (1 != bb->outputs)
+	if (NULL != bb->outputs[0])
 		fatal("t2001: bad ni1000tk5000 output count\n");
 
 	set_input = bb->inputs[0].value;

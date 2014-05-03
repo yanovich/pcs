@@ -120,6 +120,10 @@ static struct pcs_map inputs[] = {
 	}
 };
 
+static const char *outputs[] = {
+	NULL
+};
+
 static void *
 alloc(void)
 {
@@ -140,7 +144,7 @@ static struct block_builder builder = {
 	.alloc		= alloc,
 	.ops		= init,
 	.inputs		= inputs,
-	.outputs	= 1,
+	.outputs	= outputs,
 };
 
 struct block_builder *

@@ -263,17 +263,89 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+static void
+register_output(struct server_config *c, struct block *b)
+{
+	const char **outputs = b->builder->outputs;
+	long *reg = &c->regs[c->regs_used];
+	int i;
+
+	if (!outputs)
+		return;
+
+	if (NULL == outputs[0]) {
+		b->outputs = reg;
+		c->regs_used++;
+		if (c->regs_used == c->regs_count)
+			fatal("%i registers are not enough\n", c->regs_count);
+		return;
+	}
+	for (i = 0; outputs[i]; i++) {
+		c->regs_used++;
+		if (c->regs_used == c->regs_count)
+			fatal("%i registers are not enough\n", c->regs_count);
+	}
+	b->outputs = reg;
+}
+
+static long *
+find_input(struct list_head *list, const char const *key)
+{
+	struct block *b;
+	const char **outputs;
+	size_t len;
+	int i;
+
+	list_for_each_entry(b, list, block_entry) {
+		outputs = b->builder->outputs;
+		if (!outputs)
+			continue;
+
+		len = strlen(b->name);
+		if (!len)
+			continue;
+
+		if (strncmp(key, b->name, len))
+			continue;
+		if (NULL == outputs[0]) {
+			if (strlen(key) == len)
+				return b->outputs;
+			else
+				continue;
+		}
+		if ('.' != key[len])
+			continue;
+		for (i = 0; outputs[i]; i++)
+			if (!strcmp(outputs[i], &key[len + 1]))
+				return &b->outputs[i];
+	}
+	return NULL;
+}
+
 static int
 block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	struct block *b = list_entry(node->state->conf->block_list.prev,
 			struct block, block_entry);
 	const char *input = (const char *) event->data.scalar.value;
+	void (*set_input)(void *, long *);
+	long *reg;
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return unexpected_event(node, event);
 
-	debug(" %s TODO: actually set input\n", input);
+	if (NULL != b->builder->inputs->key)
+		fatal("ambiguos input in %s at line %zu column %zu\n",
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
+	reg = find_input(&node->state->conf->block_list, input);
+	if (!reg)
+		return unexpected_key(node, event, input);
+
+	set_input = b->builder->inputs[0].value;
+	set_input(b->data, reg);
+	debug(" %s\n", input);
 	remove_parser_node(node);
 	return 1;
 }
@@ -291,6 +363,8 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 	strncpy(b->name, name, PCS_MAX_NAME_LENGTH);
 	b->name[PCS_MAX_NAME_LENGTH - 1] = 0;
 	debug(" %s\n", name);
+	register_output(node->state->conf, b);
+
 	remove_parser_node(node);
 	return 1;
 }
@@ -361,6 +435,10 @@ blocks_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 	node->handler[YAML_SEQUENCE_START_EVENT] = NULL;
 	node->handler[YAML_MAPPING_START_EVENT] = map_sequence_event;
 	node->handler[YAML_SEQUENCE_END_EVENT] = end_event;
+	if (!node->state->conf->regs_count)
+		node->state->conf->regs_count = PCS_DEFAULT_REGS_COUNT;
+	node->state->conf->regs = xzalloc(sizeof(*node->state->conf->regs) *
+			node->state->conf->regs_count);
 	return 1;
 }
 

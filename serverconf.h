@@ -24,9 +24,14 @@
 
 #include "list.h"
 
+#define PCS_DEFAULT_REGS_COUNT	512
+
 struct server_config {
 	struct timeval		tick;
 	struct list_head	block_list;
+	int			regs_count;
+	int			regs_used;
+	long			*regs;
 };
 
 void

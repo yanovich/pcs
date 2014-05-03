@@ -45,7 +45,7 @@ i_87015_run(struct block *b, struct server_state *s)
 	char buff[128];
 	struct tm tm = *localtime(&s->start.tv_sec);
 	struct i_87015_state *d = b->data;
-	long ai[7];
+	long *ai = b->outputs;
 	int err;
 	size_t pos;
 	int i;
@@ -80,6 +80,17 @@ static struct pcs_map setpoints[] = {
 	}
 };
 
+static const char *outputs[] = {
+	"ai0",
+	"ai1",
+	"ai2",
+	"ai3",
+	"ai4",
+	"ai5",
+	"ai6",
+	NULL
+};
+
 static void *
 i_87015_alloc(void)
 {
@@ -102,6 +113,7 @@ static struct block_builder i_87015_builder = {
 	.alloc		= i_87015_alloc,
 	.ops		= i_87015_init,
 	.setpoints	= setpoints,
+	.outputs	= outputs,
 };
 
 struct block_builder *
