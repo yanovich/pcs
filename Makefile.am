@@ -20,6 +20,7 @@ libpcs_a_SOURCES		 = \
 				   i-87015.c \
 				   logger.c \
 				   ni1000tk5000.c \
+				   pd.c \
 				   serverconf.c
 
 libtools_a_SOURCES		 = \
@@ -40,12 +41,14 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t2002 \
 				   t/t2001 \
 				   t/t0003.sh \
 				   t/t0002.sh \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 = \
+				   t/t2002 \
 				   t/t2001
 
 EXTRA_DIST			 = \

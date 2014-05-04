@@ -1,4 +1,4 @@
-/* map.h -- simple map and tools
+/* pd.h -- calculate Proportional error and Differential
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -15,30 +15,13 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- */   
+ */
 
-#ifndef _PCS_MAP_H
-#define _PCS_MAP_H
+#ifndef _PCS_PD_H
+#define _PCS_PD_H
 
-#include <string.h>
+#include "block_builder.h"
 
-struct pcs_map {
-	const char		*key;
-	void			*value;
-};
-
-static inline void *
-pcs_lookup(struct pcs_map *map, const char *key)
-{
-	int i;
-
-	if (!map)
-		return NULL;
-
-	for (i = 0; map[i].key; i++)
-		if (!strcmp(key, map[i].key))
-			break;
-
-	return map[i].value;
-}
+struct block_builder *
+load_pd_builder(void);
 #endif
