@@ -43,6 +43,7 @@ pd_run(struct block *b, struct server_state *s)
 	}
 	b->outputs[0] = *d->input - d->target;
 	b->outputs[1] = *d->input - d->prev;
+	d->prev = *d->input;
 }
 
 static void

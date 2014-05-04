@@ -95,5 +95,16 @@ int main(int argc, char **argv)
 	if (res[1] != 100)
 		fatal("t2002: bad pd diff result for %li (%li)\n",
 				input, res[1]);
+	input = 1100;
+	res[0] = 0;
+	res[1] = 1;
+	b->ops->run(b, &s);
+
+	if (res[0] != 100)
+		fatal("t2002: bad pd error result for %li (%li)\n",
+				input, res[0]);
+	if (res[1] != -100)
+		fatal("t2002: bad pd diff result for %li (%li)\n",
+				input, res[1]);
 	return 0;
 }
