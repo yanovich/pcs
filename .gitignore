@@ -11,7 +11,7 @@ config.h
 config.log
 config.status
 configure
-icp-raw
+dcon-raw
 lsicpdas
 pcs
 stamp-h1

@@ -32,11 +32,11 @@ LDADD				 = \
 				   libtools.a
 
 bin_PROGRAMS			 = \
-				   icp-raw \
+				   dcon-raw \
 				   lsicpdas \
 				   pcs
 
-icp_raw_LDADD			 = libicpdas.a libtools.a
+dcon_raw_LDADD			 = libicpdas.a libtools.a
 lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 

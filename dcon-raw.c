@@ -1,4 +1,4 @@
-/* icp-raw.c -- exchange a single command with an ICP DAS I-87 module
+/* dcon-raw.c -- exchange a single command with an DCON module
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,8 +29,8 @@
 static void
 usage(int err)
 {
-	fprintf(stderr, "Usage: icp-raw [-d] [-p port] [-s slot] command\n");
-	fprintf(stderr, "       icp-raw  -h\n");
+	fprintf(stderr, "Usage: dcon-raw [-d] [-p port] [-s slot] command\n");
+	fprintf(stderr, "       dcon-raw  -h\n");
 	exit(err);
 }
 
