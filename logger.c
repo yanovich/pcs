@@ -48,7 +48,7 @@ log_run(struct block *b, struct server_state *s)
 	int i = 0;
 
 	list_for_each_entry(item, &d->items, item_entry) {
-		i += snprintf(buff, sz - i, "%s:%li ",
+		i += snprintf(&buff[i], sz - i, "%s:%li ",
 				item->key, *item->value);
 		if (i >= (sz - 1))
 			break;
