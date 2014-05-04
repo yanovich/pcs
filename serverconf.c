@@ -32,6 +32,7 @@
 #include "list.h"
 #include "logger.h"
 #include "map.h"
+#include "pd.h"
 #include "serverconf.h"
 
 const char *yaml_event_type[] = {
@@ -403,6 +404,10 @@ struct pcs_map loaders[] = {
 		.value		= load_ni1000tk5000_builder,
 	}
 	,{
+		.key		= "PD",
+		.value		= load_pd_builder,
+	}
+	,{
 	}
 };
 
@@ -507,6 +512,10 @@ struct pcs_parser_map block_map[] = {
 	,{
 		.key			= "name",
 		.handler		= block_name_event,
+	}
+	,{
+		.key			= "setpoint",
+		.handler		= new_setpoint_event,
 	}
 	,{
 		.key			= "setpoints",
