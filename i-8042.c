@@ -19,11 +19,6 @@
 
 #include "includes.h"
 
-#include <stdio.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
-
 #include "block.h"
 #include "i-8042.h"
 #include "icpdas.h"
@@ -39,8 +34,6 @@ struct i_8042_state {
 static void
 i_8042_run(struct block *b, struct server_state *s)
 {
-	char buff[24];
-	struct tm tm = *localtime(&s->start.tv_sec);
 	struct i_8042_state *d = b->data;
 	unsigned long di16, do16;
 	int err;
@@ -53,9 +46,8 @@ i_8042_run(struct block *b, struct server_state *s)
 	if (0 > err)
 		error("bad i-8042 output slot %u\n", d->slot);
 
-	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	debug("%s %s: i-8042 di 0x%04lx do 0x%04lx\n",
-			buff, b->name, di16, do16);
+	debug("%s: i-8042 di 0x%04lx do 0x%04lx\n",
+			b->name, di16, do16);
 }
 
 static int

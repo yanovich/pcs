@@ -19,11 +19,6 @@
 
 #include "includes.h"
 
-#include <stdio.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
-
 #include "block.h"
 #include "ni1000tk5000.h"
 #include "map.h"
@@ -89,8 +84,6 @@ bsearch_interval(const long *o, int size, long v)
 static void
 ni1000tk5000_run(struct block *b, struct server_state *s)
 {
-	char buff[24];
-	struct tm tm = *localtime(&s->start.tv_sec);
 	struct ni1000tk5000_state *d = b->data;
 	int i;
 
@@ -103,9 +96,8 @@ ni1000tk5000_run(struct block *b, struct server_state *s)
 		b->outputs[0] = (100 * (*d->input - ni1000tk5000[i])) /
 			(ni1000tk5000[i + 1] - ni1000tk5000[i]) + i * 100 - 500;
 
-	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	debug("%s %s: ni1000tk5000 %li from %li\n",
-			buff, b->name, b->outputs[0], *d->input);
+	debug("%s: ni1000tk5000 %li from %li\n",
+			b->name, b->outputs[0], *d->input);
 }
 
 static void

@@ -20,9 +20,6 @@
 #include "includes.h"
 
 #include <stdio.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "block.h"
 #include "i-87015.h"
@@ -43,20 +40,17 @@ static void
 i_87015_run(struct block *b, struct server_state *s)
 {
 	char buff[128];
-	struct tm tm = *localtime(&s->start.tv_sec);
 	struct i_87015_state *d = b->data;
 	long *ai = b->outputs;
 	int err;
-	size_t pos;
+	size_t pos = 0;
 	int i;
 
 	err = icpdas_get_serial_analog_input(d->device, d->slot, 7, ai);
 	if (0 > err)
 		error("bad i-87015 input slot %u\n", d->slot);
 
-	pos = strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-
-	pos += snprintf(&buff[pos], 128 - pos, " %s: i-87015 ", b->name);
+	pos += snprintf(&buff[pos], 128 - pos, "%s: i-87015 ", b->name);
 	for (i = 0; i < 7; i++)
 		pos += snprintf(&buff[pos], 128 - pos, "%5li ", ai[i]);
 	debug("%s\n", buff);

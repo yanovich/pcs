@@ -20,6 +20,7 @@
 #include "includes.h"
 
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "block.h"
@@ -82,6 +83,11 @@ int main(int argc, char **argv)
 	gettimeofday(&s.start, NULL);
 
 	while (1) {
+		char buff[24];
+		struct tm tm = *localtime(&s.start.tv_sec);
+		strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
+		debug("%s\n", buff);
+
 		list_for_each_entry(b, &c.block_list, block_entry) {
 			b->ops->run(b, &s);
 		}
