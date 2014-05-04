@@ -70,5 +70,13 @@ int main(int argc, char **argv)
 		fatal("t2001: bad ni1000tk5000 result for 1500 Ohms (%li)\n",
 				res);
 
+	ai = 12958;
+	res = -2000;
+	b->ops->run(b, &s);
+
+	if (res != 620)
+		fatal("t2001: bad ni1000tk5000 result for 1500 Ohms (%li)\n",
+				res);
+
 	return 0;
 }

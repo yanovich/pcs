@@ -96,7 +96,9 @@ ni1000tk5000_run(struct block *b, struct server_state *s)
 
 	if (!d->input)
 		return;
-	i = bsearch_interval(ni1000tk5000, sizeof(ni1000tk5000), *d->input);
+	i = bsearch_interval(ni1000tk5000,
+			sizeof(ni1000tk5000) / sizeof(ni1000tk5000[0]),
+			*d->input);
 	if (i >=0 && i < sizeof(ni1000tk5000))
 		b->outputs[0] = (100 * (*d->input - ni1000tk5000[i])) /
 			(ni1000tk5000[i + 1] - ni1000tk5000[i]) + i * 100 - 500;
