@@ -597,7 +597,13 @@ parse_config(const char *filename, struct server_config *conf)
 			fatal("failed to parse %s\n", filename);
 		node = list_entry(nodes.prev, struct pcs_parser_node,
 				node_entry);
-		debug3("%s (%p)\n", yaml_event_type[event.type], node);
+		if (YAML_SCALAR_EVENT != event.type)
+			debug3("%s (%p)\n", yaml_event_type[event.type], node);
+		else
+			debug3("%s (%p) %s\n",
+					yaml_event_type[event.type],
+					node,
+					event.data.scalar.value);
 		if (&node->node_entry == &nodes)
 			fatal("empty parser list\n");
 		handler = node->handler[event.type];
