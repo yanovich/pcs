@@ -57,7 +57,7 @@ set_target(void *data, long value)
 {
 	struct pd_state *d = data;
 	d->target = value;
-	debug("target = %u\n", d->target);
+	debug("target = %li\n", d->target);
 	return 0;
 }
 
