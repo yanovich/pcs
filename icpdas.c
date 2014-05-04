@@ -216,7 +216,6 @@ icpdas_serial_exchange(const char const *device, unsigned int slot,
 		return -1;
 	}
 	if (slot > 0) {
-		debug3("Openning %s\n", ICP_ACTIVE_SLOT_FILE);
 		active_port_fd = open(ICP_ACTIVE_SLOT_FILE, O_RDWR);
 		if (-1 == active_port_fd) {
 			error("%s: %s (%i) when openning slot file\n",
@@ -225,7 +224,7 @@ icpdas_serial_exchange(const char const *device, unsigned int slot,
 			err = -1;
 			goto close_fd;
 		}
-		debug3("Writing %s\n", buff);
+		debug3("%s: writing %s\n", ICP_ACTIVE_SLOT_FILE, buff);
 		err = write(active_port_fd, buff, 2);
 		if (err <= 0) {
 			error("%s: %s (%i) when writing slot index\n",
@@ -302,6 +301,7 @@ icpdas_serial_exchange(const char const *device, unsigned int slot,
 	}
 
 	err = write(fd, cmd, strlen(cmd));
+	debug3("%s: sent %s\n", device, cmd);
 	if (0 > err) {
 		error("%s: %s (%i) when sending command\n",
 				device, strerror(errno), errno);
@@ -340,7 +340,10 @@ icpdas_serial_exchange(const char const *device, unsigned int slot,
 
 	data[i] = 0;
 	err = i;
-	debug2("read: [%s]\n", data);
+	if (slot)
+		debug2("%s:slot%u: read [%s]\n", device, slot, data);
+	else
+		debug2("%s: read [%s]\n", device, data);
 close_fd:
 	close(fd);
 	return err;
