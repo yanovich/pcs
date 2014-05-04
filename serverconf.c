@@ -363,7 +363,6 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 	strncpy(b->name, name, PCS_MAX_NAME_LENGTH);
 	b->name[PCS_MAX_NAME_LENGTH - 1] = 0;
 	debug(" %s\n", name);
-	register_output(node->state->conf, b);
 
 	remove_parser_node(node);
 	return 1;
@@ -389,6 +388,15 @@ struct pcs_map loaders[] = {
 	,{
 	}
 };
+
+static int
+end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	register_output(node->state->conf, b);
+	return end_event(node, event);
+}
 
 static int
 new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
@@ -420,9 +428,11 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	list_add_tail(&b->block_entry, &node->state->conf->block_list);
 
-	node->handler[YAML_SCALAR_EVENT] = NULL;
+	node->handler[YAML_SCALAR_EVENT] = scalar_key_event;
+	node->handler[YAML_MAPPING_START_EVENT] = NULL;
+	node->handler[YAML_MAPPING_END_EVENT] = end_block_event;
 	node->handler[YAML_SEQUENCE_START_EVENT] = NULL;
-	return map_start_event(node, event);
+	return 1;
 }
 
 static int
