@@ -1,4 +1,4 @@
-/* mark.h -- mark block builder definitions
+/* const.h -- block to produce constant status value
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -17,11 +17,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef _PCS_MARK_H
-#define _PCS_MARK_H
+#ifndef _PCS_CONST_H
+#define _PCS_CONST_H
 
 #include "block_builder.h"
 
 struct block_builder *
-load_mark_builder(void);
+load_const_builder(void);
 #endif

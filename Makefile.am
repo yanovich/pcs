@@ -15,10 +15,11 @@ libicpdas_a_SOURCES		 = \
 				   icpdas.c
 
 libpcs_a_SOURCES		 = \
+				   const.c \
 				   i-8042.c \
 				   i-87015.c \
+				   logger.c \
 				   ni1000tk5000.c \
-				   mark.c \
 				   serverconf.c
 
 libtools_a_SOURCES		 = \

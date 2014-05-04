@@ -1,4 +1,4 @@
-/* mark.c -- mark block and its builder
+/* const.c -- block to produce constant status value
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -19,40 +19,71 @@
 
 #include "includes.h"
 
-#include <stdio.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
-
 #include "block.h"
-#include "mark.h"
+#include "const.h"
+#include "map.h"
 #include "state.h"
 
+struct const_state {
+	long			value;
+};
+
 static void
-mark_run(struct block *b, struct server_state *s)
+const_run(struct block *b, struct server_state *s)
 {
-	char buff[24];
-	struct tm tm = *localtime(&s->start.tv_sec);
-	strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
-	logit("%s %s: Greetings, world!\n", buff, b->name);
+	struct const_state *d = b->data;
+	*b->outputs = d->value;
+	debug3("%s: %li at %p\n", b->name, d->value, b->outputs);
 }
 
-static struct block_ops mark_ops = {
-	.run		= mark_run,
+static struct block_ops ops = {
+	.run		= const_run,
 };
 
 static struct block_ops *
-mark_init(void)
+init(void)
 {
-	return &mark_ops;
+	return &ops;
 }
 
-static struct block_builder mark_builder = {
-	.ops		= mark_init,
+static void *
+alloc(void)
+{
+	struct const_state *d = xzalloc(sizeof(*d));
+	return d;
+}
+
+static int
+set_value(void *data, long value)
+{
+	struct const_state *d = data;
+	d->value = value;
+	debug("value = %li\n", d->value);
+	return 0;
+}
+
+static struct pcs_map setpoints[] = {
+	{
+		.key			= "value",
+		.value			= set_value,
+	}
+	,{
+	}
+};
+
+static const char *outputs[] = {
+	NULL
+};
+
+static struct block_builder const_builder = {
+	.ops		= init,
+	.alloc		= alloc,
+	.setpoints	= setpoints,
+	.outputs	= outputs,
 };
 
 struct block_builder *
-load_mark_builder(void)
+load_const_builder(void)
 {
-	return &mark_builder;
+	return &const_builder;
 }

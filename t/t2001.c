@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct server_state s;
 	struct block_builder *bb;
 	struct block *b;
-	void (*set_input)(void *, long *);
+	void (*set_input)(void *, const char const *, long *);
 	long ai, res;
 
 	bb = load_ni1000tk5000_builder();
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 		fatal("t2001: bad ni1000tk5000 output count\n");
 
 	set_input = bb->inputs[0].value;
-	set_input(b->data, &ai);
+	set_input(b->data, "input", &ai);
 	b->outputs = &res;
 
 	ai = 10000;
@@ -59,14 +59,16 @@ int main(int argc, char **argv)
 	b->ops->run(b, &s);
 
 	if (res != 0)
-		fatal("t2001: bad ni1000tk5000 result for 1000 Ohms\n");
+		fatal("t2001: bad ni1000tk5000 result for 1000 Ohms (%li)\n",
+				res);
 
 	ai = 15000;
 	res = -2000;
 	b->ops->run(b, &s);
 
 	if (res != 1000)
-		fatal("t2001: bad ni1000tk5000 result for 1500 Ohms\n");
+		fatal("t2001: bad ni1000tk5000 result for 1500 Ohms (%li)\n",
+				res);
 
 	return 0;
 }

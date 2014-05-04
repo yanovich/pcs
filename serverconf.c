@@ -25,12 +25,13 @@
 #include <yaml.h>
 
 #include "block.h"
+#include "const.h"
 #include "i-8042.h"
 #include "i-87015.h"
 #include "ni1000tk5000.h"
 #include "list.h"
+#include "logger.h"
 #include "map.h"
-#include "mark.h"
 #include "serverconf.h"
 
 const char *yaml_event_type[] = {
@@ -258,6 +259,12 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 		return unexpected_key(node, event, key);
 
 	debug(" %li\n", value);
+	if (!b->data)
+		fatal("trying to setup uninitialized block at "
+				"%s line %zu column %zu\n",
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
 	setter(b->data, value);
 	remove_parser_node(node);
 	return 1;
@@ -289,7 +296,7 @@ register_output(struct server_config *c, struct block *b)
 }
 
 static long *
-find_input(struct list_head *list, const char const *key)
+find_output(struct list_head *list, const char const *key)
 {
 	struct block *b;
 	const char **outputs;
@@ -328,23 +335,29 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 	struct block *b = list_entry(node->state->conf->block_list.prev,
 			struct block, block_entry);
 	const char *input = (const char *) event->data.scalar.value;
-	void (*set_input)(void *, long *);
+	const char *key = (const char *) &node[1];
+	void (*set_input)(void *, const char const *, long *);
 	long *reg;
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return unexpected_event(node, event);
 
+	if (!b->builder->inputs)
+		fatal("block has no inputs in %s at line %zu column %zu\n",
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
 	if (NULL != b->builder->inputs->key)
 		fatal("ambiguos input in %s at line %zu column %zu\n",
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	reg = find_input(&node->state->conf->block_list, input);
+	reg = find_output(&node->state->conf->block_list, input);
 	if (!reg)
 		return unexpected_key(node, event, input);
 
 	set_input = b->builder->inputs[0].value;
-	set_input(b->data, reg);
+	set_input(b->data, key, reg);
 	debug(" %s\n", input);
 	remove_parser_node(node);
 	return 1;
@@ -370,6 +383,10 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 struct pcs_map loaders[] = {
 	{
+		.key		= "const",
+		.value		= load_const_builder,
+	}
+	,{
 		.key		= "i-8042",
 		.value		= load_i_8042_builder,
 	}
@@ -378,12 +395,12 @@ struct pcs_map loaders[] = {
 		.value		= load_i_87015_builder,
 	}
 	,{
-		.key		= "ni1000tk5000",
-		.value		= load_ni1000tk5000_builder,
+		.key		= "log",
+		.value		= load_log_builder,
 	}
 	,{
-		.key		= "mark",
-		.value		= load_mark_builder,
+		.key		= "ni1000tk5000",
+		.value		= load_ni1000tk5000_builder,
 	}
 	,{
 	}
@@ -461,6 +478,14 @@ struct pcs_parser_map options_map[] = {
 	}
 };
 
+struct pcs_parser_map inputs_map[] = {
+	{
+		.handler		= block_input_event,
+	}
+	,{
+	}
+};
+
 struct pcs_parser_map setpoints_map[] = {
 	{
 		.handler		= new_setpoint_event,
@@ -473,6 +498,11 @@ struct pcs_parser_map block_map[] = {
 	{
 		.key			= "input",
 		.handler		= block_input_event,
+	}
+	,{
+		.key			= "inputs",
+		.handler		= map_start_event,
+		.data			= &inputs_map,
 	}
 	,{
 		.key			= "name",

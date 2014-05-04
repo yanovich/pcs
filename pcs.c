@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	const char *config_file_name = SYSCONFDIR "/pcs.conf";
 	int log_level = LOG_NOTICE;
 	int test_only = 0;
-	struct server_config c = { 0 };
+	struct server_config c = { {0} };
 	struct server_state s;
 	struct block *b;
 	int opt;

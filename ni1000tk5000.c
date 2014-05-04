@@ -107,7 +107,7 @@ ni1000tk5000_run(struct block *b, struct server_state *s)
 }
 
 static void
-set_input(void *data, long *input)
+set_input(void *data, const char const *key, long *input)
 {
 	struct ni1000tk5000_state *d = data;
 	d->input = input;
