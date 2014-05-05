@@ -15,7 +15,7 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- */   
+ */
 
 #include "includes.h"
 
@@ -25,15 +25,9 @@
 #include <yaml.h>
 
 #include "block.h"
-#include "const.h"
-#include "i-8042.h"
-#include "i-87015.h"
-#include "fuzzy-if-z.h"
-#include "ni1000tk5000.h"
+#include "block-list.h"
 #include "list.h"
-#include "logger.h"
 #include "map.h"
-#include "pd.h"
 #include "serverconf.h"
 
 const char *yaml_event_type[] = {
@@ -387,39 +381,6 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 	remove_parser_node(node);
 	return 1;
 }
-
-struct pcs_map loaders[] = {
-	{
-		.key		= "const",
-		.value		= load_const_builder,
-	}
-	,{
-		.key		= "fuzzy if z",
-		.value		= load_fuzzy_if_z_builder,
-	}
-	,{
-		.key		= "i-8042",
-		.value		= load_i_8042_builder,
-	}
-	,{
-		.key		= "i-87015",
-		.value		= load_i_87015_builder,
-	}
-	,{
-		.key		= "log",
-		.value		= load_log_builder,
-	}
-	,{
-		.key		= "ni1000tk5000",
-		.value		= load_ni1000tk5000_builder,
-	}
-	,{
-		.key		= "PD",
-		.value		= load_pd_builder,
-	}
-	,{
-	}
-};
 
 static int
 end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
