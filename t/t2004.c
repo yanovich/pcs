@@ -1,4 +1,4 @@
-/* t/t2004.c -- test fuzzy logic Z condition block
+/* t/t2004.c -- test fuzzy logic D condition block
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
