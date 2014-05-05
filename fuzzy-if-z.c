@@ -59,10 +59,6 @@ set_b(void *data, long value)
 {
 	struct fuzzy_if_z_state *d = data;
 	d->b = value;
-	if (d->b > d->c) {
-		error("b cannot be greater than c, please set c first\n");
-		return 1;
-	}
 	debug("b = %li\n", d->b);
 	return 0;
 }

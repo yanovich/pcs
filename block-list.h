@@ -23,6 +23,8 @@
 #include "const.h"
 #include "i-8042.h"
 #include "i-87015.h"
+#include "fuzzy-if-d.h"
+#include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
 #include "logger.h"
 #include "map.h"
@@ -33,6 +35,14 @@ static struct pcs_map loaders[] = {
 	{
 		.key		= "const",
 		.value		= load_const_builder,
+	}
+	,{
+		.key		= "fuzzy if d",
+		.value		= load_fuzzy_if_d_builder,
+	}
+	,{
+		.key		= "fuzzy if s",
+		.value		= load_fuzzy_if_s_builder,
 	}
 	,{
 		.key		= "fuzzy if z",
