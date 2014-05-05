@@ -261,12 +261,17 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	debug(" %li\n", value);
 	if (!b->data)
-		fatal("trying to setup uninitialized block at "
+		fatal("trying to setup uninitialized block in "
 				"%s line %zu column %zu\n",
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	setter(b->data, value);
+	if (setter(b->data, value))
+		fatal("setpoint '%s' error in %s line %zu column %zu\n",
+				key,
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
 	remove_parser_node(node);
 	return 1;
 }
