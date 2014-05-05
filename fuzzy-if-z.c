@@ -1,4 +1,4 @@
-/* fuzzy-if-z.c -- calculate Proportional error and Differential
+/* fuzzy-if-z.c -- calculate fuzzy logic value with Z function
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
