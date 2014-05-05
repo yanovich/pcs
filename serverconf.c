@@ -28,6 +28,7 @@
 #include "const.h"
 #include "i-8042.h"
 #include "i-87015.h"
+#include "fuzzy-if-z.h"
 #include "ni1000tk5000.h"
 #include "list.h"
 #include "logger.h"
@@ -391,6 +392,10 @@ struct pcs_map loaders[] = {
 	{
 		.key		= "const",
 		.value		= load_const_builder,
+	}
+	,{
+		.key		= "fuzzy if z",
+		.value		= load_fuzzy_if_z_builder,
 	}
 	,{
 		.key		= "i-8042",
