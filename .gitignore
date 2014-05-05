@@ -5,14 +5,17 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
-config-aux
+compile
 config-h.in
 config.h
 config.log
 config.status
 configure
 dcon-raw
+depcomp
+install-sh
 lsicpdas
+missing
 pcs
 stamp-h1
 t/t2001
@@ -22,4 +25,5 @@ t/t2004
 t/t2005
 t/t*.log
 t/t*.trs
+test-driver
 test-suite.log
