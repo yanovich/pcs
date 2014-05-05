@@ -19,6 +19,7 @@ t/t2001
 t/t2002
 t/t2003
 t/t2004
+t/t2005
 t/t*.log
 t/t*.trs
 test-suite.log
