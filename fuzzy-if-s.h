@@ -1,4 +1,4 @@
-/* fuzzy-if-s.h -- calculate fuzzy logic value with S function
+/* fuzzy-if-s.h -- calculate fuzzy logic measure with S function
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or

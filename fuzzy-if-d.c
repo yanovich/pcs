@@ -1,4 +1,4 @@
-/* fuzzy-if-d.c -- calculate fuzzy logic value with delta function
+/* fuzzy-if-d.c -- calculate fuzzy logic measure with delta function
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,11 @@
 #include <stdio.h>
 
 #include "block.h"
-#include "fuzzy-if-z.h"
+#include "fuzzy-if-d.h"
 #include "map.h"
 #include "state.h"
 
-#define PCS_BLOCK	"fuzzy-if-z"
+#define PCS_BLOCK	"fuzzy-if-d"
 
 struct fuzzy_if_d_state {
 	long			*input;

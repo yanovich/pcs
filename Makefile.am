@@ -19,6 +19,7 @@ libpcs_a_SOURCES		 = \
 				   fuzzy-if-d.c \
 				   fuzzy-if-s.c \
 				   fuzzy-if-z.c \
+				   fuzzy-then-d.c \
 				   i-8042.c \
 				   i-87015.c \
 				   logger.c \
@@ -44,6 +45,7 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t2006 \
 				   t/t2005 \
 				   t/t2004 \
 				   t/t2003 \
@@ -54,6 +56,7 @@ TESTS				 = \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 = \
+				   t/t2006 \
 				   t/t2005 \
 				   t/t2004 \
 				   t/t2003 \
