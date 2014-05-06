@@ -26,6 +26,7 @@
 #include "fuzzy-if-d.h"
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
+#include "fuzzy-then-d.h"
 #include "logger.h"
 #include "map.h"
 #include "ni1000tk5000.h"
@@ -47,6 +48,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "fuzzy if z",
 		.value		= load_fuzzy_if_z_builder,
+	}
+	,{
+		.key		= "fuzzy then d",
+		.value		= load_fuzzy_then_d_builder,
 	}
 	,{
 		.key		= "i-8042",
