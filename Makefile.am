@@ -25,7 +25,8 @@ libpcs_a_SOURCES		 = \
 				   logger.c \
 				   ni1000tk5000.c \
 				   pd.c \
-				   serverconf.c
+				   serverconf.c \
+				   weighted-sum.c
 
 libtools_a_SOURCES		 = \
 				   log.c \
@@ -45,6 +46,7 @@ lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
 TESTS				 = \
+				   t/t2007 \
 				   t/t2006 \
 				   t/t2005 \
 				   t/t2004 \
@@ -56,6 +58,7 @@ TESTS				 = \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 = \
+				   t/t2007 \
 				   t/t2006 \
 				   t/t2005 \
 				   t/t2004 \
