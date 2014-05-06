@@ -52,8 +52,7 @@ fuzzy_then_d_run(struct block *b, struct server_state *s)
 	z = 0x20000 - h;
 	z /= 2;
 	z *= h;
-	logit("z: 0x%lx\n", z);
-	z /= 0x10000;
+	z /= 0x1000000;
 	z *= (d->c - d->a);
 	b->outputs[1] = (long) z;
 }

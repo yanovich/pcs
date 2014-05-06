@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 	if (res[0] != 400)
 		fatal("t2006: bad 'fuzzy then d' value for 0x%lx (%li)\n",
 				input, res[0]);
-	if (res[1] != 900 * 0x4000)
+	if (res[1] != 900 * 0x40)
 		fatal("t2006: bad 'fuzzy then d' weight for 0x%lx (%li)\n",
 				input, res[1]);
 
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	if (res[0] != 400)
 		fatal("t2006: bad 'fuzzy then d' value for 0x%lx (%li)\n",
 				input, res[0]);
-	if (res[1] != 300 * 0x10000)
+	if (res[1] != 300 * 0x100)
 		fatal("t2006: bad 'fuzzy then d' weight for 0x%lx (%li)\n",
 				input, res[1]);
 	return 0;
