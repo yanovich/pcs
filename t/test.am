@@ -24,5 +24,8 @@ noinst_PROGRAMS			 += \
 
 EXTRA_DIST			 += \
 				   t/t0003.sh \
+				   t/t0003.sh.conf \
 				   t/t0002.sh \
-				   t/t0001.sh
+				   t/t0002.sh.conf \
+				   t/t0001.sh \
+				   t/t0001.sh.conf
