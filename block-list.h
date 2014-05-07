@@ -21,6 +21,7 @@
 #define _PCS_BLOCK_LIST_H
 
 #include "const.h"
+#include "discrete-valve.h"
 #include "i-8042.h"
 #include "i-87015.h"
 #include "fuzzy-if-d.h"
@@ -37,6 +38,10 @@ static struct pcs_map loaders[] = {
 	{
 		.key		= "const",
 		.value		= load_const_builder,
+	}
+	,{
+		.key		= "discrete valve",
+		.value		= load_discrete_valve_builder,
 	}
 	,{
 		.key		= "fuzzy if d",

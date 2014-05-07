@@ -16,6 +16,7 @@ libicpdas_a_SOURCES		 = \
 
 libpcs_a_SOURCES		 = \
 				   const.c \
+				   discrete-valve.c \
 				   fuzzy-if-d.c \
 				   fuzzy-if-s.c \
 				   fuzzy-if-z.c \
