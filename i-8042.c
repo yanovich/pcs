@@ -1,4 +1,4 @@
-/* mark.c -- mark block and its builder
+/* i-8042.c -- load I-8042 status
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or

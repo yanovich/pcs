@@ -1,4 +1,4 @@
-/* weighted-sum.h -- calculate fuzzy logic value with delta function
+/* weighted-sum.h -- calculate weighted sum
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
