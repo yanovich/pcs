@@ -28,6 +28,7 @@
 
 struct server_config {
 	struct timeval		tick;
+	long			multiple;
 	struct list_head	block_list;
 	int			regs_count;
 	int			regs_used;

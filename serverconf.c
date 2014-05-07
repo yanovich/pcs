@@ -222,6 +222,21 @@ map_sequence_event(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
+options_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	long mul;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	mul = long_value(node, event);
+	debug(" %li\n", mul);
+	node->state->conf->multiple = mul;
+	remove_parser_node(node);
+	return 1;
+}
+
+static int
 options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	long msec;
@@ -365,6 +380,30 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
+block_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	const char *val = (const char *) event->data.scalar.value;
+	char *bad;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	b->multiple = (unsigned int) strtoul(val, &bad, 10);
+	if (bad[0] != 0)
+		fatal("bad integer (%s) in %s at line %zu column %zu\n",
+				val,
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
+	debug(" %s\n", val);
+
+	remove_parser_node(node);
+	return 1;
+}
+
+static int
 block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	struct block *b = list_entry(node->state->conf->block_list.prev,
@@ -411,6 +450,8 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 		return unexpected_key(node, event, (const char *) &node[1]);
 
 	b = xzalloc(sizeof(*b));
+	b->multiple = node->state->conf->multiple;
+	b->counter = b->multiple;
 	b->builder = builder;
 	if (builder->alloc)
 		b->data = builder->alloc();
@@ -447,6 +488,10 @@ blocks_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 struct pcs_parser_map options_map[] = {
 	{
+		.key			= "multiple",
+		.handler		= options_multiple_event,
+	}
+	,{
 		.key			= "tick",
 		.handler		= options_tick_event,
 	}
@@ -479,6 +524,10 @@ struct pcs_parser_map block_map[] = {
 		.key			= "inputs",
 		.handler		= map_start_event,
 		.data			= &inputs_map,
+	}
+	,{
+		.key			= "multiple",
+		.handler		= block_multiple_event,
 	}
 	,{
 		.key			= "name",

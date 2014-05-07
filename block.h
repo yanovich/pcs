@@ -31,6 +31,8 @@ struct block {
 	char			name[PCS_MAX_NAME_LENGTH];
 	struct block_builder	*builder;
 	long			*outputs;
+	unsigned int		multiple;
+	unsigned int		counter;
 	void			*data;
 };
 

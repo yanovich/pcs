@@ -49,7 +49,10 @@ int main(int argc, char **argv)
 	const char *config_file_name = SYSCONFDIR "/pcs.conf";
 	int log_level = LOG_NOTICE;
 	int test_only = 0;
-	struct server_config c = { {0} };
+	struct server_config c = {
+		.tick		= {0},
+		.multiple	= 1,
+       	};
 	struct server_state s;
 	struct block *b;
 	int opt;
@@ -89,6 +92,9 @@ int main(int argc, char **argv)
 		debug("%s\n", buff);
 
 		list_for_each_entry(b, &c.block_list, block_entry) {
+			if (--b->counter)
+				continue;
+			b->counter = b->multiple;
 			b->ops->run(b, &s);
 		}
 		timeradd(&s.start, &c.tick, &s.start);

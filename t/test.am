@@ -9,6 +9,7 @@ TESTS				 = \
 				   t/t2003 \
 				   t/t2002 \
 				   t/t2001 \
+				   t/t0004.sh \
 				   t/t0003.sh \
 				   t/t0002.sh \
 				   t/t0001.sh
@@ -23,6 +24,8 @@ noinst_PROGRAMS			 += \
 				   t/t2001
 
 EXTRA_DIST			 += \
+				   t/t0004.sh \
+				   t/t0004.sh.conf \
 				   t/t0003.sh \
 				   t/t0003.sh.conf \
 				   t/t0002.sh \
