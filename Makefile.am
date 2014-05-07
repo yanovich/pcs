@@ -46,28 +46,6 @@ dcon_raw_LDADD			 = libicpdas.a libtools.a
 lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
 
-TESTS				 = \
-				   t/t2007 \
-				   t/t2006 \
-				   t/t2005 \
-				   t/t2004 \
-				   t/t2003 \
-				   t/t2002 \
-				   t/t2001 \
-				   t/t0003.sh \
-				   t/t0002.sh \
-				   t/t0001.sh
-
-noinst_PROGRAMS			 = \
-				   t/t2007 \
-				   t/t2006 \
-				   t/t2005 \
-				   t/t2004 \
-				   t/t2003 \
-				   t/t2002 \
-				   t/t2001
-
-EXTRA_DIST			 = \
-				   t/t0003.sh \
-				   t/t0002.sh \
-				   t/t0001.sh
+noinst_PROGRAMS			 =
+EXTRA_DIST			 =
+include $(srcdir)/t/test.am
