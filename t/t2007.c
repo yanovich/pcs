@@ -94,5 +94,20 @@ int main(int argc, char **argv)
 		fatal("t2007: bad 'weighted sum' value 2 (%li)\n",
 				res);
 
+	input[0] = 0;
+	input[1] = 0;
+	input[2] = 400;
+	input[3] = 0x10fe0;
+	input[4] = 100;
+	input[5] = 0x32c8;
+	input[6] = 0;
+	input[7] = 0;
+	res = 1;
+	b->ops->run(b, &s);
+
+	if (res != 353)
+		fatal("t2007: bad 'weighted sum' value 2 (%li)\n",
+				res);
+
 	return 0;
 }
