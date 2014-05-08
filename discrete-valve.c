@@ -28,6 +28,8 @@
 #define PCS_BLOCK	"discrete-valve"
 #define PCS_DV_CLOSE	0
 #define PCS_DV_OPEN	1
+#define PCS_DV_POSITION	2
+#define PCS_DV_ABSOLUTE	3
 
 struct discrete_valve_state {
 	long			*input;
@@ -35,8 +37,6 @@ struct discrete_valve_state {
 	long			span;
 	long			c_in;
 	long			c_out;
-	long			position;
-	long			absolute;
 };
 
 static void
@@ -67,30 +67,30 @@ discrete_valve_run(struct block *b, struct server_state *s)
 	input /= tick;
 	span = d->span / tick;
 
-	input += d->position;
-	if (d->absolute) {
+	input += b->outputs[PCS_DV_POSITION];
+	if (b->outputs[PCS_DV_ABSOLUTE]) {
 		if (input < 0) {
 			input = 0;
-			if (d->position != 0)
-				d->position = d->input_multiple;
+			if (b->outputs[PCS_DV_POSITION] != 0)
+				b->outputs[PCS_DV_POSITION] = d->input_multiple;
 		} else if (input > span) {
 			input = span;
-			if (d->position != span)
-				d->position = input - d->input_multiple;
+			if (b->outputs[PCS_DV_POSITION] != span)
+				b->outputs[PCS_DV_POSITION] = input - d->input_multiple;
 		}
 	} else {
 		if (input <= -span) {
-			d->absolute = 1;
+			b->outputs[PCS_DV_ABSOLUTE] = 1;
 			input = 0;
-			d->position = d->input_multiple;
+			b->outputs[PCS_DV_POSITION] = d->input_multiple;
 		} else if (input >= span) {
-			d->absolute = 1;
+			b->outputs[PCS_DV_ABSOLUTE] = 1;
 			input = span;
-			d->position = input - d->input_multiple;
+			b->outputs[PCS_DV_POSITION] = input - d->input_multiple;
 		}
 	}
-	input -= d->position;
-	d->position += input;
+	input -= b->outputs[PCS_DV_POSITION];
+	b->outputs[PCS_DV_POSITION] += input;
 
 	if (input == 0) {
 		b->outputs[PCS_DV_CLOSE] = 0;
@@ -110,7 +110,7 @@ discrete_valve_run(struct block *b, struct server_state *s)
 	debug3("%s: input (%li) p(%li) s(%li) o(%li) c(%li) c_o(%li)\n",
 			__FUNCTION__,
 			input,
-			d->position,
+			b->outputs[PCS_DV_POSITION],
 			span,
 			b->outputs[PCS_DV_OPEN],
 			b->outputs[PCS_DV_CLOSE],
@@ -145,6 +145,8 @@ set_span(void *data, long value)
 static const char *outputs[] = {
 	"close",
 	"open",
+	"position",
+	"absolute",
 	NULL
 };
 

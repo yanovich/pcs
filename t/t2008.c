@@ -41,9 +41,10 @@ int main(int argc, char **argv)
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
 	int (*setter)(void *, long);
-	long input, res[2];
+	long input, res[4];
 	int i = 1, stop;
 
+	log_init("t2008", LOG_DEBUG + 2, LOG_DAEMON, 1);
 	bb = load_discrete_valve_builder();
 	b = xzalloc(sizeof(*b));
 	b->multiple = 1;
@@ -67,7 +68,11 @@ int main(int argc, char **argv)
 		fatal("t2008: bad 'discrete valve' output 'close'\n");
 	if (!bb->outputs[1] || strcmp(bb->outputs[1], "open"))
 		fatal("t2008: bad 'discrete valve' output 'open'\n");
-	if (NULL != bb->outputs[2])
+	if (!bb->outputs[2] || strcmp(bb->outputs[2], "position"))
+		fatal("t2008: bad 'discrete valve' output 'position'\n");
+	if (!bb->outputs[3] || strcmp(bb->outputs[3], "absolute"))
+		fatal("t2008: bad 'discrete valve' output 'absolute'\n");
+	if (NULL != bb->outputs[4])
 		fatal("t2008: bad 'discrete valve' output count\n");
 	b->outputs = res;
 
@@ -87,6 +92,8 @@ int main(int argc, char **argv)
 	input = 0;
 	res[0] = 1;
 	res[1] = 1;
+	res[2] = 0;
+	res[3] = 0;
 	b->ops->run(b, &s);
 	{
 		if (res[0] != 0)
@@ -97,6 +104,14 @@ int main(int argc, char **argv)
 			fatal("t2008: bad 'discrete valve' open "
 					"for %li (%li) step 1-%i\n",
 					input, res[1], i);
+		if (res[2] != 0)
+			fatal("t2008: bad 'discrete valve' position "
+					"for %li (%li) step 1-%i\n",
+					input, res[2], i);
+		if (res[3] != 0)
+			fatal("t2008: bad 'discrete valve' absolute "
+					"for %li (%li) step 1-%i\n",
+					input, res[3], i);
 	}
 
 
@@ -144,6 +159,16 @@ int main(int argc, char **argv)
 			fatal("t2008: bad 'discrete valve' open "
 					"for %li (%li) step 4-%i\n",
 					input, res[1], i);
+	}
+	{
+		if (res[2] != C_t2008_SPAN / C_t2008_TICK)
+			fatal("t2008: bad 'discrete valve' position "
+					"for %li (%li) step 4-%i\n",
+					input, res[2], i);
+		if (res[3] != 1)
+			fatal("t2008: bad 'discrete valve' absolute "
+					"for %li (%li) step 4-%i\n",
+					input, res[3], i);
 	}
 
 	stop += C_t2008_INPUT_MULTIPLE;
