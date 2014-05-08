@@ -41,18 +41,18 @@ weighted_sum_run(struct block *b, struct server_state *s)
 {
 	struct weighted_sum_state *d = b->data;
 	struct weighted_component *c;
-	long value = 0;
-	unsigned long weight = 0;
+	long long value = 0;
+	long long weight = 0;
 
 	list_for_each_entry(c, &d->component_list, component_entry) {
-		weight += (unsigned long) c->data[1];
+		weight += c->data[1];
 		if (0 == weight)
 			continue;
 		value += ((c->data[0] - value) * c->data[1]) / weight;
 		debug3("%li %lx -> %li %lx\n", c->data[0], c->data[1],
 				value, weight);
 	}
-	*b->outputs = value;
+	*b->outputs = (long) value;
 }
 
 static void
