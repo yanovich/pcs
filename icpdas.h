@@ -30,6 +30,9 @@ int
 icpdas_get_parallel_output(unsigned int slot, unsigned long *out);
 
 int
+icpdas_set_parallel_output(unsigned int slot, unsigned long out);
+
+int
 icpdas_get_serial_analog_input(const char const *device, unsigned int slot,
 		int size, long *out);
 int

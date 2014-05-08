@@ -1,4 +1,4 @@
-/* i-8042.c -- load I-8042 status
+/* i-8042.c -- load and write I-8042 status
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@ i_8042_run(struct block *b, struct server_state *s)
 {
 	struct i_8042_state *d = b->data;
 	unsigned long di16, do16;
-	int err;
+	int err, i;
 
 	err = icpdas_get_parallel_input(d->slot, &di16);
 	if (0 > err)
@@ -46,8 +46,13 @@ i_8042_run(struct block *b, struct server_state *s)
 	if (0 > err)
 		error("bad i-8042 output slot %u\n", d->slot);
 
-	debug("%s: i-8042 di 0x%04lx do 0x%04lx\n",
+	debug3("%s: i-8042 di 0x%04lx do 0x%04lx\n",
 			b->name, di16, do16);
+
+	for (i = 0; i < 16; i++) {
+		b->outputs[i] = do16 & 1;
+		do16 >>= 1;
+	}
 }
 
 static int
@@ -66,6 +71,26 @@ static struct pcs_map setpoints[] = {
 	}
 	,{
 	}
+};
+
+static const char *outputs[] = {
+	"do0",
+	"do1",
+	"do2",
+	"do3",
+	"do4",
+	"do5",
+	"do6",
+	"do7",
+	"do8",
+	"do0",
+	"do10",
+	"do11",
+	"do12",
+	"do13",
+	"do14",
+	"do15",
+	NULL
 };
 
 static void *
@@ -88,10 +113,117 @@ static struct block_builder i_8042_builder = {
 	.alloc		= i_8042_alloc,
 	.ops		= i_8042_init,
 	.setpoints	= setpoints,
+	.outputs	= outputs,
 };
 
 struct block_builder *
 load_i_8042_builder(void)
 {
 	return &i_8042_builder;
+}
+
+/* Output */
+struct i_8042_out_state {
+	unsigned		slot;
+	long			*status;
+	long			*DO[16];
+};
+
+static void
+i_8042_out_run(struct block *b, struct server_state *s)
+{
+	struct i_8042_out_state *d = b->data;
+	unsigned long do16 = 0;
+	int err, i;
+
+	for (i = 15; i >= 0; i--) {
+		if (NULL != d->DO[i])
+			do16 |= (*d->DO[i]) & 1;
+		else
+			do16 |= (d->status[i]) & 1;
+		if (i > 0)
+			do16 <<= 1;
+	}
+	err = icpdas_set_parallel_output(d->slot, do16);
+	if (0 > err)
+		error("%s: i-8042 output error %i\n", b->name, err);
+
+	debug3("%s: i-8042 do 0x%04lx\n",
+			b->name, do16);
+}
+
+static int
+set_out_slot(void *data, long value)
+{
+	struct i_8042_out_state *d = data;
+	d->slot = (unsigned) value;
+	debug("slot = %u\n", d->slot);
+	return 0;
+}
+
+static void
+set_out_status(void *data, const char const *key, long *input)
+{
+	struct i_8042_out_state *d = data;
+	d->status = input;
+}
+
+static void
+set_input(void *data, const char const *key, long *input)
+{
+	struct i_8042_out_state *d = data;
+	char *bad;
+	long i = strtol(key, &bad, 10);
+	if (bad[0] != 0 || i <=0 || i >= 16)
+		fatal("i-8042 out: bad input '%s'\n", key);
+	d->DO[i] = input;
+}
+
+static struct pcs_map out_setpoints[] = {
+	{
+		.key			= "slot",
+		.value			= set_out_slot,
+	}
+	,{
+	}
+};
+
+static struct pcs_map out_inputs[] = {
+	{
+		.key			= "status",
+		.value			= set_out_status,
+	}
+	,{
+		.key			= NULL,
+		.value			= set_input,
+	}
+};
+
+static void *
+i_8042_out_alloc(void)
+{
+	return xzalloc(sizeof(struct i_8042_out_state));
+}
+
+static struct block_ops i_8042_out_ops = {
+	.run		= i_8042_out_run,
+};
+
+static struct block_ops *
+i_8042_out_init(void)
+{
+	return &i_8042_out_ops;
+}
+
+static struct block_builder i_8042_out_builder = {
+	.alloc		= i_8042_out_alloc,
+	.ops		= i_8042_out_init,
+	.setpoints	= out_setpoints,
+	.inputs		= out_inputs,
+};
+
+struct block_builder *
+load_i_8042_out_builder(void)
+{
+	return &i_8042_out_builder;
 }

@@ -2,6 +2,7 @@
 ## vim:ft=automake:
 
 TESTS				 = \
+				   t/t3007.sh \
 				   t/t2008 \
 				   t/t2007 \
 				   t/t2006 \
@@ -26,6 +27,8 @@ noinst_PROGRAMS			 += \
 				   t/t2001
 
 EXTRA_DIST			 += \
+				   t/t3007.sh \
+				   t/t3007.sh.conf \
 				   t/t0004.sh \
 				   t/t0004.sh.conf \
 				   t/t0003.sh \

@@ -191,6 +191,49 @@ close_fd:
 }
 
 int
+icpdas_set_parallel_output(unsigned int slot, unsigned long out)
+{
+	int fd, err;
+	char buff[256];
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+			"/sys/bus/icpdas/devices/slot%02u/output_status", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+
+	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%08lx", out);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	err = write(fd, buff, err);
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+close_fd:
+	close(fd);
+	return err;
+}
+
+int
 icpdas_serial_exchange(const char const *device, unsigned int slot,
 		const char const *cmd, int size, char *data)
 {

@@ -64,6 +64,10 @@ static struct pcs_map loaders[] = {
 		.value		= load_i_8042_builder,
 	}
 	,{
+		.key		= "i-8042 out",
+		.value		= load_i_8042_out_builder,
+	}
+	,{
 		.key		= "i-87015",
 		.value		= load_i_87015_builder,
 	}

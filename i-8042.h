@@ -24,4 +24,7 @@
 
 struct block_builder *
 load_i_8042_builder(void);
+
+struct block_builder *
+load_i_8042_out_builder(void);
 #endif
