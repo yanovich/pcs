@@ -451,7 +451,7 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	b = xzalloc(sizeof(*b));
 	b->multiple = node->state->conf->multiple;
-	b->counter = b->multiple;
+	b->counter = 1;
 	b->builder = builder;
 	if (builder->alloc)
 		b->data = builder->alloc();
