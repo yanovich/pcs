@@ -2,6 +2,7 @@
 ## vim:ft=automake:
 
 TESTS				 = \
+				   t/t2008 \
 				   t/t2007 \
 				   t/t2006 \
 				   t/t2005 \
@@ -15,6 +16,7 @@ TESTS				 = \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 += \
+				   t/t2008 \
 				   t/t2007 \
 				   t/t2006 \
 				   t/t2005 \

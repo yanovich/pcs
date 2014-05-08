@@ -26,15 +26,95 @@
 #include "state.h"
 
 #define PCS_BLOCK	"discrete-valve"
+#define PCS_DV_CLOSE	0
+#define PCS_DV_OPEN	1
 
 struct discrete_valve_state {
 	long			*input;
+	long			input_multiple;
 	long			span;
+	long			c_in;
+	long			c_out;
+	long			position;
+	long			absolute;
 };
 
 static void
 discrete_valve_run(struct block *b, struct server_state *s)
 {
+	struct discrete_valve_state *d = b->data;
+	long input = *d->input;
+	long tick, span;
+
+	if (--d->c_in) {
+		if (d->c_out == 0)
+			return;
+		if (--d->c_out)
+			return;
+		if (b->outputs[PCS_DV_CLOSE]) {
+			b->outputs[PCS_DV_CLOSE] = 0;
+			return;
+		} else if (b->outputs[PCS_DV_OPEN]) {
+			b->outputs[PCS_DV_OPEN] = 0;
+			return;
+		}
+	}
+	d->c_in = d->input_multiple;
+
+	tick = s->tick.tv_sec * 1000;
+	tick += s->tick.tv_usec / 1000;
+	tick *= b->multiple;
+	input /= tick;
+	span = d->span / tick;
+
+	input += d->position;
+	if (d->absolute) {
+		if (input < 0) {
+			input = 0;
+			if (d->position != 0)
+				d->position = d->input_multiple;
+		} else if (input > span) {
+			input = span;
+			if (d->position != span)
+				d->position = input - d->input_multiple;
+		}
+	} else {
+		if (input <= -span) {
+			d->absolute = 1;
+			input = 0;
+			d->position = d->input_multiple;
+		} else if (input >= span) {
+			d->absolute = 1;
+			input = span;
+			d->position = input - d->input_multiple;
+		}
+	}
+	input -= d->position;
+	d->position += input;
+
+	if (input == 0) {
+		b->outputs[PCS_DV_CLOSE] = 0;
+		b->outputs[PCS_DV_OPEN] = 0;
+		d->c_out = 0;
+	} else if (input < 0) {
+		b->outputs[PCS_DV_CLOSE] = 1;
+		b->outputs[PCS_DV_OPEN] = 0;
+		d->c_out = -input;
+	} else {
+		b->outputs[PCS_DV_CLOSE] = 0;
+		b->outputs[PCS_DV_OPEN] = 1;
+		d->c_out = input;
+	}
+	if (d->c_out >= d->input_multiple)
+		d->c_out = 0;
+	debug3("%s: input (%li) p(%li) s(%li) o(%li) c(%li) c_o(%li)\n",
+			__FUNCTION__,
+			input,
+			d->position,
+			span,
+			b->outputs[PCS_DV_OPEN],
+			b->outputs[PCS_DV_CLOSE],
+			d->c_out);
 }
 
 static void
@@ -42,6 +122,15 @@ set_input(void *data, const char const *key, long *input)
 {
 	struct discrete_valve_state *d = data;
 	d->input = input;
+}
+
+static int
+set_input_multiple(void *data, long value)
+{
+	struct discrete_valve_state *d = data;
+	d->input_multiple = value;
+	debug("input multiple = %li\n", d->input_multiple);
+	return 0;
 }
 
 static int
@@ -54,6 +143,8 @@ set_span(void *data, long value)
 }
 
 static const char *outputs[] = {
+	"close",
+	"open",
 	NULL
 };
 
@@ -66,6 +157,10 @@ static struct pcs_map inputs[] = {
 
 static struct pcs_map setpoints[] = {
 	{
+		.key			= "input multiple",
+		.value			= set_input_multiple,
+	}
+	,{
 		.key			= "span",
 		.value			= set_span,
 	}
@@ -77,6 +172,7 @@ static void *
 alloc(void)
 {
 	struct discrete_valve_state *d = xzalloc(sizeof(*d));
+	d->c_in = 1;
 	return d;
 }
 

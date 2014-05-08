@@ -25,6 +25,7 @@ t/t2004
 t/t2005
 t/t2006
 t/t2007
+t/t2008
 t/t*.log
 t/t*.trs
 test-driver
