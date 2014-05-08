@@ -173,6 +173,7 @@ alloc(void)
 {
 	struct discrete_valve_state *d = xzalloc(sizeof(*d));
 	d->c_in = 1;
+	d->input_multiple = 1;
 	return d;
 }
 
