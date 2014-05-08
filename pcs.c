@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 	if (test_only)
 		return 0;
 	gettimeofday(&s.start, NULL);
+	s.tick = c.tick;
 
 	while (1) {
 		char buff[24];

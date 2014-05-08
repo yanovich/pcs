@@ -24,5 +24,6 @@
 
 struct server_state {
 	struct timeval		start;
+	struct timeval		tick;
 };
 #endif
