@@ -363,7 +363,9 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	if (NULL != b->builder->inputs->key)
+
+	set_input = pcs_lookup(b->builder->inputs, key);
+	if (NULL == set_input)
 		fatal("ambiguos input in %s at line %zu column %zu\n",
 				node->state->filename,
 				event->start_mark.line,
@@ -372,7 +374,6 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 	if (!reg)
 		return unexpected_key(node, event, input);
 
-	set_input = b->builder->inputs[0].value;
 	set_input(b->data, key, reg);
 	debug(" %s\n", input);
 	remove_parser_node(node);
