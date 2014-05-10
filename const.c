@@ -64,7 +64,7 @@ set_value(void *data, long value)
 
 static struct pcs_map setpoints[] = {
 	{
-		.key			= "value",
+		.key			= NULL,
 		.value			= set_value,
 	}
 	,{
