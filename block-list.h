@@ -30,6 +30,7 @@
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
 #include "fuzzy-then-d.h"
+#include "linear.h"
 #include "logger.h"
 #include "logical-and.h"
 #include "logical-not.h"
@@ -85,6 +86,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "i-87017",
 		.value		= load_i_87017_builder,
+	}
+	,{
+		.key		= "linear",
+		.value		= load_linear_builder,
 	}
 	,{
 		.key		= "log",

@@ -25,6 +25,7 @@ libpcs_a_SOURCES		 = \
 				   i-8042.c \
 				   i-87015.c \
 				   i-87017.c \
+				   linear.c \
 				   logger.c \
 				   logical-and.c \
 				   logical-not.c \
