@@ -33,6 +33,7 @@
 #include "logical-and.h"
 #include "logical-not.h"
 #include "logical-or.h"
+#include "logical-xor.h"
 #include "map.h"
 #include "ni1000tk5000.h"
 #include "pd.h"
@@ -95,6 +96,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "logical OR",
 		.value		= load_logical_or_builder,
+	}
+	,{
+		.key		= "logical XOR",
+		.value		= load_logical_xor_builder,
 	}
 	,{
 		.key		= "ni1000tk5000",
