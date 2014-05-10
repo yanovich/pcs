@@ -1,4 +1,4 @@
-/* trigger.c -- report value state with hysteresis
+/* trigger.c -- report value state with optional hysteresis
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -27,17 +27,36 @@
 #include "trigger.h"
 
 #define PCS_BLOCK	"trigger"
+#define PCS_T_HIGH	0
+#define PCS_T_LOW	1
 
 struct trigger_state {
 	long			*input;
 	long			high;
+	long			hysteresis;
 	long			low;
-	long			state;
 };
 
 static void
 trigger_run(struct block *b, struct server_state *s)
 {
+	struct trigger_state *d = b->data;
+
+	if (*d->input >= d->high) {
+		b->outputs[PCS_T_HIGH] = 1;
+		b->outputs[PCS_T_LOW] = 0;
+		return;
+	} else if (*d->input <= d->low) {
+		b->outputs[PCS_T_HIGH] = 0;
+		b->outputs[PCS_T_LOW] = 1;
+		return;
+	}
+
+	if (!d->hysteresis) {
+		b->outputs[PCS_T_HIGH] = 0;
+		b->outputs[PCS_T_LOW] = 0;
+		return;
+	}
 }
 
 static void
@@ -53,6 +72,19 @@ set_high(void *data, long value)
 	struct trigger_state *d = data;
 	d->high = value;
 	debug("high = %li\n", d->high);
+	return 0;
+}
+
+static int
+set_hysteresis(void *data, long value)
+{
+	struct trigger_state *d = data;
+	d->hysteresis = value;
+	if (value != 0 && value != 1) {
+		error(PCS_BLOCK ": bad boolean value (%li)\n", value);
+		return 1;
+	}
+	debug("hysteresis = %li\n", d->hysteresis);
 	return 0;
 }
 
@@ -86,6 +118,10 @@ static struct pcs_map setpoints[] = {
 	{
 		.key			= "high",
 		.value			= set_high,
+	}
+	,{
+		.key			= "hysteresis",
+		.value			= set_hysteresis,
 	}
 	,{
 		.key			= "low",
