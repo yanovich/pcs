@@ -98,7 +98,7 @@ static struct block_ops i_87015_ops = {
 };
 
 static struct block_ops *
-i_87015_init(void)
+i_87015_init(void *data)
 {
 	return &i_87015_ops;
 }

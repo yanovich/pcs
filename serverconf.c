@@ -425,9 +425,18 @@ block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
+	const char *key = (const char *) &node[1];
 	struct block *b = list_entry(node->state->conf->block_list.prev,
 			struct block, block_entry);
 	register_output(node->state->conf, b);
+
+	b->ops = b->builder->ops(b->data);
+	if (!b->ops || !b->ops->run)
+		fatal("bad config for %s in %s at line %zu column %zu\n",
+				key,
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
 	return end_event(node, event);
 }
 
@@ -456,10 +465,6 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 	b->builder = builder;
 	if (builder->alloc)
 		b->data = builder->alloc();
-
-	b->ops = builder->ops();
-	if (!b->ops || !b->ops->run)
-		fatal("bad ops for block '%s'\n", key);
 
 	list_add_tail(&b->block_entry, &node->state->conf->block_list);
 

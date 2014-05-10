@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	bb = load_fuzzy_if_s_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
-	b->ops = bb->ops();
+	b->ops = bb->ops(b->data);
 	if (!b->ops || !b->ops->run)
 		fatal("t2005: bad 'fuzzy if s' ops\n");
 

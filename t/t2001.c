@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	bb = load_ni1000tk5000_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
-	b->ops = bb->ops();
+	b->ops = bb->ops(b->data);
 	if (!b->ops || !b->ops->run)
 		fatal("t2001: bad ni1000tk5000 ops\n");
 

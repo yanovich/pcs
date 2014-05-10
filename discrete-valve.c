@@ -184,7 +184,7 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void)
+init(void *data)
 {
 	return &ops;
 }

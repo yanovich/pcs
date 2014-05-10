@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	b = xzalloc(sizeof(*b));
 	b->multiple = 1;
 	b->data = bb->alloc();
-	b->ops = bb->ops();
+	b->ops = bb->ops(b->data);
 	if (!b->ops || !b->ops->run)
 		fatal("t2008: bad 'discrete valve' ops\n");
 

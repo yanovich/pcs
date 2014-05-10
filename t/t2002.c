@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	bb = load_pd_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
-	b->ops = bb->ops();
+	b->ops = bb->ops(b->data);
 	if (!b->ops || !b->ops->run)
 		fatal("t2002: bad pd ops\n");
 
