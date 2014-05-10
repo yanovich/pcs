@@ -47,16 +47,16 @@ int main(int argc, char **argv)
 		fatal("t2002: bad 'pd' input table\n");
 	set_input = pcs_lookup(bb->inputs, "feed");
 	if (NULL == set_input)
-		fatal("t2009: bad 'pd.feed' input\n");
+		fatal("t2002: bad 'pd.feed' input\n");
 	set_input(b->data, "feed", &feed);
 
 	set_input = pcs_lookup(bb->inputs, "reference");
 	if (NULL == set_input)
-		fatal("t2009: bad 'pd.reference' input\n");
+		fatal("t2002: bad 'pd.reference' input\n");
 	set_input(b->data, "reference", &reference);
 
 	if (NULL != bb->inputs[2].key)
-		fatal("t2009: bad 'pd' input count\n");
+		fatal("t2002: bad 'pd' input count\n");
 
 	if (NULL == bb->outputs)
 		fatal("t2002: bad pd output table\n");
