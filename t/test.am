@@ -3,6 +3,7 @@
 
 TESTS				 = \
 				   t/t3007.sh \
+				   t/t2011 \
 				   t/t2010 \
 				   t/t2009 \
 				   t/t2008 \
@@ -19,6 +20,7 @@ TESTS				 = \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 += \
+				   t/t2011 \
 				   t/t2010 \
 				   t/t2009 \
 				   t/t2008 \

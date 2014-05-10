@@ -34,6 +34,12 @@ struct logical_not_state {
 static void
 logical_not_run(struct block *b, struct server_state *s)
 {
+	struct logical_not_state *d = b->data;
+	if (*d->input != 0 && *d->input != 1) {
+		error("%s: bad boolean (%li)\n", PCS_BLOCK, *d->input);
+		return;
+	}
+	*b->outputs = !*d->input;
 }
 
 static int
