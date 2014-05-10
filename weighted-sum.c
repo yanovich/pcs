@@ -49,7 +49,7 @@ weighted_sum_run(struct block *b, struct server_state *s)
 		if (0 == weight)
 			continue;
 		value += ((c->data[0] - value) * c->data[1]) / weight;
-		debug3("%li %lx -> %li %lx\n", c->data[0], c->data[1],
+		debug3("%li %lx -> %lli %llx\n", c->data[0], c->data[1],
 				value, weight);
 	}
 	*b->outputs = (long) value;
