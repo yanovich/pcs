@@ -27,6 +27,7 @@ libpcs_a_SOURCES		 = \
 				   logger.c \
 				   logical-and.c \
 				   logical-not.c \
+				   logical-or.c \
 				   ni1000tk5000.c \
 				   pd.c \
 				   serverconf.c \
