@@ -30,6 +30,7 @@
 #include "fuzzy-if-z.h"
 #include "fuzzy-then-d.h"
 #include "logger.h"
+#include "logical-and.h"
 #include "logical-not.h"
 #include "map.h"
 #include "ni1000tk5000.h"
@@ -81,6 +82,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "log",
 		.value		= load_log_builder,
+	}
+	,{
+		.key		= "logical AND",
+		.value		= load_logical_and_builder,
 	}
 	,{
 		.key		= "logical NOT",
