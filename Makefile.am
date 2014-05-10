@@ -28,6 +28,7 @@ libpcs_a_SOURCES		 = \
 				   logical-and.c \
 				   logical-not.c \
 				   logical-or.c \
+				   logical-xor.c \
 				   ni1000tk5000.c \
 				   pd.c \
 				   serverconf.c \

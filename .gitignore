@@ -31,6 +31,7 @@ t/t2010
 t/t2011
 t/t2012
 t/t2013
+t/t2014
 t/t*.log
 t/t*.trs
 test-driver
