@@ -25,6 +25,7 @@ libpcs_a_SOURCES		 = \
 				   i-8042.c \
 				   i-87015.c \
 				   logger.c \
+				   logical-not.c \
 				   ni1000tk5000.c \
 				   pd.c \
 				   serverconf.c \
