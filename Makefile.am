@@ -28,6 +28,7 @@ libpcs_a_SOURCES		 = \
 				   ni1000tk5000.c \
 				   pd.c \
 				   serverconf.c \
+				   trigger.c \
 				   weighted-sum.c
 
 libtools_a_SOURCES		 = \

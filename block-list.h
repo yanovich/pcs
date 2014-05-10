@@ -33,6 +33,7 @@
 #include "map.h"
 #include "ni1000tk5000.h"
 #include "pd.h"
+#include "trigger.h"
 #include "weighted-sum.h"
 
 static struct pcs_map loaders[] = {
@@ -87,6 +88,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "PD",
 		.value		= load_pd_builder,
+	}
+	,{
+		.key		= "trigger",
+		.value		= load_trigger_builder,
 	}
 	,{
 		.key		= "weighted sum",
