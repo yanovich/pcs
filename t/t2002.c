@@ -34,8 +34,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
-	long input, res[2];
+	long feed, reference = 1000, res[2];
 
 	bb = load_pd_builder();
 	b = xzalloc(sizeof(*b));
@@ -45,13 +44,19 @@ int main(int argc, char **argv)
 		fatal("t2002: bad pd ops\n");
 
 	if (NULL == bb->inputs)
-		fatal("t2002: bad pd input table\n");
-	if (NULL != bb->inputs[0].key)
-		fatal("t2002: bad pd input key\n");
-	if (NULL == bb->inputs[0].value)
-		fatal("t2002: bad pd input value\n");
-	set_input = bb->inputs[0].value;
-	set_input(b->data, "input", &input);
+		fatal("t2002: bad 'pd' input table\n");
+	set_input = pcs_lookup(bb->inputs, "feed");
+	if (NULL == set_input)
+		fatal("t2009: bad 'pd.feed' input\n");
+	set_input(b->data, "feed", &feed);
+
+	set_input = pcs_lookup(bb->inputs, "reference");
+	if (NULL == set_input)
+		fatal("t2009: bad 'pd.reference' input\n");
+	set_input(b->data, "reference", &reference);
+
+	if (NULL != bb->inputs[2].key)
+		fatal("t2009: bad 'pd' input count\n");
 
 	if (NULL == bb->outputs)
 		fatal("t2002: bad pd output table\n");
@@ -63,48 +68,42 @@ int main(int argc, char **argv)
 		fatal("t2002: bad pd output count\n");
 	b->outputs = res;
 
-	if (NULL == bb->setpoints)
+	if (NULL != bb->setpoints)
 		fatal("t2002: bad pd setpoints table\n");
-	if (NULL != bb->setpoints[0].key)
-		fatal("t2002: bad pd setpoint key\n");
-	if (NULL == bb->setpoints[0].value)
-		fatal("t2002: bad pd setpoint value\n");
-	setter = bb->setpoints[0].value;
-	setter(b->data, 1000);
 
-	input = 1100;
+	feed = 1100;
 	res[0] = 0;
 	res[1] = 1;
 	b->ops->run(b, &s);
 
 	if (res[0] != 100)
 		fatal("t2002: bad pd error result for %li (%li)\n",
-				input, res[0]);
+				feed, res[0]);
 	if (res[1] != 0)
 		fatal("t2002: bad initial pd diff (%li)\n",
 				res[1]);
 
-	input = 1200;
+	feed = 1200;
 	res[0] = 0;
 	res[1] = 1;
 	b->ops->run(b, &s);
 
 	if (res[0] != 200)
 		fatal("t2002: bad pd error result for %li (%li)\n",
-				input, res[0]);
+				feed, res[0]);
 	if (res[1] != 100)
 		fatal("t2002: bad pd diff result for %li (%li)\n",
-				input, res[1]);
-	input = 1100;
+				feed, res[1]);
+	feed = 1100;
 	res[0] = 0;
 	res[1] = 1;
 	b->ops->run(b, &s);
 
 	if (res[0] != 100)
 		fatal("t2002: bad pd error result for %li (%li)\n",
-				input, res[0]);
+				feed, res[0]);
 	if (res[1] != -100)
 		fatal("t2002: bad pd diff result for %li (%li)\n",
-				input, res[1]);
+				feed, res[1]);
 	return 0;
 }

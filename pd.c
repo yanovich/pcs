@@ -27,9 +27,9 @@
 #define PCS_BLOCK	"pd"
 
 struct pd_state {
-	long			*input;
+	long			*feed;
+	long			*reference;
 	int			first_run;
-	long			target;
 	long			prev;
 };
 
@@ -39,27 +39,25 @@ pd_run(struct block *b, struct server_state *s)
 	struct pd_state *d = b->data;
 	if (d->first_run) {
 		d->first_run = 0;
-		d->prev = *d->input;
+		d->prev = *d->feed;
 	}
-	b->outputs[0] = *d->input - d->target;
-	b->outputs[1] = *d->input - d->prev;
-	d->prev = *d->input;
+	b->outputs[0] = *d->feed - *d->reference;
+	b->outputs[1] = *d->feed - d->prev;
+	d->prev = *d->feed;
 }
 
 static void
-set_input(void *data, const char const *key, long *input)
+set_feed(void *data, const char const *key, long *input)
 {
 	struct pd_state *d = data;
-	d->input = input;
+	d->feed = input;
 }
 
-static int
-set_target(void *data, long value)
+static void
+set_reference(void *data, const char const *key, long *input)
 {
 	struct pd_state *d = data;
-	d->target = value;
-	debug("target = %li\n", d->target);
-	return 0;
+	d->reference = input;
 }
 
 static const char *outputs[] = {
@@ -70,14 +68,12 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
-		.key			= NULL,
-		.value			= set_input,
+		.key			= "feed",
+		.value			= set_feed,
 	}
-};
-
-static struct pcs_map setpoints[] = {
-	{
-		.value			= set_target,
+	,{
+		.key			= "reference",
+		.value			= set_reference,
 	}
 	,{
 	}
@@ -106,7 +102,6 @@ static struct block_builder builder = {
 	.ops		= init,
 	.outputs	= outputs,
 	.inputs		= inputs,
-	.setpoints	= setpoints,
 };
 
 struct block_builder *
