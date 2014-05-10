@@ -1,4 +1,4 @@
-/* pcs.c -- process control service
+/* t/t2001.c -- test NI1000TK5000 convereter
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
