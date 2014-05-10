@@ -25,6 +25,7 @@
 #include "discrete-valve.h"
 #include "i-8042.h"
 #include "i-87015.h"
+#include "i-87017.h"
 #include "fuzzy-if-d.h"
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
@@ -80,6 +81,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "i-87015",
 		.value		= load_i_87015_builder,
+	}
+	,{
+		.key		= "i-87017",
+		.value		= load_i_87017_builder,
 	}
 	,{
 		.key		= "log",

@@ -1,4 +1,4 @@
-/* i-87015.c -- load I-87015 status
+/* i-87017.c -- load I-87017 status
  * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -22,36 +22,36 @@
 #include <stdio.h>
 
 #include "block.h"
-#include "i-87015.h"
+#include "i-87017.h"
 #include "icpdas.h"
 #include "map.h"
 #include "state.h"
 
-#define PCS_BLOCK	"i-87015"
+#define PCS_BLOCK	"i-87017"
 
 static const char const *default_device = "/dev/ttyS1";
 
-struct i_87015_state {
+struct i_87017_state {
 	unsigned		slot;
 	const char		*device;
 };
 
 static void
-i_87015_run(struct block *b, struct server_state *s)
+i_87017_run(struct block *b, struct server_state *s)
 {
 	char buff[128];
-	struct i_87015_state *d = b->data;
+	struct i_87017_state *d = b->data;
 	long *ai = b->outputs;
 	int err;
 	size_t pos = 0;
 	int i;
 
-	err = icpdas_get_serial_analog_input(d->device, d->slot, 7, ai);
+	err = icpdas_get_serial_analog_input(d->device, d->slot, 8, ai);
 	if (0 > err)
-		error("bad i-87015 input slot %u\n", d->slot);
+		error("bad i-87017 input, slot %u\n", d->slot);
 
-	pos += snprintf(&buff[pos], 128 - pos, "%s: i-87015 ", b->name);
-	for (i = 0; i < 7; i++)
+	pos += snprintf(&buff[pos], 128 - pos, "%s: i-87017 ", b->name);
+	for (i = 0; i < 8; i++)
 		pos += snprintf(&buff[pos], 128 - pos, "%5li ", ai[i]);
 	debug("%s\n", buff);
 }
@@ -59,7 +59,7 @@ i_87015_run(struct block *b, struct server_state *s)
 static int
 set_slot(void *data, long value)
 {
-	struct i_87015_state *d = data;
+	struct i_87017_state *d = data;
 	d->slot = (unsigned) value;
 	debug("slot = %u\n", d->slot);
 	return 0;
@@ -82,36 +82,37 @@ static const char *outputs[] = {
 	"ai4",
 	"ai5",
 	"ai6",
+	"ai7",
 	NULL
 };
 
 static void *
-i_87015_alloc(void)
+alloc(void)
 {
-	struct i_87015_state *d = xzalloc(sizeof(struct i_87015_state));
+	struct i_87017_state *d = xzalloc(sizeof(struct i_87017_state));
 	d->device = default_device;
 	return d;
 }
 
-static struct block_ops i_87015_ops = {
-	.run		= i_87015_run,
+static struct block_ops ops = {
+	.run		= i_87017_run,
 };
 
 static struct block_ops *
-i_87015_init(void *data)
+init(void *data)
 {
-	return &i_87015_ops;
+	return &ops;
 }
 
-static struct block_builder i_87015_builder = {
-	.alloc		= i_87015_alloc,
-	.ops		= i_87015_init,
+static struct block_builder builder = {
+	.alloc		= alloc,
+	.ops		= init,
 	.setpoints	= setpoints,
 	.outputs	= outputs,
 };
 
 struct block_builder *
-load_i_87015_builder(void)
+load_i_87017_builder(void)
 {
-	return &i_87015_builder;
+	return &builder;
 }
