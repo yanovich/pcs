@@ -39,6 +39,16 @@ struct data_component {
 static void
 logical_and_run(struct block *b, struct server_state *s)
 {
+	struct logical_and_state *d = b->data;
+	struct data_component *c;
+
+	list_for_each_entry(c, &d->component_list, component_entry) {
+		if (0 == *c->data) {
+			*b->outputs = 0;
+			return;
+		}
+	}
+	*b->outputs = 1;
 }
 
 static int
