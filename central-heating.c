@@ -29,7 +29,6 @@
 #define PCS_BLOCK	"central-heating"
 
 struct central_heating_state {
-	long			*input_feed;
 	long			*input_flowback;
 	long			*input_street;
 	long			feed;
@@ -42,13 +41,22 @@ struct central_heating_state {
 static void
 central_heating_run(struct block *b, struct server_state *s)
 {
-}
+	struct central_heating_state *d = b->data;
+	long long t11;
+	long long t12_excess;
 
-static void
-set_input_feed(void *data, const char const *key, long *input_feed)
-{
-	struct central_heating_state *d = data;
-	d->input_feed = input_feed;
+	t11  = d->feed - d->inside;
+	t11 *= d->inside - *d->input_street;
+	t11 /= d->inside - d->street;
+	t11 += d->inside;
+
+	t12_excess  = d->feed - d->flowback;
+	t12_excess *= d->inside - *d->input_street;
+	t12_excess /= d->inside - d->street;
+	t12_excess += *d->input_flowback - t11;
+
+	*b->outputs = (long) (t11 - t12_excess);
+	debug3("%s: %lli %lli %li\n", PCS_BLOCK, t11, t12_excess, *b->outputs);
 }
 
 static void
@@ -116,10 +124,6 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
-		.key			= "feed",
-		.value			= set_input_feed,
-	}
-	,{
 		.key			= "flowback",
 		.value			= set_input_flowback,
 	}
