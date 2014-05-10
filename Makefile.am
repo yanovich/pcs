@@ -15,6 +15,7 @@ libicpdas_a_SOURCES		 = \
 				   icpdas.c
 
 libpcs_a_SOURCES		 = \
+				   central-heating.c \
 				   const.c \
 				   discrete-valve.c \
 				   fuzzy-if-d.c \

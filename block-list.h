@@ -20,6 +20,7 @@
 #ifndef _PCS_BLOCK_LIST_H
 #define _PCS_BLOCK_LIST_H
 
+#include "central-heating.h"
 #include "const.h"
 #include "discrete-valve.h"
 #include "i-8042.h"
@@ -36,6 +37,10 @@
 
 static struct pcs_map loaders[] = {
 	{
+		.key		= "central heating",
+		.value		= load_central_heating_builder,
+	}
+	,{
 		.key		= "const",
 		.value		= load_const_builder,
 	}
