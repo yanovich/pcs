@@ -20,6 +20,7 @@
 #include "includes.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
@@ -98,6 +99,7 @@ int main(int argc, char **argv)
 
 	log_init("pcs", log_level, LOG_DAEMON, no_detach);
 
+	srand(s.start.tv_sec);
         f = fopen(pid_file, "w");
         if (f != NULL) {
                 fprintf(f, "%lu\n", (long unsigned) getpid());

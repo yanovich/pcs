@@ -42,6 +42,7 @@ int main(int argc, char **argv)
 	int (*setter)(void *, long);
 	long stage, unstage, stop, res[C_t2015_OUTPUTS];
 	int i = 1;
+	int j;
 
 	log_init("t2015", LOG_DEBUG + 2, LOG_DAEMON, 1);
 	bb = load_cascade_builder();
@@ -139,23 +140,28 @@ int main(int argc, char **argv)
 	unstage = 0;
 	stop = 0;
 	b->ops->run(b, &s);
+	for (j = 0; j < 4; j++)
+		if (res[j] == 1)
+			break;
+	if (4 == j)
+		fatal("t2015: unexpected state at step 2\n");
 	{
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 2-%i\n",
-					res[0], i);
-		if (res[1] != 0)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 0)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 2-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 2-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 2-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 
 	stage = 0;
@@ -163,22 +169,22 @@ int main(int argc, char **argv)
 	stop = 0;
 	for (i = 1; i <= C_t2015_STAGE - 2; i++) {
 		b->ops->run(b, &s);
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 3-%i\n",
-					res[0], i);
-		if (res[1] != 0)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 0)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 3-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 3-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 3-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 
 	stage = 1;
@@ -186,42 +192,42 @@ int main(int argc, char **argv)
 	stop = 0;
 	b->ops->run(b, &s);
 	{
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 4-%i\n",
-					res[0], i);
-		if (res[1] != 0)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 0)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 4-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 4-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 4-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	i++;
 	b->ops->run(b, &s);
 	{
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 5-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 5-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 5-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 5-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	i++;
 
@@ -230,41 +236,41 @@ int main(int argc, char **argv)
 	stop = 0;
 	for (; i <= C_t2015_UNSTAGE - 2; i++) {
 		b->ops->run(b, &s);
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 6-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 6-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 6-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 6-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	{
 		b->ops->run(b, &s);
-		if (res[0] != 0)
+		if (res[(j + 0) %4] != 0)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 7-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 7-%i\n",
-					res[1], i);
-		if (res[2] != 0)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 0)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 7-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 7-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 
 	stage = 1;
@@ -272,61 +278,61 @@ int main(int argc, char **argv)
 	stop = 0;
 	for (i = 1; i <= C_t2015_STAGE; i++) {
 		b->ops->run(b, &s);
-		if (res[0] != 0)
+		if (res[(j + 0) %4] != 0)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 8-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 8-%i\n",
-					res[1], i);
-		if (res[2] != 1)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 1)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 8-%i\n",
-					res[2], i);
-		if (res[3] != 0)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 0)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 8-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	for (i = 1; i <= C_t2015_STAGE; i++) {
 		b->ops->run(b, &s);
-		if (res[0] != 0)
+		if (res[(j + 0) %4] != 0)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 9-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 9-%i\n",
-					res[1], i);
-		if (res[2] != 1)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 1)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 9-%i\n",
-					res[2], i);
-		if (res[3] != 1)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 1)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 9-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	i = 1;
 	{
 		b->ops->run(b, &s);
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 10-%i\n",
-					res[0], i);
-		if (res[1] != 1)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 1)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 10-%i\n",
-					res[1], i);
-		if (res[2] != 1)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 1)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 10-%i\n",
-					res[2], i);
-		if (res[3] != 1)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 1)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 10-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 
 	stage = 0;
@@ -334,22 +340,22 @@ int main(int argc, char **argv)
 	stop = 0;
 	{
 		b->ops->run(b, &s);
-		if (res[0] != 1)
+		if (res[(j + 0) %4] != 1)
 			fatal("t2015: bad 'cascade' m1 "
 					"(%li) for step 11-%i\n",
-					res[0], i);
-		if (res[1] != 0)
+					res[(j + 0) %4], i);
+		if (res[(j + 1) %4] != 0)
 			fatal("t2015: bad 'cascade' m2 "
 					"(%li) for step 11-%i\n",
-					res[1], i);
-		if (res[2] != 1)
+					res[(j + 1) %4], i);
+		if (res[(j + 2) %4] != 1)
 			fatal("t2015: bad 'cascade' m3 "
 					"(%li) for step 11-%i\n",
-					res[2], i);
-		if (res[3] != 1)
+					res[(j + 2) %4], i);
+		if (res[(j + 3) %4] != 1)
 			fatal("t2015: bad 'cascade' m4 "
 					"(%li) for step 11-%i\n",
-					res[3], i);
+					res[(j + 3) %4], i);
 	}
 	return 0;
 }

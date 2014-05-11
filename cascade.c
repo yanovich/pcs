@@ -206,6 +206,8 @@ static struct block_ops *
 init(void *data)
 {
 	struct cascade_state *d = data;
+	int first;
+
 	if (0 == d->output_count) {
 		error("%s: bad output count\n", PCS_BLOCK);
 		return NULL;
@@ -218,6 +220,9 @@ init(void *data)
 		error("%s: bad unstage input\n", PCS_BLOCK);
 		return NULL;
 	}
+	first = rand() % d->output_count;
+	d->next_stage = first;
+	d->next_unstage = first;
 	return &ops;
 }
 
