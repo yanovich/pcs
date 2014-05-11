@@ -33,6 +33,7 @@
 
 struct discrete_valve_state {
 	long			*input;
+	long			*reset;
 	long			input_multiple;
 	long			span;
 	long			c_in;
@@ -45,6 +46,22 @@ discrete_valve_run(struct block *b, struct server_state *s)
 	struct discrete_valve_state *d = b->data;
 	long input = *d->input;
 	long tick, span;
+
+	if (d->reset && *d->reset) {
+		b->outputs[PCS_DV_CLOSE] = 0;
+		b->outputs[PCS_DV_OPEN] = 0;
+		b->outputs[PCS_DV_POSITION] = 0;
+		b->outputs[PCS_DV_ABSOLUTE] = 0;
+		d->c_out = 0;
+		if (--d->c_in) {
+			d->c_in = d->input_multiple;
+			debug3("%s: input (%li) p(%li) reset\n",
+					__FUNCTION__,
+					(long) 0,
+					b->outputs[PCS_DV_POSITION]);
+		}
+		return;
+	}
 
 	if (--d->c_in) {
 		if (d->c_out == 0)
@@ -124,6 +141,13 @@ set_input(void *data, const char const *key, long *input)
 	d->input = input;
 }
 
+static void
+set_reset(void *data, const char const *key, long *input)
+{
+	struct discrete_valve_state *d = data;
+	d->reset = input;
+}
+
 static int
 set_input_multiple(void *data, long value)
 {
@@ -152,8 +176,14 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
-		.key			= NULL,
+		.key			= "input",
 		.value			= set_input,
+	}
+	,{
+		.key			= "reset",
+		.value			= set_reset,
+	}
+	,{
 	}
 };
 

@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
 	int (*setter)(void *, long);
-	long input, res[4];
+	long input, reset = 0, res[4];
 	int i = 1, stop;
 
 	log_init("t2008", LOG_DEBUG + 2, LOG_DAEMON, 1);
@@ -55,12 +55,15 @@ int main(int argc, char **argv)
 
 	if (NULL == bb->inputs)
 		fatal("t2008: bad 'discrete valve' input table\n");
-	if (NULL != bb->inputs[0].key)
-		fatal("t2008: bad 'discrete valve' input key\n");
-	if (NULL == bb->inputs[0].value)
-		fatal("t2008: bad 'discrete valve' input value\n");
-	set_input = bb->inputs[0].value;
+	set_input = pcs_lookup(bb->inputs, "input");
+	if (NULL == set_input)
+		fatal("t2008: bad 'discrete valve' input\n");
 	set_input(b->data, "input", &input);
+
+	set_input = pcs_lookup(bb->inputs, "reset");
+	if (NULL == set_input)
+		fatal("t2008: bad 'discrete valve.reset' input\n");
+	set_input(b->data, "reset", &reset);
 
 	if (NULL == bb->outputs)
 		fatal("t2008: bad 'discrete valve' output table\n");
@@ -262,5 +265,84 @@ int main(int argc, char **argv)
 					input, res[1], i);
 	}
 
+	input = -C_t2008_TICK * (2);
+	res[0] = 0;
+	res[1] = 1;
+	i = 1;
+	{
+		b->ops->run(b, &s);
+
+		if (res[0] != 1)
+			fatal("t2008: bad 'discrete valve' close "
+					"for %li (%li) step 9-%i\n",
+					input, res[0], i);
+		if (res[1] != 0)
+			fatal("t2008: bad 'discrete valve' open "
+					"for %li (%li) step 9-%i\n",
+					input, res[1], i);
+	}
+	reset = 1;
+	res[0] = 1;
+	res[1] = 1;
+	i++;
+	{
+		b->ops->run(b, &s);
+
+		if (res[0] != 0)
+			fatal("t2008: bad 'discrete valve' close "
+					"for %li (%li) step 10-%i\n",
+					input, res[0], i);
+		if (res[1] != 0)
+			fatal("t2008: bad 'discrete valve' open "
+					"for %li (%li) step 10-%i\n",
+					input, res[1], i);
+	}
+	{
+		if (res[2] != 0)
+			fatal("t2008: bad 'discrete valve' position "
+					"for %li (%li) step 10-%i\n",
+					input, res[2], i);
+		if (res[3] != 0)
+			fatal("t2008: bad 'discrete valve' absolute "
+					"for %li (%li) step 10-%i\n",
+					input, res[3], i);
+	}
+
+	reset = 0;
+	input = -C_t2008_TICK * C_t2008_INPUT_MULTIPLE;
+	stop = C_t2008_INPUT_MULTIPLE;
+	for (; i <= stop; i++) {
+		b->ops->run(b, &s);
+
+		if (res[0] != 0)
+			fatal("t2008: bad 'discrete valve' close "
+					"for %li (%li) step 11-%i\n",
+					input, res[0], i);
+		if (res[1] != 0)
+			fatal("t2008: bad 'discrete valve' open "
+					"for %li (%li) step 11-%i\n",
+					input, res[1], i);
+		if (res[2] != 0)
+			fatal("t2008: bad 'discrete valve' position "
+					"for %li (%li) step 11-%i\n",
+					input, res[2], i);
+	}
+	stop = C_t2008_INPUT_MULTIPLE;
+	for (i = 1; i <= stop; i++) {
+		b->ops->run(b, &s);
+
+		if (res[0] != 1)
+			fatal("t2008: bad 'discrete valve' close "
+					"for %li (%li) step 12-%i\n",
+					input, res[0], i);
+		if (res[1] != 0)
+			fatal("t2008: bad 'discrete valve' open "
+					"for %li (%li) step 12-%i\n",
+					input, res[1], i);
+		if (res[2] != -stop)
+			fatal("t2008: bad 'discrete valve' position "
+					"for %li (%li) step 12-%i\n",
+					input, res[2], i);
+	}
 	return 0;
 }
