@@ -37,12 +37,57 @@ struct cascade_state {
 	long			*input_unstage;
 	long			output_count;
 	long			stage_interval;
+	long			stage_mark;
+	long			next_stage;
 	long			unstage_interval;
+	long			unstage_mark;
+	long			next_unstage;
 };
 
 static void
 cascade_run(struct block *b, struct server_state *s)
 {
+	struct cascade_state *d = b->data;
+	int i, j;
+
+	if (d->unstage_mark)
+		d->unstage_mark--;
+	if (d->stage_mark)
+		d->stage_mark--;
+
+	if (d->input_stop && *d->input_stop) {
+		for (i = 0; i < d->output_count; i++)
+			if (b->outputs[i]) {
+				b->outputs[i] = 0;
+				d->unstage_mark = d->unstage_interval;
+			}
+		return;
+	}
+	if (*d->input_stage) {
+		if (d->stage_mark)
+			return;
+		for (i = 0; i < d->output_count; i++) {
+			j = (i + d->next_stage) % d->output_count;
+			if (!b->outputs[j]) {
+				b->outputs[j] = 1;
+				d->stage_mark = d->stage_interval;
+				d->next_stage = j + 1;
+				break;
+			}
+		}
+	} else if (*d->input_unstage) {
+		if (d->unstage_mark)
+			return;
+		for (i = 0; i < d->output_count; i++) {
+			j = (i + d->next_unstage) % d->output_count;
+			if (b->outputs[j]) {
+				b->outputs[j] = 0;
+				d->unstage_mark = d->unstage_interval;
+				d->next_unstage = j + 1;
+				break;
+			}
+		}
+	}
 }
 
 static void
@@ -87,10 +132,10 @@ set_output_count(void *data, long value)
 	d->output_count = value;
 	builder.outputs = xzalloc(sizeof(*builder.outputs) * (value + 1));
 	for (i = 0; i < value; i++) {
-		snprintf(buff, 16, "%i", i);
+		snprintf(buff, 16, "%i", i + 1);
 		builder.outputs[i] = strdup(buff);
 	}
-	debug("outputs count = %li\n", d->output_count);
+	debug("output count = %li\n", d->output_count);
 	return 0;
 }
 
