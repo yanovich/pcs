@@ -19,6 +19,7 @@
 
 #include "includes.h"
 
+#include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
@@ -47,6 +48,7 @@ next_tick(struct server_state *s)
 int main(int argc, char **argv)
 {
 	const char *config_file_name = SYSCONFDIR "/pcs.conf";
+	const char *pid_file = PIDDIR "/pcs.pid";
 	int log_level = LOG_NOTICE;
 	int test_only = 0;
 	struct server_config c = {
@@ -56,9 +58,14 @@ int main(int argc, char **argv)
 	struct server_state s;
 	struct block *b;
 	int opt;
+	int no_detach = 0;
+	FILE *f;
 
-	while ((opt = getopt(argc, argv, "df:t")) != -1) {
+	while ((opt = getopt(argc, argv, "Ddf:t")) != -1) {
 		switch (opt) {
+		case 'D':
+			no_detach = 1;
+			break;
 		case 'd':
 			if (log_level >= LOG_DEBUG)
 				log_level++;
@@ -86,6 +93,17 @@ int main(int argc, char **argv)
 	gettimeofday(&s.start, NULL);
 	s.tick = c.tick;
 
+	if (!no_detach)
+		daemon(0, 0);
+
+	log_init("pcs", log_level, LOG_DAEMON, no_detach);
+
+        f = fopen(pid_file, "w");
+        if (f != NULL) {
+                fprintf(f, "%lu\n", (long unsigned) getpid());
+                fclose(f);
+        }
+
 	while (1) {
 		char buff[24];
 		struct tm tm = *localtime(&s.start.tv_sec);
@@ -101,6 +119,11 @@ int main(int argc, char **argv)
 		timeradd(&s.start, &c.tick, &s.start);
 		next_tick(&s);
 	}
+
+	if (!no_detach)
+		closelog();
+
+	unlink(pid_file);
 
 	return 0;
 }

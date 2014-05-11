@@ -5,6 +5,9 @@ AM_MAKEFLAGS			 = --no-print-directory
 AM_CFLAGS			 = -Wall
 AM_CPPFLAGS			 = -I /usr/include
 AM_CPPFLAGS			 += -DSYSCONFDIR='"$(sysconfdir)"'
+AM_CPPFLAGS			 += -DPIDDIR='"$(piddir)"'
+
+piddir				  = $(localstatedir)/run
 
 noinst_LIBRARIES		 = \
 				   libicpdas.a \
