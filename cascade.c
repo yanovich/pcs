@@ -210,6 +210,14 @@ init(void *data)
 		error("%s: bad output count\n", PCS_BLOCK);
 		return NULL;
 	}
+	if (NULL == d->input_stage) {
+		error("%s: bad stage input\n", PCS_BLOCK);
+		return NULL;
+	}
+	if (NULL == d->input_unstage) {
+		error("%s: bad unstage input\n", PCS_BLOCK);
+		return NULL;
+	}
 	return &ops;
 }
 
