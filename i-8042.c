@@ -195,7 +195,7 @@ set_input(void *data, const char const *key, long *input)
 	struct i_8042_out_state *d = data;
 	char *bad;
 	long i = strtol(key, &bad, 10);
-	if (bad[0] != 0 || i <=0 || i >= 16)
+	if (bad[0] != 0 || i < 0 || i >= 16)
 		fatal("i-8042 out: bad input '%s'\n", key);
 	d->DO[i] = input;
 }
