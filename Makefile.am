@@ -26,6 +26,7 @@ libpcs_a_SOURCES		 = \
 				   fuzzy-if-s.c \
 				   fuzzy-if-z.c \
 				   fuzzy-then-d.c \
+				   file-input.c \
 				   i-8042.c \
 				   i-87015.c \
 				   i-87017.c \

@@ -27,6 +27,7 @@
 #include "i-8042.h"
 #include "i-87015.h"
 #include "i-87017.h"
+#include "file-input.h"
 #include "fuzzy-if-d.h"
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
@@ -59,6 +60,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "discrete valve",
 		.value		= load_discrete_valve_builder,
+	}
+	,{
+		.key		= "file input",
+		.value		= load_file_input_builder,
 	}
 	,{
 		.key		= "fuzzy if d",
