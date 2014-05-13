@@ -28,7 +28,6 @@
 #define PCS_DEFAULT_REGS_COUNT	512
 
 struct server_config {
-	struct timeval		tick;
 	long			multiple;
 	struct list_head	block_list;
 	int			regs_count;

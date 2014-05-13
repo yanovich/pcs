@@ -53,7 +53,6 @@ int main(int argc, char **argv)
 	int log_level = LOG_NOTICE;
 	int test_only = 0;
 	struct server_config c = {
-		.tick		= {0},
 		.multiple	= 1,
        	};
 	struct server_state *s = &c.state;
@@ -92,7 +91,6 @@ int main(int argc, char **argv)
 	if (test_only)
 		return 0;
 	gettimeofday(&s->start, NULL);
-	s->tick = c.tick;
 
 	if (!no_detach)
 		daemon(0, 0);
@@ -118,7 +116,7 @@ int main(int argc, char **argv)
 			b->counter = b->multiple;
 			b->ops->run(b, s);
 		}
-		timeradd(&s->start, &c.tick, &s->start);
+		timeradd(&s->start, &s->tick, &s->start);
 		next_tick(s);
 	}
 

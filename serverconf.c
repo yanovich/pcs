@@ -80,8 +80,8 @@ handler_from_map(const char *key, struct pcs_parser_map *map)
 static void
 default_config(struct server_config *conf)
 {
-	conf->tick.tv_sec = 10;
-	conf->tick.tv_usec = 0;
+	conf->state.tick.tv_sec = 10;
+	conf->state.tick.tv_usec = 0;
 }
 
 static struct pcs_parser_node*
@@ -246,8 +246,8 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	msec = long_value(node, event);
 	debug(" %li ms\n", msec);
-	node->state->conf->tick.tv_sec = msec / 1000;
-	node->state->conf->tick.tv_usec = (msec % 1000) * 1000;
+	node->state->conf->state.tick.tv_sec = msec / 1000;
+	node->state->conf->state.tick.tv_usec = (msec % 1000) * 1000;
 	remove_parser_node(node);
 	return 1;
 }
