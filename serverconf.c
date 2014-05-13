@@ -286,6 +286,39 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+static int
+new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct block *b = list_entry(node->state->conf->block_list.prev,
+			struct block, block_entry);
+	const char *key = (const char *) &node[1];
+	const char *value = (const char *) event->data.scalar.value;
+	int (*setter)(void *, const char *, const char *);
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return unexpected_event(node, event);
+
+	setter = pcs_lookup(b->builder->strings, key);
+	if (!setter)
+		return unexpected_key(node, event, key);
+
+	debug(" %s\n", value);
+	if (!b->data)
+		fatal("trying to setup uninitialized block in "
+				"%s line %zu column %zu\n",
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
+	if (setter(b->data, key, value))
+		fatal("string '%s' error in %s line %zu column %zu\n",
+				key,
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
+	remove_parser_node(node);
+	return 1;
+}
+
 static void
 register_output(struct server_config *c, struct block *b)
 {
@@ -521,6 +554,14 @@ struct pcs_parser_map setpoints_map[] = {
 	}
 };
 
+struct pcs_parser_map strings_map[] = {
+	{
+		.handler		= new_string_event,
+	}
+	,{
+	}
+};
+
 struct pcs_parser_map block_map[] = {
 	{
 		.key			= "input",
@@ -547,6 +588,11 @@ struct pcs_parser_map block_map[] = {
 		.key			= "setpoints",
 		.handler		= map_start_event,
 		.data			= &setpoints_map,
+	}
+	,{
+		.key			= "strings",
+		.handler		= map_start_event,
+		.data			= &strings_map,
 	}
 	,{
 	}
