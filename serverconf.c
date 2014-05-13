@@ -55,6 +55,7 @@ struct pcs_parser_node {
 	int				(*handler[YAML_MAPPING_END_EVENT + 1])(
 			struct pcs_parser_node *node, yaml_event_t *event);
 	void				*data;
+	int				sequence;
 };
 
 struct pcs_parser_map {
@@ -175,6 +176,7 @@ scalar_key_event(struct pcs_parser_node *node, yaml_event_t *event)
 	if (len > 500)
 		fatal("key (%s) is over 500 chars\n", key);
 
+	len += 1;
 	len += sizeof(int *) - len % sizeof(int *);
 	n = new_parser_node(node->state, &node->node_entry, len);
 	s = (char *) &n[1];
@@ -315,7 +317,8 @@ new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	remove_parser_node(node);
+	if (!node->sequence)
+		remove_parser_node(node);
 	return 1;
 }
 
@@ -388,8 +391,15 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 	void (*set_input)(void *, const char const *, long *);
 	long *reg;
 
-	if (YAML_SCALAR_EVENT != event->type)
+	if (0 == node->sequence && YAML_SEQUENCE_START_EVENT == event->type) {
+		node->handler[YAML_SEQUENCE_END_EVENT] = exit_event;
+		node->sequence = 1;
+		return 1;
+	} else if (YAML_SCALAR_EVENT != event->type) {
 		return unexpected_event(node, event);
+	} else if (0 == node->sequence) {
+		node->sequence = -1;
+	}
 
 	if (!b->builder->inputs)
 		fatal("block has no inputs in %s at line %zu column %zu\n",
@@ -409,7 +419,8 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	set_input(b->data, key, reg);
 	debug(" %s\n", input);
-	remove_parser_node(node);
+	if (1 != node->sequence)
+		remove_parser_node(node);
 	return 1;
 }
 
