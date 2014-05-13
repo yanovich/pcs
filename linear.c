@@ -55,7 +55,7 @@ linear_run(struct block *b, struct server_state *s)
 	res += d->out_low;
 
 	*b->outputs = (long) res;
-	debug3("%s: %lli\n", res);
+	debug3("%s: %lli\n", PCS_BLOCK, res);
 }
 
 static void
