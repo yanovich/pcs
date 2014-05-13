@@ -23,6 +23,7 @@
 #include <sys/time.h>
 
 #include "list.h"
+#include "state.h"
 
 #define PCS_DEFAULT_REGS_COUNT	512
 
@@ -33,6 +34,7 @@ struct server_config {
 	int			regs_count;
 	int			regs_used;
 	long			*regs;
+	struct server_state	state;
 };
 
 void

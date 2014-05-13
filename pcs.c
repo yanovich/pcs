@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 		.tick		= {0},
 		.multiple	= 1,
        	};
-	struct server_state s;
+	struct server_state *s = &c.state;
 	struct block *b;
 	int opt;
 	int no_detach = 0;
@@ -91,15 +91,15 @@ int main(int argc, char **argv)
 		fatal("Nothing to do. Exiting\n");
 	if (test_only)
 		return 0;
-	gettimeofday(&s.start, NULL);
-	s.tick = c.tick;
+	gettimeofday(&s->start, NULL);
+	s->tick = c.tick;
 
 	if (!no_detach)
 		daemon(0, 0);
 
 	log_init("pcs", log_level, LOG_DAEMON, no_detach);
 
-	srand(s.start.tv_sec);
+	srand(s->start.tv_sec);
         f = fopen(pid_file, "w");
         if (f != NULL) {
                 fprintf(f, "%lu\n", (long unsigned) getpid());
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 
 	while (1) {
 		char buff[24];
-		struct tm tm = *localtime(&s.start.tv_sec);
+		struct tm tm = *localtime(&s->start.tv_sec);
 		strftime(&buff[0], sizeof(buff) - 1, "%b %e %H:%M:%S", &tm);
 		debug("%s\n", buff);
 
@@ -116,10 +116,10 @@ int main(int argc, char **argv)
 			if (--b->counter)
 				continue;
 			b->counter = b->multiple;
-			b->ops->run(b, &s);
+			b->ops->run(b, s);
 		}
-		timeradd(&s.start, &c.tick, &s.start);
-		next_tick(&s);
+		timeradd(&s->start, &c.tick, &s->start);
+		next_tick(s);
 	}
 
 	if (!no_detach)
