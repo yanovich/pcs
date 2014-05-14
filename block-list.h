@@ -28,6 +28,7 @@
 #include "i-87015.h"
 #include "i-87017.h"
 #include "file-input.h"
+#include "file-output.h"
 #include "fuzzy-if-d.h"
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
@@ -64,6 +65,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "file input",
 		.value		= load_file_input_builder,
+	}
+	,{
+		.key		= "file output",
+		.value		= load_file_output_builder,
 	}
 	,{
 		.key		= "fuzzy if d",
