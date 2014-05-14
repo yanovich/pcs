@@ -35,6 +35,12 @@ static const char const *default_path = "/var/lib/pcs";
 struct file_input_state {
 	long			count;
 	const char		*path;
+	struct list_head	key_list;
+};
+
+struct line_key {
+	struct list_head	key_entry;
+	const char		*key;
 };
 
 static void
@@ -42,31 +48,15 @@ file_input_run(struct block *b, struct server_state *s)
 {
 }
 
-static struct block_builder builder;
-
 static int
-set_count(void *data, long value)
+set_key(void *data, const char *key, const char *value)
 {
 	struct file_input_state *d = data;
-	char buff[16];
-	int i;
-
-	if (value <= 0) {
-		error("%s: bad input count (%li)\n", PCS_BLOCK, value);
-		return 1;
-	}
-	if (value > PCS_FI_MAX_INPUTS) {
-		error("%s: input count (%li) is over maximum (%i)\n",
-				PCS_BLOCK, value, PCS_FI_MAX_INPUTS);
-		return 1;
-	}
-	d->count = value;
-	builder.outputs = xzalloc(sizeof(*builder.outputs) * (value + 1));
-	for (i = 0; i < value; i++) {
-		snprintf(buff, 16, "%i", i);
-		builder.outputs[i] = strdup(buff);
-	}
-	debug("count = %li\n", d->count);
+	struct line_key *c = xzalloc(sizeof(*c));
+	c->key = strdup(value);
+	list_add_tail(&c->key_entry, &d->key_list);
+	debug("key = %s\n", c->key);
+	d->count++;
 	return 0;
 }
 
@@ -83,17 +73,12 @@ set_path(void *data, const char *key, const char *value)
 	return 0;
 }
 
-static struct pcs_map setpoints[] = {
-	{
-		.key			= "count",
-		.value			= set_count,
-	}
-	,{
-	}
-};
-
 static struct pcs_map strings[] = {
 	{
+		.key			= "key",
+		.value			= set_key,
+	}
+	,{
 		.key			= "path",
 		.value			= set_path,
 	}
@@ -105,6 +90,7 @@ static void *
 alloc(void)
 {
 	struct file_input_state *d = xzalloc(sizeof(struct file_input_state));
+	INIT_LIST_HEAD(&d->key_list);
 	return d;
 }
 
@@ -112,19 +98,33 @@ static struct block_ops ops = {
 	.run		= file_input_run,
 };
 
+static struct block_builder builder;
+
 static struct block_ops *
 init(void *data)
 {
 	struct file_input_state *d = data;
+	struct line_key *c;
+	int i = 0;
+
 	if (d->path)
 		d->path = default_path;
+	if (d->count > PCS_FI_MAX_INPUTS) {
+		error("%s: input count (%li) is over maximum (%i)\n",
+				PCS_BLOCK, d->count, PCS_FI_MAX_INPUTS);
+		return NULL;
+	}
+	builder.outputs = xzalloc(sizeof(*builder.outputs) * (d->count + 1));
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		builder.outputs[i++] = c->key;
+		debug3(" %i %s\n", i - 1, builder.outputs[i - 1]);
+	}
 	return &ops;
 }
 
 static struct block_builder builder = {
 	.alloc		= alloc,
 	.ops		= init,
-	.setpoints	= setpoints,
 	.strings	= strings,
 };
 

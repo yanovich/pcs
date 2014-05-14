@@ -297,8 +297,15 @@ new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
 	const char *value = (const char *) event->data.scalar.value;
 	int (*setter)(void *, const char *, const char *);
 
-	if (YAML_SCALAR_EVENT != event->type)
+	if (0 == node->sequence && YAML_SEQUENCE_START_EVENT == event->type) {
+		node->handler[YAML_SEQUENCE_END_EVENT] = end_event;
+		node->sequence = 1;
+		return 1;
+	} else if (YAML_SCALAR_EVENT != event->type) {
 		return unexpected_event(node, event);
+	} else if (0 == node->sequence) {
+		node->sequence = -1;
+	}
 
 	setter = pcs_lookup(b->builder->strings, key);
 	if (!setter)
@@ -317,7 +324,7 @@ new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	if (!node->sequence)
+	if (1 != node->sequence)
 		remove_parser_node(node);
 	return 1;
 }
@@ -345,6 +352,7 @@ register_output(struct server_config *c, struct block *b)
 			fatal("%i registers are not enough\n", c->regs_count);
 	}
 	b->outputs = reg;
+	debug3(" %s: %i outputs\n", b->name, i);
 }
 
 static long *
@@ -472,7 +480,6 @@ end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 	const char *key = (const char *) &node[1];
 	struct block *b = list_entry(node->state->conf->block_list.prev,
 			struct block, block_entry);
-	register_output(node->state->conf, b);
 
 	b->ops = b->builder->ops(b->data);
 	if (!b->ops || !b->ops->run)
@@ -481,6 +488,8 @@ end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
+	register_output(node->state->conf, b);
+
 	return end_event(node, event);
 }
 
