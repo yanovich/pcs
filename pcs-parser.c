@@ -121,8 +121,10 @@ pcs_parser_scalar_key(struct pcs_parser_node *node, yaml_event_t *event)
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
-	if (len > 500)
-		fatal("key (%s) is over 500 chars\n", key);
+	if (len > 500) {
+		error("key (%s) is over 500 chars\n", key);
+		return 0;
+	}
 
 	len += 1;
 	len += sizeof(int *) - len % sizeof(int *);
@@ -188,12 +190,17 @@ pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
 	};
 	LIST_HEAD(nodes);
 	struct pcs_parser_node *node = pcs_parser_new_node(&state, &nodes, 0);
+	struct pcs_parser_node *tmp;
 
-	if (!node)
-		fatal("%s: empty node\n", __FUNCTION__);
+	if (!node) {
+		error("%s: empty node\n", __FUNCTION__);
+		return 1;
+	}
 
-	if (NULL == f)
-		fatal("failed to open %s (%s)\n", filename, strerror(errno));
+	if (NULL == f) {
+		error("failed to open %s (%s)\n", filename, strerror(errno));
+		return 1;
+	}
 
 	node->handler[YAML_STREAM_START_EVENT] = parse_stream;
 	node->data = map;
@@ -201,8 +208,10 @@ pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
 	yaml_parser_set_input_file(&parser, f);
 
 	while (run) {
-		if (!yaml_parser_parse(&parser, &event))
-			fatal("failed to parse %s\n", filename);
+		if (!yaml_parser_parse(&parser, &event)) {
+			error("failed to parse %s\n", filename);
+			break;
+		}
 		node = list_entry(nodes.prev, struct pcs_parser_node,
 				node_entry);
 		if (YAML_SCALAR_EVENT != event.type)
@@ -214,8 +223,10 @@ pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
 					pcs_parser_event_type(event.type),
 					node,
 					event.data.scalar.value);
-		if (&node->node_entry == &nodes)
-			fatal("empty parser list\n");
+		if (&node->node_entry == &nodes) {
+			error("empty parser list\n");
+			return 1;
+		}
 		handler = node->handler[event.type];
 		if (!handler)
 			handler = pcs_parser_unexpected_event;
@@ -225,7 +236,12 @@ pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
 	yaml_parser_delete(&parser);
 	fclose(f);
 
-	return nodes.prev != nodes.next;
+	if (nodes.prev == nodes.next)
+		return 0;
+	list_for_each_entry_safe(node, tmp, &nodes, node_entry) {
+		pcs_parser_remove_node(node);
+	}
+	return 1;
 }
 
 int
