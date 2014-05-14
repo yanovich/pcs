@@ -25,12 +25,11 @@
 #include "file-input.h"
 #include "icpdas.h"
 #include "map.h"
+#include "pcs-parser.h"
 #include "state.h"
 
 #define PCS_BLOCK	"file-input"
 #define PCS_FI_MAX_INPUTS	256
-
-static const char const *default_path = "/var/lib/pcs";
 
 struct file_input_state {
 	long			count;
@@ -41,27 +40,104 @@ struct file_input_state {
 struct line_key {
 	struct list_head	key_entry;
 	const char		*key;
+	int			i;
+	int			present;
 };
+
+static struct block_builder builder;
+
+static int
+parse_value(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	const char *key = (const char *) &node[1];
+	const char *value = (const char *) event->data.scalar.value;
+	struct block *b = node->state->data;
+	struct file_input_state *d = b->data;
+	struct line_key *c;
+
+	int i, k = -1, err = 0;
+	long val;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		if (strcmp(c->key, key))
+			continue;
+		k = c->i;
+		break;
+	}
+
+	if (k >= 0) {
+		val = pcs_parser_long(node, event, &err);
+		if (err)
+			return 0;
+		b->outputs[k] = val;
+		c->present = 1;
+		debug(" %s: %s\n", key, value);
+	}
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static struct pcs_parser_map top_map[] = {
+	{
+		.handler		= parse_value,
+	}
+};
+
+static struct pcs_parser_map document_map = {
+	.handler		= pcs_parser_map,
+	.data			= &top_map,
+};
+
+static struct pcs_parser_map stream_map = {
+	.handler		= pcs_parser_one_document,
+	.data			= &document_map,
+};
+
+static int
+load_file(struct block *b, const char const *filename)
+{
+	struct file_input_state *d = b->data;
+	struct line_key *c;
+	int err;
+
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		c->present = 0;
+	}
+	err = pcs_parse_yaml(filename, &stream_map, b);
+	if (err)
+		return 1;
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		if (1 != c->present)
+			return 1;
+	}
+	return 0;
+}
 
 static void
 file_input_run(struct block *b, struct server_state *s)
 {
+	struct file_input_state *d = b->data;
+	b->outputs[d->count] = load_file(b, d->path);
 }
 
 static int
-set_key(void *data, const char *key, const char *value)
+set_key(void *data, const char const *key, const char const *value)
 {
 	struct file_input_state *d = data;
 	struct line_key *c = xzalloc(sizeof(*c));
 	c->key = strdup(value);
 	list_add_tail(&c->key_entry, &d->key_list);
 	debug("key = %s\n", c->key);
+	c->i = d->count;
 	d->count++;
 	return 0;
 }
 
 static int
-set_path(void *data, const char *key, const char *value)
+set_path(void *data, const char const *key, const char const *value)
 {
 	struct file_input_state *d = data;
 	if (d->path) {
@@ -98,8 +174,6 @@ static struct block_ops ops = {
 	.run		= file_input_run,
 };
 
-static struct block_builder builder;
-
 static struct block_ops *
 init(void *data)
 {
@@ -107,18 +181,25 @@ init(void *data)
 	struct line_key *c;
 	int i = 0;
 
-	if (d->path)
-		d->path = default_path;
+	if (!d->path) {
+		error("%s: no input file\n", PCS_BLOCK);
+		return NULL;
+	}
+	if (0 == d->count) {
+		error("%s: no inputs count\n", PCS_BLOCK);
+		return NULL;
+	}
 	if (d->count > PCS_FI_MAX_INPUTS) {
 		error("%s: input count (%li) is over maximum (%i)\n",
 				PCS_BLOCK, d->count, PCS_FI_MAX_INPUTS);
 		return NULL;
 	}
-	builder.outputs = xzalloc(sizeof(*builder.outputs) * (d->count + 1));
+	builder.outputs = xzalloc(sizeof(*builder.outputs) * (d->count + 2));
 	list_for_each_entry(c, &d->key_list, key_entry) {
 		builder.outputs[i++] = c->key;
 		debug3(" %i %s\n", i - 1, builder.outputs[i - 1]);
 	}
+	builder.outputs[i++] = "error";
 	return &ops;
 }
 
