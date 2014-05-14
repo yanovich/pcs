@@ -17,8 +17,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef _PCS_file_input_H
-#define _PCS_file_input_H
+#ifndef _PCS_FILE_INPUT_H
+#define _PCS_FILE_INPUT_H
 
 #include "block_builder.h"
 
