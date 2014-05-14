@@ -29,7 +29,7 @@ pcs_parser_event_type(int i);
 
 struct pcs_parser_state {
 	const char const	*filename;
-	struct server_config	*conf;
+	void			*data;
 };
 
 struct pcs_parser_node {
@@ -48,12 +48,18 @@ struct pcs_parser_map {
 	void			*data;
 };
 
+int
+pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data);
+
 struct pcs_parser_node*
 pcs_parser_new_node(struct pcs_parser_state *state, struct list_head *parent,
 		size_t extra);
 
 void
 pcs_parser_remove_node(struct pcs_parser_node *node);
+
+int
+pcs_parser_up(struct pcs_parser_node *node, yaml_event_t *event);
 
 int
 pcs_parser_scalar_key(struct pcs_parser_node *node, yaml_event_t *event);

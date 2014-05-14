@@ -19,6 +19,8 @@
 
 #include "includes.h"
 
+#include <errno.h>
+
 #include "pcs-parser.h"
 
 static const char *yaml_event_type[] = {
@@ -139,6 +141,97 @@ pcs_parser_scalar_key(struct pcs_parser_node *node, yaml_event_t *event)
 	n->handler[YAML_MAPPING_START_EVENT] = handler;
 	n->data = map[i].data;
 	debug("%s:\n", key);
+	return 1;
+}
+
+static int
+pcs_parser_finish(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	pcs_parser_remove_node(node);
+	return 0;
+}
+
+static int
+parse_stream(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	struct pcs_parser_map *map = node->data;
+	struct pcs_parser_node *n = pcs_parser_new_node(node->state,
+			&node->node_entry, 0);
+	if (!n) {
+		error("%s: empty node\n", __FUNCTION__);
+		return 0;
+	}
+
+	if (!map) {
+		error("%s: empty map\n", __FUNCTION__);
+		return 0;
+	}
+
+	node->handler[YAML_STREAM_START_EVENT] = NULL;
+	node->handler[YAML_STREAM_END_EVENT] = pcs_parser_finish;
+	n->handler[YAML_DOCUMENT_START_EVENT] = map->handler;
+	n->data = map->data;
+	return 1;
+}
+
+int
+pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
+{
+	int run = 1;
+	FILE *f = fopen(filename, "r");
+	yaml_parser_t parser;
+	yaml_event_t event;
+	int (*handler)(struct pcs_parser_node *node, yaml_event_t *event);
+	struct pcs_parser_state state = {
+		.filename = filename,
+		.data = data,
+	};
+	LIST_HEAD(nodes);
+	struct pcs_parser_node *node = pcs_parser_new_node(&state, &nodes, 0);
+
+	if (!node)
+		fatal("%s: empty node\n", __FUNCTION__);
+
+	if (NULL == f)
+		fatal("failed to open %s (%s)\n", filename, strerror(errno));
+
+	node->handler[YAML_STREAM_START_EVENT] = parse_stream;
+	node->data = map;
+	yaml_parser_initialize(&parser);
+	yaml_parser_set_input_file(&parser, f);
+
+	while (run) {
+		if (!yaml_parser_parse(&parser, &event))
+			fatal("failed to parse %s\n", filename);
+		node = list_entry(nodes.prev, struct pcs_parser_node,
+				node_entry);
+		if (YAML_SCALAR_EVENT != event.type)
+			debug3("%s (%p)\n",
+					pcs_parser_event_type(event.type),
+					node);
+		else
+			debug3("%s (%p) %s\n",
+					pcs_parser_event_type(event.type),
+					node,
+					event.data.scalar.value);
+		if (&node->node_entry == &nodes)
+			fatal("empty parser list\n");
+		handler = node->handler[event.type];
+		if (!handler)
+			handler = pcs_parser_unexpected_event;
+		run = handler(node, &event);
+	}
+
+	yaml_parser_delete(&parser);
+	fclose(f);
+
+	return nodes.prev != nodes.next;
+}
+
+int
+pcs_parser_up(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	pcs_parser_remove_node(node);
 	return 1;
 }
 

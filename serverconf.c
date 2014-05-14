@@ -53,20 +53,6 @@ long_value(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
-end_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	pcs_parser_remove_node(node);
-	return 1;
-}
-
-static int
-exit_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	pcs_parser_remove_node(node);
-	return 0;
-}
-
-static int
 map_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	if (YAML_MAPPING_START_EVENT != event->type)
@@ -74,7 +60,7 @@ map_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 
 	node->handler[YAML_SCALAR_EVENT] = pcs_parser_scalar_key;
 	node->handler[YAML_MAPPING_START_EVENT] = NULL;
-	node->handler[YAML_MAPPING_END_EVENT] = end_event;
+	node->handler[YAML_MAPPING_END_EVENT] = pcs_parser_up;
 	return 1;
 }
 
@@ -91,7 +77,7 @@ map_sequence_event(struct pcs_parser_node *node, yaml_event_t *event)
 		return pcs_parser_unexpected_event(node, event);
 
 	n->handler[YAML_SCALAR_EVENT] = pcs_parser_scalar_key;
-	n->handler[YAML_MAPPING_END_EVENT] = end_event;
+	n->handler[YAML_MAPPING_END_EVENT] = pcs_parser_up;
 	n->data = node->data;
 	return 1;
 }
@@ -100,13 +86,14 @@ static int
 options_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	long mul;
+	struct server_config *conf = node->state->data;
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
 	mul = long_value(node, event);
 	debug(" %li\n", mul);
-	node->state->conf->multiple = mul;
+	conf->multiple = mul;
 	pcs_parser_remove_node(node);
 	return 1;
 }
@@ -115,14 +102,15 @@ static int
 options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	long msec;
+	struct server_config *conf = node->state->data;
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
 	msec = long_value(node, event);
 	debug(" %li ms\n", msec);
-	node->state->conf->state.tick.tv_sec = msec / 1000;
-	node->state->conf->state.tick.tv_usec = (msec % 1000) * 1000;
+	conf->state.tick.tv_sec = msec / 1000;
+	conf->state.tick.tv_usec = (msec % 1000) * 1000;
 	pcs_parser_remove_node(node);
 	return 1;
 }
@@ -130,7 +118,8 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 	const char *key = (const char *) &node[1];
 	long value;
@@ -164,14 +153,15 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 	const char *key = (const char *) &node[1];
 	const char *value = (const char *) event->data.scalar.value;
 	int (*setter)(void *, const char *, const char *);
 
 	if (0 == node->sequence && YAML_SEQUENCE_START_EVENT == event->type) {
-		node->handler[YAML_SEQUENCE_END_EVENT] = end_event;
+		node->handler[YAML_SEQUENCE_END_EVENT] = pcs_parser_up;
 		node->sequence = 1;
 		return 1;
 	} else if (YAML_SCALAR_EVENT != event->type) {
@@ -265,7 +255,8 @@ find_output(struct list_head *list, const char const *key)
 static int
 block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 	const char *input = (const char *) event->data.scalar.value;
 	const char *key = (const char *) &node[1];
@@ -273,7 +264,7 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 	long *reg;
 
 	if (0 == node->sequence && YAML_SEQUENCE_START_EVENT == event->type) {
-		node->handler[YAML_SEQUENCE_END_EVENT] = end_event;
+		node->handler[YAML_SEQUENCE_END_EVENT] = pcs_parser_up;
 		node->sequence = 1;
 		return 1;
 	} else if (YAML_SCALAR_EVENT != event->type) {
@@ -294,7 +285,7 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	reg = find_output(&node->state->conf->block_list, input);
+	reg = find_output(&conf->block_list, input);
 	if (!reg)
 		return pcs_parser_unexpected_key(node, event, input);
 
@@ -308,7 +299,8 @@ block_input_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 block_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 	const char *val = (const char *) event->data.scalar.value;
 	char *bad;
@@ -332,7 +324,8 @@ block_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 block_name_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 	const char *name = (const char *) event->data.scalar.value;
 
@@ -351,7 +344,8 @@ static int
 end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	const char *key = (const char *) &node[1];
-	struct block *b = list_entry(node->state->conf->block_list.prev,
+	struct server_config *conf = node->state->data;
+	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 
 	b->ops = b->builder->ops(b->data);
@@ -361,15 +355,16 @@ end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	register_output(node->state->conf, b);
+	register_output(conf, b);
 
-	return end_event(node, event);
+	return pcs_parser_up(node, event);
 }
 
 static int
 new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	const char *key = (const char *) &node[1];
+	struct server_config *conf = node->state->data;
 	struct block_builder *(*loader)(void) = NULL;
 	struct block_builder *builder = NULL;
 	struct block *b;
@@ -386,13 +381,13 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 		return pcs_parser_unexpected_key(node, event, (const char *) &node[1]);
 
 	b = xzalloc(sizeof(*b));
-	b->multiple = node->state->conf->multiple;
+	b->multiple = conf->multiple;
 	b->counter = 1;
 	b->builder = builder;
 	if (builder->alloc)
 		b->data = builder->alloc();
 
-	list_add_tail(&b->block_entry, &node->state->conf->block_list);
+	list_add_tail(&b->block_entry, &conf->block_list);
 
 	node->handler[YAML_SCALAR_EVENT] = pcs_parser_scalar_key;
 	node->handler[YAML_MAPPING_START_EVENT] = NULL;
@@ -404,17 +399,19 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 static int
 blocks_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
+	struct server_config *conf = node->state->data;
+
 	if (YAML_SEQUENCE_START_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
 	node->handler[YAML_SCALAR_EVENT] = NULL;
 	node->handler[YAML_SEQUENCE_START_EVENT] = NULL;
 	node->handler[YAML_MAPPING_START_EVENT] = map_sequence_event;
-	node->handler[YAML_SEQUENCE_END_EVENT] = end_event;
-	if (!node->state->conf->regs_count)
-		node->state->conf->regs_count = PCS_DEFAULT_REGS_COUNT;
-	node->state->conf->regs = xzalloc(sizeof(*node->state->conf->regs) *
-			node->state->conf->regs_count);
+	node->handler[YAML_SEQUENCE_END_EVENT] = pcs_parser_up;
+	if (!conf->regs_count)
+		conf->regs_count = PCS_DEFAULT_REGS_COUNT;
+	conf->regs = xzalloc(sizeof(*conf->regs) *
+			conf->regs_count);
 	return 1;
 }
 
@@ -515,98 +512,42 @@ struct pcs_parser_map top_map[] = {
 	}
 };
 
+struct pcs_parser_map document_map[] = {
+	{
+		.handler		= map_start_event,
+		.data			= &top_map,
+	}
+	,{
+	}
+};
+
 static int
 document_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
-	static int reentry;
 	struct pcs_parser_node *n = pcs_parser_new_node(node->state,
 			&node->node_entry, 0);
 
-	if (!n)
-		fatal("%s: empty node\n", __FUNCTION__);
-
-	if (reentry)
-		fatal("multiple config documents not supported\n");
-
-	node->handler[YAML_DOCUMENT_START_EVENT] = NULL;
-	node->handler[YAML_DOCUMENT_END_EVENT] = end_event;
-	n->handler[YAML_MAPPING_START_EVENT] = map_start_event;
-	n->data = top_map;
-	reentry = 1;
-	return 1;
-}
-
-static int
-stream_start_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	struct pcs_parser_node *n = pcs_parser_new_node(node->state,
-			&node->node_entry, 0);
-	if (!n)
-		fatal("%s: empty node\n", __FUNCTION__);
-
-	node->handler[YAML_STREAM_START_EVENT] = NULL;
-	node->handler[YAML_STREAM_END_EVENT] = exit_event;
-	n->handler[YAML_DOCUMENT_START_EVENT] = document_start_event;
-	return 1;
-}
-
-static int
-parse_config(const char *filename, struct server_config *conf)
-{
-	int run = 1;
-	FILE *f = fopen(filename, "r");
-	yaml_parser_t parser;
-	yaml_event_t event;
-	int (*handler)(struct pcs_parser_node *node, yaml_event_t *event);
-	struct pcs_parser_state state = {
-		.filename = filename,
-		.conf = conf,
-	};
-	LIST_HEAD(nodes);
-	struct pcs_parser_node *node = pcs_parser_new_node(&state, &nodes, 0);
-
-	if (!node)
-		fatal("%s: empty node\n", __FUNCTION__);
-
-	if (NULL == f)
-		fatal("failed to open %s (%s)\n", filename, strerror(errno));
-
-	node->handler[YAML_STREAM_START_EVENT] = stream_start_event;
-	yaml_parser_initialize(&parser);
-	yaml_parser_set_input_file(&parser, f);
-
-	while (run) {
-		if (!yaml_parser_parse(&parser, &event))
-			fatal("failed to parse %s\n", filename);
-		node = list_entry(nodes.prev, struct pcs_parser_node,
-				node_entry);
-		if (YAML_SCALAR_EVENT != event.type)
-			debug3("%s (%p)\n",
-					pcs_parser_event_type(event.type),
-					node);
-		else
-			debug3("%s (%p) %s\n",
-					pcs_parser_event_type(event.type),
-					node,
-					event.data.scalar.value);
-		if (&node->node_entry == &nodes)
-			fatal("empty parser list\n");
-		handler = node->handler[event.type];
-		if (!handler)
-			handler = pcs_parser_unexpected_event;
-		run = handler(node, &event);
+	if (!n) {
+		error("%s: empty node\n", __FUNCTION__);
+		return 0;
 	}
 
-	yaml_parser_delete(&parser);
-	fclose(f);
-
-	return nodes.prev != nodes.next;
+	node->handler[YAML_DOCUMENT_START_EVENT] = NULL;
+	node->handler[YAML_DOCUMENT_END_EVENT] = pcs_parser_up;
+	n->handler[YAML_MAPPING_START_EVENT] = map_start_event;
+	n->data = top_map;
+	return 1;
 }
+
+struct pcs_parser_map stream_map = {
+		.handler		= document_start_event,
+		.data			= &document_map,
+};
 
 int
 load_server_config(const char const *filename, struct server_config *conf)
 {
 	default_config(conf);
 
-	return parse_config(filename, conf);
+	return pcs_parse_yaml(filename, &stream_map, conf);
 }
