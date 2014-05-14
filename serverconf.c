@@ -38,20 +38,6 @@ default_config(struct server_config *conf)
 	conf->state.tick.tv_usec = 0;
 }
 
-static long
-long_value(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	char *bad;
-	long val = strtol((const char *) event->data.scalar.value, &bad, 0);
-	if (bad[0] != 0)
-		fatal("bad integer(%s) in %s at line %zu column %zu\n",
-				(const char *) event->data.scalar.value,
-				node->state->filename,
-				event->start_mark.line,
-				event->start_mark.column);
-	return val;
-}
-
 static int
 map_sequence_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
@@ -79,7 +65,7 @@ options_multiple_event(struct pcs_parser_node *node, yaml_event_t *event)
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
-	mul = long_value(node, event);
+	mul = pcs_parser_long(node, event, NULL);
 	debug(" %li\n", mul);
 	conf->multiple = mul;
 	pcs_parser_remove_node(node);
@@ -95,7 +81,7 @@ options_tick_event(struct pcs_parser_node *node, yaml_event_t *event)
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
-	msec = long_value(node, event);
+	msec = pcs_parser_long(node, event, NULL);
 	debug(" %li ms\n", msec);
 	conf->state.tick.tv_sec = msec / 1000;
 	conf->state.tick.tv_usec = (msec % 1000) * 1000;
@@ -116,7 +102,7 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
 
-	value = long_value(node, event);
+	value = pcs_parser_long(node, event, NULL);
 	setter = pcs_lookup(b->builder->setpoints, key);
 	if (!setter)
 		return pcs_parser_unexpected_key(node, event, key);

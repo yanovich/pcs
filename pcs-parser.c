@@ -287,3 +287,23 @@ pcs_parser_map(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+int
+pcs_parser_long(struct pcs_parser_node *node, yaml_event_t *event, int *err)
+{
+	char *bad;
+	const char * from = (const char *) event->data.scalar.value;
+	long val = strtol(from, &bad, 0);
+	if (bad[0] != 0) {
+		error("bad integer(%s) in %s at line %zu column %zu\n",
+				from,
+				node->state->filename,
+				event->start_mark.line,
+				event->start_mark.column);
+		if (NULL == err)
+			fatal("exiting");
+		else
+			*err = 1;
+	}
+	return val;
+}
+

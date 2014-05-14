@@ -77,4 +77,7 @@ pcs_parser_unexpected_key(struct pcs_parser_node *node, yaml_event_t *event,
 int
 pcs_parser_unexpected_event(struct pcs_parser_node *node, yaml_event_t *event);
 
+int
+pcs_parser_long(struct pcs_parser_node *node, yaml_event_t *event, int *err);
+
 #endif
