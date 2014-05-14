@@ -521,26 +521,8 @@ struct pcs_parser_map document_map[] = {
 	}
 };
 
-static int
-document_start_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	struct pcs_parser_node *n = pcs_parser_new_node(node->state,
-			&node->node_entry, 0);
-
-	if (!n) {
-		error("%s: empty node\n", __FUNCTION__);
-		return 0;
-	}
-
-	node->handler[YAML_DOCUMENT_START_EVENT] = NULL;
-	node->handler[YAML_DOCUMENT_END_EVENT] = pcs_parser_up;
-	n->handler[YAML_MAPPING_START_EVENT] = map_start_event;
-	n->data = top_map;
-	return 1;
-}
-
 struct pcs_parser_map stream_map = {
-		.handler		= document_start_event,
+		.handler		= pcs_parser_one_document,
 		.data			= &document_map,
 };
 
