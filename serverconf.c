@@ -53,18 +53,6 @@ long_value(struct pcs_parser_node *node, yaml_event_t *event)
 }
 
 static int
-map_start_event(struct pcs_parser_node *node, yaml_event_t *event)
-{
-	if (YAML_MAPPING_START_EVENT != event->type)
-		return pcs_parser_unexpected_event(node, event);
-
-	node->handler[YAML_SCALAR_EVENT] = pcs_parser_scalar_key;
-	node->handler[YAML_MAPPING_START_EVENT] = NULL;
-	node->handler[YAML_MAPPING_END_EVENT] = pcs_parser_up;
-	return 1;
-}
-
-static int
 map_sequence_event(struct pcs_parser_node *node, yaml_event_t *event)
 {
 	struct pcs_parser_node *n = pcs_parser_new_node(node->state,
@@ -459,7 +447,7 @@ struct pcs_parser_map block_map[] = {
 	}
 	,{
 		.key			= "inputs",
-		.handler		= map_start_event,
+		.handler		= pcs_parser_map,
 		.data			= &inputs_map,
 	}
 	,{
@@ -476,12 +464,12 @@ struct pcs_parser_map block_map[] = {
 	}
 	,{
 		.key			= "setpoints",
-		.handler		= map_start_event,
+		.handler		= pcs_parser_map,
 		.data			= &setpoints_map,
 	}
 	,{
 		.key			= "strings",
-		.handler		= map_start_event,
+		.handler		= pcs_parser_map,
 		.data			= &strings_map,
 	}
 	,{
@@ -500,7 +488,7 @@ struct pcs_parser_map blocks_map[] = {
 struct pcs_parser_map top_map[] = {
 	{
 		.key			= "options",
-		.handler		= map_start_event,
+		.handler		= pcs_parser_map,
 		.data			= &options_map,
 	}
 	,{
@@ -514,7 +502,7 @@ struct pcs_parser_map top_map[] = {
 
 struct pcs_parser_map document_map[] = {
 	{
-		.handler		= map_start_event,
+		.handler		= pcs_parser_map,
 		.data			= &top_map,
 	}
 	,{

@@ -65,6 +65,9 @@ int
 pcs_parser_one_document(struct pcs_parser_node *node, yaml_event_t *event);
 
 int
+pcs_parser_map(struct pcs_parser_node *node, yaml_event_t *event);
+
+int
 pcs_parser_scalar_key(struct pcs_parser_node *node, yaml_event_t *event);
 
 int

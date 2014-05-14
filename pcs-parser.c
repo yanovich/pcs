@@ -259,3 +259,15 @@ pcs_parser_one_document(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
+int
+pcs_parser_map(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	if (YAML_MAPPING_START_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	node->handler[YAML_SCALAR_EVENT] = pcs_parser_scalar_key;
+	node->handler[YAML_MAPPING_START_EVENT] = NULL;
+	node->handler[YAML_MAPPING_END_EVENT] = pcs_parser_up;
+	return 1;
+}
+
