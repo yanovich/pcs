@@ -85,7 +85,8 @@ int main(int argc, char **argv)
 
 	INIT_LIST_HEAD(&c.block_list);
 	log_init("pcs", log_level, LOG_DAEMON, 1);
-	load_server_config(config_file_name, &c);
+	if (load_server_config(config_file_name, &c))
+		fatal("Bad configuration\n");
 	if (&c.block_list == c.block_list.next)
 		fatal("Nothing to do. Exiting\n");
 	if (test_only)

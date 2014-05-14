@@ -36,6 +36,6 @@ struct server_config {
 	struct server_state	state;
 };
 
-void
+int
 load_server_config(const char const *filename, struct server_config *conf);
 #endif

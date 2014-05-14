@@ -37,6 +37,7 @@ libpcs_a_SOURCES		 = \
 				   logical-or.c \
 				   logical-xor.c \
 				   ni1000tk5000.c \
+				   pcs-parser.c \
 				   pd.c \
 				   serverconf.c \
 				   trigger.c \
