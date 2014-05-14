@@ -55,7 +55,7 @@ parse_value(struct pcs_parser_node *node, yaml_event_t *event)
 	struct file_input_state *d = b->data;
 	struct line_key *c;
 
-	int i, k = -1, err = 0;
+	int k = -1, err = 0;
 	long val;
 
 	if (YAML_SCALAR_EVENT != event->type)
