@@ -389,7 +389,7 @@ blocks_start_event(struct pcs_parser_node *node, yaml_event_t *event)
 	return 1;
 }
 
-struct pcs_parser_map options_map[] = {
+static struct pcs_parser_map options_map[] = {
 	{
 		.key			= "multiple",
 		.handler		= options_multiple_event,
@@ -402,7 +402,7 @@ struct pcs_parser_map options_map[] = {
 	}
 };
 
-struct pcs_parser_map inputs_map[] = {
+static struct pcs_parser_map inputs_map[] = {
 	{
 		.handler		= block_input_event,
 	}
@@ -410,7 +410,7 @@ struct pcs_parser_map inputs_map[] = {
 	}
 };
 
-struct pcs_parser_map setpoints_map[] = {
+static struct pcs_parser_map setpoints_map[] = {
 	{
 		.handler		= new_setpoint_event,
 	}
@@ -418,7 +418,7 @@ struct pcs_parser_map setpoints_map[] = {
 	}
 };
 
-struct pcs_parser_map strings_map[] = {
+static struct pcs_parser_map strings_map[] = {
 	{
 		.handler		= new_string_event,
 	}
@@ -426,7 +426,7 @@ struct pcs_parser_map strings_map[] = {
 	}
 };
 
-struct pcs_parser_map block_map[] = {
+static struct pcs_parser_map block_map[] = {
 	{
 		.key			= "input",
 		.handler		= block_input_event,
@@ -462,7 +462,7 @@ struct pcs_parser_map block_map[] = {
 	}
 };
 
-struct pcs_parser_map blocks_map[] = {
+static struct pcs_parser_map blocks_map[] = {
 	{
 		.handler		= new_block_event,
 		.data			= &block_map,
@@ -471,7 +471,7 @@ struct pcs_parser_map blocks_map[] = {
 	}
 };
 
-struct pcs_parser_map top_map[] = {
+static struct pcs_parser_map top_map[] = {
 	{
 		.key			= "options",
 		.handler		= pcs_parser_map,
@@ -486,7 +486,7 @@ struct pcs_parser_map top_map[] = {
 	}
 };
 
-struct pcs_parser_map document_map[] = {
+static struct pcs_parser_map document_map[] = {
 	{
 		.handler		= pcs_parser_map,
 		.data			= &top_map,
@@ -495,7 +495,7 @@ struct pcs_parser_map document_map[] = {
 	}
 };
 
-struct pcs_parser_map stream_map = {
+static struct pcs_parser_map stream_map = {
 		.handler		= pcs_parser_one_document,
 		.data			= &document_map,
 };
