@@ -50,6 +50,10 @@ file_output_run(struct block *b, struct server_state *s)
 	FILE *f;
 
         f = fopen(d->path, "w");
+	if (!f) {
+		error("%s: failed to open '%s'", PCS_BLOCK, d->path);
+		return;
+	}
 	list_for_each_entry(item, &d->items, item_entry) {
 		fprintf(f, "%s: %li\n", item->key, *item->value);
 	}
