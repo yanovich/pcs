@@ -366,7 +366,7 @@ icpdas_serial_exchange(const char const *device, unsigned int slot,
 			goto close_fd;
 		} else if (0 == err) {
 			err = -1;
-			error("%s: timeout when reading reply\n",
+			debug("%s: timeout when reading reply\n",
 					device);
 			goto close_fd;
 		}
