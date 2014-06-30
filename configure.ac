@@ -13,6 +13,7 @@ AC_PROG_RANLIB
 
 AC_CHECK_HEADERS(\
 		 errno.h \
+		 signal.h \
 		 stdio.h \
 		 string.h \
 		 sys/time.h \

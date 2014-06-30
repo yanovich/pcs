@@ -19,6 +19,7 @@
 
 #include "includes.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -29,6 +30,14 @@
 #include "list.h"
 #include "serverconf.h"
 #include "state.h"
+
+static int received_signal = 0;
+
+static void
+sigterm_handler(int sig)
+{
+	received_signal = sig;
+}
 
 void
 next_tick(struct server_state *s)
@@ -105,6 +114,10 @@ int main(int argc, char **argv)
                 fclose(f);
         }
 
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGQUIT, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
+
 	while (1) {
 		char buff[24];
 		struct tm tm = *localtime(&s->start.tv_sec);
@@ -112,12 +125,17 @@ int main(int argc, char **argv)
 		debug("%s\n", buff);
 
 		list_for_each_entry(b, &c.block_list, block_entry) {
+			if (received_signal)
+				break;
 			if (--b->counter)
 				continue;
 			b->counter = b->multiple;
 			b->ops->run(b, s);
 		}
 		timeradd(&s->start, &s->tick, &s->start);
+
+		if (received_signal)
+			break;
 		next_tick(s);
 	}
 
