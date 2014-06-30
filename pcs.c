@@ -39,7 +39,7 @@ sigterm_handler(int sig)
 	received_signal = sig;
 }
 
-void
+static void
 next_tick(struct server_state *s)
 {
 	struct timeval now;
