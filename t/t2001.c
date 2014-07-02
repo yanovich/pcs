@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	b->ops->run(b, &s);
 
 	if (res != 620)
-		fatal("t2001: bad ni1000tk5000 result for 1500 Ohms (%li)\n",
+		fatal("t2001: bad ni1000tk5000 result for 1295.8 Ohms (%li)\n",
 				res);
 
 	return 0;
