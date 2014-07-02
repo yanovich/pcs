@@ -461,3 +461,31 @@ icpdas_get_serial_analog_input(const char const *device, unsigned int slot,
 	}
 	return 0;
 }
+
+int
+icpdas_get_serial_digital_input(const char const *device, unsigned int slot,
+		unsigned long *out)
+{
+	int err;
+	char data[256];
+	char *p;
+
+	err = icpdas_serial_exchange(device, slot, "@00", 256, &data[0]);
+	if (0 > err) {
+		error("%s: read failure on %s slot %i\n", __FUNCTION__,
+				device, slot);
+		return err;
+	}
+	if ('>' != data[0]) {
+		error("%s: malformed data on %s slot %i\n", __FUNCTION__,
+				device, slot);
+		return -1;
+	}
+
+	*out = strtoul(data[1], &p, 16);
+	if (p[0] != 0) {
+		error("%s: bad input: %s\n", __FUNCTION__, p);
+		return -1;
+	}
+	return 0;
+}

@@ -2,6 +2,7 @@
 ## vim:ft=automake:
 
 TESTS				 = \
+				   t/t3022.sh \
 				   t/t3007.sh \
 				   t/t2016 \
 				   t/t2015 \

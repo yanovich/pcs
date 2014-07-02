@@ -36,6 +36,9 @@ int
 icpdas_get_serial_analog_input(const char const *device, unsigned int slot,
 		int size, long *out);
 int
+icpdas_get_serial_digital_input(const char const *device, unsigned int slot,
+		unsigned long *out);
+int
 icpdas_serial_exchange(const char const *device, unsigned int slot,
 		const char const *cmd, int size, char *data);
 #endif /* _PCS_ICPDAS_H */

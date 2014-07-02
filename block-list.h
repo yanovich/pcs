@@ -28,6 +28,7 @@
 #include "i-8042.h"
 #include "i-87015.h"
 #include "i-87017.h"
+#include "i-87040.h"
 #include "file-input.h"
 #include "file-output.h"
 #include "fuzzy-if-d.h"
@@ -106,6 +107,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "i-87017",
 		.value		= load_i_87017_builder,
+	}
+	,{
+		.key		= "i-87040",
+		.value		= load_i_87040_builder,
 	}
 	,{
 		.key		= "linear",
