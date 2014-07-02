@@ -24,6 +24,7 @@
 #include "central-heating.h"
 #include "const.h"
 #include "discrete-valve.h"
+#include "i-8041.h"
 #include "i-8042.h"
 #include "i-87015.h"
 #include "i-87017.h"
@@ -85,6 +86,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "fuzzy then d",
 		.value		= load_fuzzy_then_d_builder,
+	}
+	,{
+		.key		= "i-8041",
+		.value		= load_i_8041_builder,
 	}
 	,{
 		.key		= "i-8042",
