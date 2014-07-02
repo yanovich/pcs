@@ -22,6 +22,7 @@ libpcs_a_SOURCES		 = \
 				   cascade.c \
 				   central-heating.c \
 				   const.c \
+				   copy.c \
 				   discrete-valve.c \
 				   fuzzy-if-d.c \
 				   fuzzy-if-s.c \

@@ -24,6 +24,7 @@
 #include "cascade.h"
 #include "central-heating.h"
 #include "const.h"
+#include "copy.h"
 #include "discrete-valve.h"
 #include "i-8024.h"
 #include "i-8041.h"
@@ -69,6 +70,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "const",
 		.value		= load_const_builder,
+	}
+	,{
+		.key		= "copy",
+		.value		= load_copy_builder,
 	}
 	,{
 		.key		= "discrete valve",
