@@ -482,7 +482,7 @@ icpdas_get_serial_digital_input(const char const *device, unsigned int slot,
 		return -1;
 	}
 
-	*out = strtoul(data[1], &p, 16);
+	*out = strtoul(&data[1], &p, 16);
 	if (p[0] != 0) {
 		error("%s: bad input: %s\n", __FUNCTION__, p);
 		return -1;
