@@ -58,7 +58,7 @@ next_tick(struct server_state *s)
 int main(int argc, char **argv)
 {
 	const char *config_file_name = SYSCONFDIR "/pcs.conf";
-	const char *pid_file = PIDDIR "/pcs.pid";
+	const char *pid_file = PKGRUNDIR "/pcs.pid";
 	int log_level = LOG_NOTICE;
 	int test_only = 0;
 	struct server_config c = {
@@ -112,7 +112,9 @@ int main(int argc, char **argv)
         if (f != NULL) {
                 fprintf(f, "%lu\n", (long unsigned) getpid());
                 fclose(f);
-        }
+        } else {
+		error(PACKAGE ": failed to create %s\n", pid_file);
+	}
 
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGQUIT, sigterm_handler);
