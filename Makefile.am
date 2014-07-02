@@ -18,6 +18,7 @@ libicpdas_a_SOURCES		 = \
 				   icpdas.c
 
 libpcs_a_SOURCES		 = \
+				   analog-valve.c \
 				   cascade.c \
 				   central-heating.c \
 				   const.c \
@@ -28,6 +29,7 @@ libpcs_a_SOURCES		 = \
 				   fuzzy-then-d.c \
 				   file-input.c \
 				   file-output.c \
+				   i-8024.c \
 				   i-8041.c \
 				   i-8042.c \
 				   i-87015.c \
@@ -42,6 +44,7 @@ libpcs_a_SOURCES		 = \
 				   ni1000tk5000.c \
 				   pcs-parser.c \
 				   pt1000.c \
+				   r404a.c \
 				   pd.c \
 				   serverconf.c \
 				   trigger.c \

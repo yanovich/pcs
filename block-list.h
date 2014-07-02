@@ -20,10 +20,12 @@
 #ifndef _PCS_BLOCK_LIST_H
 #define _PCS_BLOCK_LIST_H
 
+#include "analog-valve.h"
 #include "cascade.h"
 #include "central-heating.h"
 #include "const.h"
 #include "discrete-valve.h"
+#include "i-8024.h"
 #include "i-8041.h"
 #include "i-8042.h"
 #include "i-87015.h"
@@ -45,11 +47,16 @@
 #include "ni1000tk5000.h"
 #include "pd.h"
 #include "pt1000.h"
+#include "r404a.h"
 #include "trigger.h"
 #include "weighted-sum.h"
 
 static struct pcs_map loaders[] = {
 	{
+		.key		= "analog valve",
+		.value		= load_analog_valve_builder,
+	}
+	,{
 		.key		= "cascade",
 		.value		= load_cascade_builder,
 	}
@@ -88,6 +95,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "fuzzy then d",
 		.value		= load_fuzzy_then_d_builder,
+	}
+	,{
+		.key		= "i-8024",
+		.value		= load_i_8024_builder,
 	}
 	,{
 		.key		= "i-8041",
@@ -148,6 +159,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "pt1000",
 		.value		= load_pt1000_builder,
+	}
+	,{
+		.key		= "r404a",
+		.value		= load_r404a_builder,
 	}
 	,{
 		.key		= "trigger",

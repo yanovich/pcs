@@ -234,6 +234,57 @@ close_fd:
 }
 
 int
+icpdas_set_parallel_analog_output(unsigned int slot, unsigned int port,
+		long value)
+{
+	int fd, err;
+	unsigned int data = ((unsigned int) value) + 0x2000;
+	char buff[256];
+
+	if (data > 0x3fff) {
+		error("%s:%u: value out of range (%i)\n", __FILE__, __LINE__,
+				value);
+		return -1;
+	}
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+			"/sys/bus/icpdas/devices/slot%02u/analog_output", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	fd = open(buff, O_RDWR);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+
+	data |= ((unsigned int) port) << 14;
+	err = snprintf(&buff[0], sizeof(buff) - 1, "0x%04x", data);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	err = write(fd, buff, err);
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+close_fd:
+	close(fd);
+	return err;
+}
+
+int
 icpdas_serial_exchange(const char const *device, unsigned int slot,
 		const char const *cmd, int size, char *data)
 {
