@@ -48,6 +48,7 @@
 #include "pd.h"
 #include "pt1000.h"
 #include "r404a.h"
+#include "timer.h"
 #include "trigger.h"
 #include "weighted-sum.h"
 
@@ -163,6 +164,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "r404a",
 		.value		= load_r404a_builder,
+	}
+	,{
+		.key		= "timer",
+		.value		= load_timer_builder,
 	}
 	,{
 		.key		= "trigger",

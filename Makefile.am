@@ -47,6 +47,7 @@ libpcs_a_SOURCES		 = \
 				   r404a.c \
 				   pd.c \
 				   serverconf.c \
+				   timer.c \
 				   trigger.c \
 				   weighted-sum.c
 
