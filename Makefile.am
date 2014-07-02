@@ -35,6 +35,7 @@ libpcs_a_SOURCES		 = \
 				   i-87015.c \
 				   i-87017.c \
 				   i-87040.c \
+				   last-state.c \
 				   linear.c \
 				   logger.c \
 				   logical-and.c \

@@ -37,6 +37,7 @@
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
 #include "fuzzy-then-d.h"
+#include "last-state.h"
 #include "linear.h"
 #include "logger.h"
 #include "logical-and.h"
@@ -124,6 +125,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "i-87040",
 		.value		= load_i_87040_builder,
+	}
+	,{
+		.key		= "last state",
+		.value		= load_last_state_builder,
 	}
 	,{
 		.key		= "linear",
