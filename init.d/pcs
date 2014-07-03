@@ -57,7 +57,7 @@ case "$1" in
   start)
 	log_daemon_msg "Starting process control service" "pcs"
 	do_modprobe lp8x4x_bus
-	if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
+	if start-stop-daemon --start --quiet --oknodo --nicelevel -20 --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
 	    log_end_msg 0
 	else
 	    log_end_msg 1
