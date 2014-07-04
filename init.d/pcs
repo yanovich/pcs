@@ -65,7 +65,7 @@ case "$1" in
 	;;
   stop)
 	log_daemon_msg "Stopping process control service" "pcs"
-	if start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE; then
+	if start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE --exec $SERVICE; then
 	    log_end_msg 0
 	else
 	    log_end_msg 1
@@ -76,7 +76,7 @@ case "$1" in
 	check_for_no_start
 	check_config
 	log_daemon_msg "Reloading process control service's configuration" "pcs"
-	if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile $PIDFILE --exec /usr/sbin/pcs; then
+	if start-stop-daemon --stop --signal 1 --quiet --oknodo --nicelevel -20 --pidfile $PIDFILE --exec $SERVICE; then
 	    log_end_msg 0
 	else
 	    log_end_msg 1
@@ -86,9 +86,9 @@ case "$1" in
   restart)
 	check_config
 	log_daemon_msg "Restarting process control service" "pcs"
-	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PIDFILE
+	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PIDFILE --exec $SERVICE
 	check_for_no_start log_end_msg
-	if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
+	if start-stop-daemon --start --quiet --oknodo --nicelevel -20 --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
 	    log_end_msg 0
 	else
 	    log_end_msg 1
@@ -106,7 +106,7 @@ case "$1" in
 	    0)
 		# old daemon stopped
 		check_for_no_start log_end_msg
-		if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
+		if start-stop-daemon --start --quiet --oknodo --nicelevel -20 --pidfile $PIDFILE --exec $SERVICE -- $PCS_OPTS; then
 		    log_end_msg 0
 		else
 		    log_end_msg 1
