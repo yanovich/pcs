@@ -231,6 +231,7 @@ pcs_parse_yaml(const char *filename, struct pcs_parser_map *map, void *data)
 		if (!handler)
 			handler = pcs_parser_unexpected_event;
 		run = handler(node, &event);
+		yaml_event_delete(&event);
 	}
 
 	yaml_parser_delete(&parser);
