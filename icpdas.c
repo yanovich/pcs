@@ -242,7 +242,7 @@ icpdas_set_parallel_analog_output(unsigned int slot, unsigned int port,
 	char buff[256];
 
 	if (data > 0x3fff) {
-		error("%s:%u: value out of range (%i)\n", __FILE__, __LINE__,
+		error("%s:%u: value out of range (%li)\n", __FILE__, __LINE__,
 				value);
 		return -1;
 	}
