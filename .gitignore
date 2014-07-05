@@ -17,6 +17,7 @@ install-sh
 lsicpdas
 missing
 pcs
+pcs-net
 stamp-h1
 t/t1001
 t/t2001

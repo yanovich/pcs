@@ -64,11 +64,13 @@ LDADD				 = \
 bin_PROGRAMS			 = \
 				   dcon-raw \
 				   lsicpdas \
+				   pcs-net \
 				   pcs
 
 dcon_raw_LDADD			 = libicpdas.a libtools.a
 lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
+pcs_net_LDADD			 = $(CURL_LIBS)
 
 noinst_PROGRAMS			 =
 EXTRA_DIST			 =
