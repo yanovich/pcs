@@ -70,7 +70,7 @@ bin_PROGRAMS			 = \
 dcon_raw_LDADD			 = libicpdas.a libtools.a
 lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
-pcs_net_LDADD			 = $(CURL_LIBS)
+pcs_net_LDADD			 = libtools.a $(CURL_LIBS)
 
 noinst_PROGRAMS			 =
 EXTRA_DIST			 =

@@ -19,7 +19,10 @@
 
 #include "includes.h"
 
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "block.h"
 #include "file-output.h"
@@ -42,21 +45,48 @@ struct log_item {
 	long				*value;
 };
 
+static int received_pipe_signal = 0;
+
+static void
+pipe_handler(int sig)
+{
+	received_pipe_signal = sig;
+}
+
+
 static void
 file_output_run(struct block *b, struct server_state *s)
 {
 	struct file_output_state *d = b->data;
 	struct log_item *item;
+	int first = 1;
+	int fd;
 	FILE *f;
 
-        f = fopen(d->path, "w");
-	if (!f) {
-		error("%s: failed to open '%s'", PCS_BLOCK, d->path);
+	fd = open(d->path, O_WRONLY | O_APPEND | O_NONBLOCK);
+	if (fd < 0) {
+		debug("%s: failed to open file '%s'\n", PCS_BLOCK, d->path);
 		return;
 	}
-	list_for_each_entry(item, &d->items, item_entry) {
-		fprintf(f, "%s: %li\n", item->key, *item->value);
+        f = fdopen(fd, "a");
+	if (!f) {
+		error("%s: failed to open stream '%s'\n", PCS_BLOCK, d->path);
+		return;
 	}
+	received_pipe_signal = 0;
+	signal(SIGPIPE, pipe_handler);
+	fprintf(f, "{");
+	list_for_each_entry(item, &d->items, item_entry) {
+		fprintf(f, "%s\"%s\":%li", first ? "" : ",",
+				item->key, *item->value);
+		if (first)
+			first = 0;
+		if (received_pipe_signal)
+			break;
+	}
+	if (0 == received_pipe_signal)
+		fprintf(f, "}\n");
+	signal(SIGPIPE, SIG_DFL);
 	fclose(f);
 }
 
