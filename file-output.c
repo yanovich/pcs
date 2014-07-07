@@ -79,8 +79,7 @@ file_output_run(struct block *b, struct server_state *s)
 	list_for_each_entry(item, &d->items, item_entry) {
 		fprintf(f, "%s\"%s\":%li", first ? "" : ",",
 				item->key, *item->value);
-		if (first)
-			first = 0;
+		first = 0;
 		if (received_pipe_signal)
 			break;
 	}
