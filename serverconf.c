@@ -173,7 +173,6 @@ register_output(struct server_config *c, struct block *b)
 	long *reg = &c->regs[c->regs_used];
 	int i;
 
-	debug("*** table address: %p\n", &b->outputs_table);
 	if (!outputs)
 		return;
 
