@@ -38,8 +38,10 @@ int main(int argc, char **argv)
 	};
 	struct block_builder *bb;
 	struct block *b;
-	int (*setter_key)(void *, const char const *, const char const *);
+	int (*setter_1)(void *, const char const *, long);
+	int (*setter_3)(void *, const char const *, long);
 	int (*setter_path)(void *, const char const *, const char const *);
+	int (*setter_cache)(void *, const char const *, const char const *);
 	long res[3];
 
 	log_init("t1001", LOG_DEBUG + 2, LOG_DAEMON, 1);
@@ -54,21 +56,28 @@ int main(int argc, char **argv)
 	if (NULL != bb->inputs)
 		fatal("t1001: bad 'file-input' input table\n");
 
-	if (NULL != bb->setpoints)
+	if (NULL == bb->setpoints)
 		fatal("t1001: bad 'file-input' setpoints table\n");
 
 	if (NULL == bb->strings)
 		fatal("t1001: bad 'file-input' strings table\n");
 
-	setter_key = pcs_lookup(bb->strings, "key");
-	if (!setter_key)
-		fatal("t1001: bad file-input string 'key");
-	setter_key(b->data, "key", "1");
-	setter_key(b->data, "key", "3");
+	setter_1 = pcs_lookup(bb->setpoints, "1");
+	if (!setter_1)
+		fatal("t1001: bad file-input setpoint '1'");
+	setter_3 = pcs_lookup(bb->setpoints, "3");
+	if (!setter_3)
+		fatal("t1001: bad file-input setpoint '3'");
 
 	setter_path = pcs_lookup(bb->strings, "path");
 	if (!setter_path)
 		fatal("t1001: bad 'file-input' string 'path'\n");
+	setter_cache = pcs_lookup(bb->strings, "cache path");
+	if (!setter_cache)
+		fatal("t1001: bad 'file-input' string 'cache path'\n");
+
+	setter_1(b->data, "1", 1);
+	setter_3(b->data, "3", 3);
 	setter_path(b->data, "path", nofile);
 
 	b->ops = bb->ops(b);
@@ -95,27 +104,34 @@ int main(int argc, char **argv)
 	res[2] = 0;
 	b->ops->run(b, &s);
 
+	if (res[0] != 1)
+		fatal("t1001: bad '%li' '1' result for %s\n",
+				res[0], nofile);
+	if (res[1] != 3)
+		fatal("t1001: bad '%li' '3' result for %s\n",
+				res[1], nofile);
 	if (res[2] != 1)
 		fatal("t1001: bad '%li' error result for %s\n",
 				res[2], nofile);
 
 	xfree(b->outputs_table);
 	xfree(b->data);
+
 	b->data = bb->alloc();
+	setter_1(b->data, "1", 1);
+	setter_3(b->data, "3", 3);
 	setter_path(b->data, "path", good);
-	setter_key(b->data, "key", "1");
-	setter_key(b->data, "key", "3");
 	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
-		fatal("t1001: bad 'file-input' ops 3\n");
+		fatal("t1001: bad 'file-input' ops 2\n");
 
 	b->outputs = res;
-	res[0] = 1;
+	res[0] = 0;
 	res[1] = 0;
 	res[2] = 1;
 	b->ops->run(b, &s);
 
-	if (res[0] != 0)
+	if (res[0] != 2)
 		fatal("t1001: bad '%li' result 0 for %s\n",
 				res[0], good);
 	if (res[1] != 4)
@@ -128,16 +144,18 @@ int main(int argc, char **argv)
 
 	xfree(b->outputs_table);
 	xfree(b->data);
+
 	b->data = bb->alloc();
+	setter_1(b->data, "1", 1);
+	setter_3(b->data, "3", 3);
+	setter_cache(b->data, "cache path", good);
 	setter_path(b->data, "path", bad);
-	setter_key(b->data, "key", "1");
-	setter_key(b->data, "key", "3");
 	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t1001: bad 'file-input' ops 3\n");
 
 	b->outputs = res;
-	res[0] = 2;
+	res[0] = 0;
 	res[1] = 0;
 	res[2] = 0;
 	b->ops->run(b, &s);
@@ -145,7 +163,7 @@ int main(int argc, char **argv)
 	if (res[0] != 2)
 		fatal("t1001: bad '%li' result 0 for %s\n",
 				res[0], bad);
-	if (res[1] != 0)
+	if (res[1] != 4)
 		fatal("t1001: bad '%li' result 1 for %s\n",
 				res[1], bad);
 	if (res[2] != 1)

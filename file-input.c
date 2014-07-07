@@ -35,7 +35,6 @@ struct file_input_state {
 	long			count;
 	const char		*path;
 	const char		*cache_path;
-	const char		*init_path;
 	struct list_head	key_list;
 	long			*cache;
 	int			first;
@@ -44,6 +43,7 @@ struct file_input_state {
 struct line_key {
 	struct list_head	key_entry;
 	const char		*key;
+	long			value;
 	int			i;
 	int			present;
 	int			update;
@@ -153,29 +153,40 @@ static void
 file_input_run(struct block *b, struct server_state *s)
 {
 	struct file_input_state *d = b->data;
+	struct line_key *c;
 	int err = 1;
+
 	if (d->first) {
+		list_for_each_entry(c, &d->key_list, key_entry) {
+			b->outputs[c->i] = c->value;
+		}
 		if (d->cache_path)
-			err = load_file(b, d->cache_path);
-		if (err && d->init_path)
-			err = load_file(b, d->init_path);
+			load_file(b, d->cache_path);
 	}
 	d->first = 0;
 	b->outputs[d->count] = load_file(b, d->path);
 }
 
 static int
-set_key(void *data, const char const *key, const char const *value)
+set_key(void *data, const char const *key, long value)
 {
 	struct file_input_state *d = data;
 	struct line_key *c = xzalloc(sizeof(*c));
-	c->key = strdup(value);
+	c->key = strdup(key);
+	c->value = value;
 	list_add_tail(&c->key_entry, &d->key_list);
-	debug("key = %s\n", c->key);
+	debug("%s = %li\n", c->key, c->value);
 	c->i = d->count;
 	d->count++;
 	return 0;
 }
+
+static struct pcs_map setpoints[] = {
+	{
+		.key			= NULL,
+		.value			= set_key,
+	}
+};
 
 static int
 set_path(void *data, const char const *key, const char const *value)
@@ -203,35 +214,14 @@ set_cache_path(void *data, const char const *key, const char const *value)
 	return 0;
 }
 
-static int
-set_init_path(void *data, const char const *key, const char const *value)
-{
-	struct file_input_state *d = data;
-	if (d->init_path) {
-		error("%s: 'init_path' already initialized\n", PCS_BLOCK);
-		return 1;
-	}
-	d->init_path = strdup(value);
-	debug("init_path = %s\n", d->init_path);
-	return 0;
-}
-
 static struct pcs_map strings[] = {
 	{
-		.key			= "key",
-		.value			= set_key,
-	}
-	,{
 		.key			= "path",
 		.value			= set_path,
 	}
 	,{
 		.key			= "cache path",
 		.value			= set_cache_path,
-	}
-	,{
-		.key			= "init path",
-		.value			= set_init_path,
 	}
 	,{
 	}
@@ -283,6 +273,7 @@ init(struct block *b)
 static struct block_builder builder = {
 	.alloc		= alloc,
 	.ops		= init,
+	.setpoints	= setpoints,
 	.strings	= strings,
 };
 
