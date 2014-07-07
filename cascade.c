@@ -117,8 +117,6 @@ static int
 set_output_count(void *data, long value)
 {
 	struct cascade_state *d = data;
-	char buff[16];
-	int i;
 
 	if (value <= 0) {
 		error("%s: bad output count (%li)\n", PCS_BLOCK, value);
@@ -130,11 +128,6 @@ set_output_count(void *data, long value)
 		return 1;
 	}
 	d->output_count = value;
-	builder.outputs = xzalloc(sizeof(*builder.outputs) * (value + 1));
-	for (i = 0; i < value; i++) {
-		snprintf(buff, 16, "%i", i + 1);
-		builder.outputs[i] = strdup(buff);
-	}
 	debug("output count = %li\n", d->output_count);
 	return 0;
 }
@@ -203,10 +196,12 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct cascade_state *d = data;
+	struct cascade_state *d = b->data;
 	int first;
+	char buff[16];
+	int i;
 
 	if (0 == d->output_count) {
 		error("%s: bad output count\n", PCS_BLOCK);
@@ -223,6 +218,12 @@ init(void *data)
 	first = rand() % d->output_count;
 	d->next_stage = first;
 	d->next_unstage = first;
+	b->outputs_table = xzalloc(sizeof(*b->outputs_table) *
+			(d->output_count + 1));
+	for (i = 0; i < d->output_count; i++) {
+		snprintf(buff, 16, "%i", i + 1);
+		b->outputs_table[i] = strdup(buff);
+	}
 	return &ops;
 }
 

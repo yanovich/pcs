@@ -85,9 +85,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct logical_and_state *d = data;
+	struct logical_and_state *d = b->data;
 	if (&d->component_list == d->component_list.prev) {
 		error("%s: input not defined\n", PCS_BLOCK);
 		return NULL;

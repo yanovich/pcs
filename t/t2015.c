@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	b = xzalloc(sizeof(*b));
 	b->multiple = 1;
 	b->data = bb->alloc();
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (b->ops)
 		fatal("t2015: bad 'cascade' ops 1\n");
 
@@ -91,21 +91,21 @@ int main(int argc, char **argv)
 		fatal("t2015: bad cascade setpoint 'unstage interval'\n");
 	setter(b->data, C_t2015_UNSTAGE);
 
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t2015: bad 'cascade' ops 2\n");
 
-	if (NULL == bb->outputs)
+	if (NULL == b->outputs_table)
 		fatal("t2015: bad 'cascade' output table\n");
-	if (!bb->outputs[0] || strcmp(bb->outputs[0], "1"))
-		fatal("t2015: bad 'cascade' output '1' %s\n", bb->outputs[0]);
-	if (!bb->outputs[1] || strcmp(bb->outputs[1], "2"))
+	if (!b->outputs_table[0] || strcmp(b->outputs_table[0], "1"))
+		fatal("t2015: bad 'cascade' output '1' %s\n", b->outputs_table[0]);
+	if (!b->outputs_table[1] || strcmp(b->outputs_table[1], "2"))
 		fatal("t2015: bad 'cascade' output '2'\n");
-	if (!bb->outputs[2] || strcmp(bb->outputs[2], "3"))
+	if (!b->outputs_table[2] || strcmp(b->outputs_table[2], "3"))
 		fatal("t2015: bad 'cascade' output '3'\n");
-	if (!bb->outputs[3] || strcmp(bb->outputs[3], "4"))
+	if (!b->outputs_table[3] || strcmp(b->outputs_table[3], "4"))
 		fatal("t2015: bad 'cascade' output '4'\n");
-	if (NULL != bb->outputs[4])
+	if (NULL != b->outputs_table[4])
 		fatal("t2015: bad 'cascade' output count\n");
 	b->outputs = res;
 

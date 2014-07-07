@@ -169,10 +169,11 @@ new_string_event(struct pcs_parser_node *node, yaml_event_t *event)
 static void
 register_output(struct server_config *c, struct block *b)
 {
-	const char **outputs = b->builder->outputs;
+	const char **outputs = b->outputs_table;
 	long *reg = &c->regs[c->regs_used];
 	int i;
 
+	debug("*** table address: %p\n", &b->outputs_table);
 	if (!outputs)
 		return;
 
@@ -201,7 +202,7 @@ find_output(struct list_head *list, const char const *key)
 	int i;
 
 	list_for_each_entry(b, list, block_entry) {
-		outputs = b->builder->outputs;
+		outputs = b->outputs_table;
 		if (!outputs)
 			continue;
 
@@ -322,7 +323,8 @@ end_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 	struct block *b = list_entry(conf->block_list.prev,
 			struct block, block_entry);
 
-	b->ops = b->builder->ops(b->data);
+	debug3("%s:%i\n", __FUNCTION__, __LINE__);
+	b->ops = b->builder->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("bad config for %s in %s at line %zu column %zu\n",
 				key,
@@ -358,6 +360,7 @@ new_block_event(struct pcs_parser_node *node, yaml_event_t *event)
 	b->multiple = conf->multiple;
 	b->counter = 1;
 	b->builder = builder;
+	b->outputs_table = builder->outputs;
 	if (builder->alloc)
 		b->data = builder->alloc();
 

@@ -77,9 +77,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct logical_not_state *d = data;
+	struct logical_not_state *d = b->data;
 	if (NULL == d->input) {
 		error("%s: input not defined\n", PCS_BLOCK);
 		return NULL;

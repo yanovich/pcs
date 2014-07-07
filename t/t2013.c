@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	if (NULL != bb->setpoints)
 		fatal("t2013: bad 'logical or' setpoints table\n");
 
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t2013: bad 'logical or' ops\n");
 

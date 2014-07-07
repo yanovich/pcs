@@ -177,9 +177,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct file_input_state *d = data;
+	struct file_input_state *d = b->data;
 	struct line_key *c;
 	int i = 0;
 
@@ -196,12 +196,12 @@ init(void *data)
 				PCS_BLOCK, d->count, PCS_FI_MAX_INPUTS);
 		return NULL;
 	}
-	builder.outputs = xzalloc(sizeof(*builder.outputs) * (d->count + 2));
+	b->outputs_table = xzalloc(sizeof(*b->outputs_table) * (d->count + 2));
 	list_for_each_entry(c, &d->key_list, key_entry) {
-		builder.outputs[i++] = c->key;
-		debug3(" %i %s\n", i - 1, builder.outputs[i - 1]);
+		b->outputs_table[i++] = c->key;
+		debug3(" %i %s\n", i - 1, b->outputs_table[i - 1]);
 	}
-	builder.outputs[i++] = "error";
+	b->outputs_table[i++] = "error";
 	d->cache = xzalloc(sizeof(*d->cache) * d->count);
 	return &ops;
 }

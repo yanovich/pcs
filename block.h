@@ -30,6 +30,7 @@ struct block {
 	struct block_ops	*ops;
 	char			name[PCS_MAX_NAME_LENGTH];
 	struct block_builder	*builder;
+	const char		**outputs_table;
 	long			*outputs;
 	unsigned int		multiple;
 	unsigned int		counter;

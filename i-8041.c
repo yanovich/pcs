@@ -109,7 +109,7 @@ static struct block_ops i_8041_out_ops = {
 };
 
 static struct block_ops *
-i_8041_out_init(void *data)
+i_8041_out_init(struct block *b)
 {
 	return &i_8041_out_ops;
 }

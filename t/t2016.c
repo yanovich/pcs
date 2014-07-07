@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	bb = load_linear_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (b->ops)
 		fatal("t2016: bad 'linear' ops\n");
 
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		fatal("t2016: bad 'linear' setpoint 'out low'\n");
 	setter(b->data, 0);
 
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t2016: bad 'linear' ops\n");
 

@@ -145,9 +145,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct linear_state *d = data;
+	struct linear_state *d = b->data;
 	if (d->in_high == d->in_low) {
 		error("%s: zero input region\n", PCS_BLOCK);
 		return NULL;

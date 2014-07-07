@@ -82,9 +82,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct last_state_state *d = data;
+	struct last_state_state *d = b->data;
 	struct state_line *c;
 	int i = 0;
 
@@ -97,10 +97,10 @@ init(void *data)
 				PCS_BLOCK, d->count, PCS_FI_MAX_INPUTS);
 		return NULL;
 	}
-	builder.outputs = xzalloc(sizeof(*builder.outputs) * (d->count + 1));
+	b->outputs_table = xzalloc(sizeof(*b->outputs_table) * (d->count + 1));
 	list_for_each_entry(c, &d->key_list, key_entry) {
-		builder.outputs[i] = c->key;
-		debug3(" %i %s\n", i, builder.outputs[i]);
+		b->outputs_table[i] = c->key;
+		debug3(" %i %s\n", i, b->outputs_table[i]);
 		i++;
 	}
 	return &ops;

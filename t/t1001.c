@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	b = xzalloc(sizeof(*b));
 	b->multiple = 1;
 	b->data = bb->alloc();
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (b->ops)
 		fatal("t1001: bad 'file-input' ops 1\n");
 
@@ -71,22 +71,22 @@ int main(int argc, char **argv)
 		fatal("t1001: bad 'file-input' string 'path'\n");
 	setter_path(b->data, "path", nofile);
 
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t1001: bad 'file-input' ops 2\n");
 
-	if (NULL == bb->outputs)
+	if (NULL == b->outputs_table)
 		fatal("t1001: bad 'file-input' output table\n");
-	if (!bb->outputs[0] || strcmp(bb->outputs[0], "1"))
+	if (!b->outputs_table[0] || strcmp(b->outputs_table[0], "1"))
 		fatal("t1001: bad 'file-input' output '1' %s\n",
-				bb->outputs[0]);
-	if (!bb->outputs[1] || strcmp(bb->outputs[1], "3"))
+				b->outputs_table[0]);
+	if (!b->outputs_table[1] || strcmp(b->outputs_table[1], "3"))
 		fatal("t1001: bad 'file-input' output '3' %s\n",
-				bb->outputs[1]);
-	if (!bb->outputs[2] || strcmp(bb->outputs[2], "error"))
+				b->outputs_table[1]);
+	if (!b->outputs_table[2] || strcmp(b->outputs_table[2], "error"))
 		fatal("t1001: bad 'file-input' output 'error' %s\n",
-				bb->outputs[2]);
-	if (NULL != bb->outputs[3])
+				b->outputs_table[2]);
+	if (NULL != b->outputs_table[3])
 		fatal("t1001: bad 'file-input' output count\n");
 	b->outputs = res;
 
@@ -99,13 +99,13 @@ int main(int argc, char **argv)
 		fatal("t1001: bad '%li' error result for %s\n",
 				res[2], nofile);
 
-	xfree(bb->outputs);
+	xfree(b->outputs_table);
 	xfree(b->data);
 	b->data = bb->alloc();
 	setter_path(b->data, "path", good);
 	setter_key(b->data, "key", "1");
 	setter_key(b->data, "key", "3");
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t1001: bad 'file-input' ops 3\n");
 
@@ -126,13 +126,13 @@ int main(int argc, char **argv)
 				res[2], good);
 
 
-	xfree(bb->outputs);
+	xfree(b->outputs_table);
 	xfree(b->data);
 	b->data = bb->alloc();
 	setter_path(b->data, "path", bad);
 	setter_key(b->data, "key", "1");
 	setter_key(b->data, "key", "3");
-	b->ops = bb->ops(b->data);
+	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)
 		fatal("t1001: bad 'file-input' ops 3\n");
 

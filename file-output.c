@@ -144,9 +144,9 @@ static struct block_ops ops = {
 };
 
 static struct block_ops *
-init(void *data)
+init(struct block *b)
 {
-	struct file_output_state *d = data;
+	struct file_output_state *d = b->data;
 
 	if (!d->path) {
 		error("%s: no input file\n", PCS_BLOCK);

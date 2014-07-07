@@ -24,7 +24,7 @@
 
 struct block_builder {
 	void			*(*alloc)(void);
-	struct block_ops	*(*ops)(void *);
+	struct block_ops	*(*ops)(struct block *);
 	struct pcs_map		*setpoints;
 	struct pcs_map		*inputs;
 	struct pcs_map		*strings;
