@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
   char *b = xzalloc(16384);
   int fd = -1;
   int r = 0;
-  fd_set rfds, wfds;
+  fd_set rfds, wfds, efds;
   struct timeval t;
   struct CURLMsg *m;
 
@@ -183,9 +183,11 @@ int main(int argc, char *argv[])
   while (1) {
 		  FD_ZERO(&rfds);
 		  FD_ZERO(&wfds);
+		  FD_ZERO(&efds);
+		  curl_multi_fdset(h, &rfds, &wfds, &efds, &r);
 		  t.tv_sec = 0;
 		  t.tv_usec = 100000;
-		  select(1, &rfds, &wfds, NULL, &t);
+		  select(r, &rfds, &wfds, &efds, &t);
 		  curl_easy_pause(hnd, CURLPAUSE_CONT);
 		  paused = 0;
 		  while (CURLM_CALL_MULTI_PERFORM ==
