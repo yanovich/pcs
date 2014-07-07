@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long input, res[2];
 
 	bb = load_fuzzy_then_d_builder();
@@ -69,17 +69,17 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "a");
 	if (!setter)
 		fatal("t2006: bad 'fuzzy then d' setpoint 'a'\n");
-	setter(b->data, 100);
+	setter(b->data, "a", 100);
 
 	setter = pcs_lookup(bb->setpoints, "b");
 	if (!setter)
 		fatal("t2006: bad 'fuzzy then d' setpoint 'b'\n");
-	setter(b->data, 400);
+	setter(b->data, "b", 400);
 
 	setter = pcs_lookup(bb->setpoints, "c");
 	if (!setter)
 		fatal("t2006: bad 'fuzzy then d' setpoint 'c'\n");
-	setter(b->data, 700);
+	setter(b->data, "c", 700);
 
 	input = 0;
 	res[0] = 0;

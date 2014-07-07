@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long input, res;
 
 	bb = load_linear_builder();
@@ -65,22 +65,22 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "in high");
 	if (!setter)
 		fatal("t2016: bad 'linear' setpoint 'in high'\n");
-	setter(b->data, 20000);
+	setter(b->data, "in high", 20000);
 
 	setter = pcs_lookup(bb->setpoints, "in low");
 	if (!setter)
 		fatal("t2016: bad 'linear' setpoint 'in low'\n");
-	setter(b->data, 4000);
+	setter(b->data, "in low", 4000);
 
 	setter = pcs_lookup(bb->setpoints, "out high");
 	if (!setter)
 		fatal("t2016: bad 'linear' setpoint 'out high'\n");
-	setter(b->data, 1600);
+	setter(b->data, "out high", 1600);
 
 	setter = pcs_lookup(bb->setpoints, "out low");
 	if (!setter)
 		fatal("t2016: bad 'linear' setpoint 'out low'\n");
-	setter(b->data, 0);
+	setter(b->data, "out low", 0);
 
 	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)

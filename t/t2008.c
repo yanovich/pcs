@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long input, reset = 0, res[4];
 	int i = 1, stop;
 
@@ -85,12 +85,12 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "span");
 	if (!setter)
 		fatal("t2008: bad 'discrete valve' setpoint 'span'\n");
-	setter(b->data, C_t2008_SPAN);
+	setter(b->data, "span", C_t2008_SPAN);
 
 	setter = pcs_lookup(bb->setpoints, "input multiple");
 	if (!setter)
 		fatal("t2008: bad discrete-valve setpoint 'input multiple'\n");
-	setter(b->data, C_t2008_INPUT_MULTIPLE);
+	setter(b->data, "input multiple", C_t2008_INPUT_MULTIPLE);
 
 	input = 0;
 	res[0] = 1;

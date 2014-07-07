@@ -114,7 +114,7 @@ set_input_unstage(void *data, const char const *key, long *input)
 static struct block_builder builder;
 
 static int
-set_output_count(void *data, long value)
+set_output_count(void *data, const char const *key, long value)
 {
 	struct cascade_state *d = data;
 
@@ -133,7 +133,7 @@ set_output_count(void *data, long value)
 }
 
 static int
-set_stage_interval(void *data, long value)
+set_stage_interval(void *data, const char const *key, long value)
 {
 	struct cascade_state *d = data;
 	d->stage_interval = value;
@@ -142,7 +142,7 @@ set_stage_interval(void *data, long value)
 }
 
 static int
-set_unstage_interval(void *data, long value)
+set_unstage_interval(void *data, const char const *key, long value)
 {
 	struct cascade_state *d = data;
 	d->unstage_interval = value;

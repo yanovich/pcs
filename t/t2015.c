@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long stage, unstage, stop, res[C_t2015_OUTPUTS];
 	int i = 1;
 	int j;
@@ -79,17 +79,17 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "output count");
 	if (!setter)
 		fatal("t2015: bad 'cascade' setpoint 'output count'\n");
-	setter(b->data, C_t2015_OUTPUTS);
+	setter(b->data, "output count", C_t2015_OUTPUTS);
 
 	setter = pcs_lookup(bb->setpoints, "stage interval");
 	if (!setter)
 		fatal("t2015: bad cascade setpoint 'stage interval'\n");
-	setter(b->data, C_t2015_STAGE);
+	setter(b->data, "stage interval", C_t2015_STAGE);
 
 	setter = pcs_lookup(bb->setpoints, "unstage interval");
 	if (!setter)
 		fatal("t2015: bad cascade setpoint 'unstage interval'\n");
-	setter(b->data, C_t2015_UNSTAGE);
+	setter(b->data, "unstage interval", C_t2015_UNSTAGE);
 
 	b->ops = bb->ops(b);
 	if (!b->ops || !b->ops->run)

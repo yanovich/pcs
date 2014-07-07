@@ -53,7 +53,7 @@ set_input(void *data, const char const *key, long *input)
 }
 
 static int
-set_high(void *data, long value)
+set_high(void *data, const char const *key, long value)
 {
 	struct analog_valve_state *d = data;
 	d->high = value;
@@ -62,7 +62,7 @@ set_high(void *data, long value)
 }
 
 static int
-set_low(void *data, long value)
+set_low(void *data, const char const *key, long value)
 {
 	struct analog_valve_state *d = data;
 	d->low = value;

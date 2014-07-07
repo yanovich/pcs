@@ -51,7 +51,7 @@ timer_run(struct block *b, struct server_state *s)
 }
 
 static int
-set_delay(void *data, long value)
+set_delay(void *data, const char const *key, long value)
 {
 	struct timer_state *d = data;
 	d->delay = value;

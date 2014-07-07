@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long flowback, street, res;
 
 	log_init("t2009", LOG_DEBUG + 2, LOG_DAEMON, 1);
@@ -75,27 +75,27 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "feed");
 	if (!setter)
 		fatal("t2009: bad 'central heating' setpoint 'feed'\n");
-	setter(b->data, 950);
+	setter(b->data, "feed", 950);
 
 	setter = pcs_lookup(bb->setpoints, "flowback");
 	if (!setter)
 		fatal("t2009: bad 'central heating' setpoint 'flowback'\n");
-	setter(b->data, 700);
+	setter(b->data, "flowback", 700);
 
 	setter = pcs_lookup(bb->setpoints, "street");
 	if (!setter)
 		fatal("t2009: bad 'central heating' setpoint 'street'\n");
-	setter(b->data, -280);
+	setter(b->data, "street", -280);
 
 	setter = pcs_lookup(bb->setpoints, "inside");
 	if (!setter)
 		fatal("t2009: bad 'central heating' setpoint 'inside'\n");
-	setter(b->data, 230);
+	setter(b->data, "inside", 230);
 
 	setter = pcs_lookup(bb->setpoints, "stop");
 	if (!setter)
 		fatal("t2009: bad 'central heating' setpoint 'stop'\n");
-	setter(b->data, 120);
+	setter(b->data, "stop", 120);
 
 	flowback = 700;
 	street = -280;

@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long input, res;
 
 	bb = load_fuzzy_if_z_builder();
@@ -65,12 +65,12 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "b");
 	if (!setter)
 		fatal("t2003: bad 'fuzzy if z' setpoint 'b'\n");
-	setter(b->data, -50);
+	setter(b->data, "b", -50);
 
 	setter = pcs_lookup(bb->setpoints, "c");
 	if (!setter)
 		fatal("t2003: bad 'fuzzy if z' setpoint 'c'\n");
-	setter(b->data, -30);
+	setter(b->data, "c", -30);
 
 	input = -60;
 	res = 0;

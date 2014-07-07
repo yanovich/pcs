@@ -54,7 +54,7 @@ alloc(void)
 }
 
 static int
-set_value(void *data, long value)
+set_value(void *data, const char const *key, long value)
 {
 	struct const_state *d = data;
 	d->value = value;

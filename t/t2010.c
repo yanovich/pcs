@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 	long input, res[2];
 	int i = 0;
 
@@ -70,12 +70,12 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "high");
 	if (!setter)
 		fatal("t2010: bad 'trigger' setpoint 'high'\n");
-	setter(b->data, 200);
+	setter(b->data, "high", 200);
 
 	setter = pcs_lookup(bb->setpoints, "low");
 	if (!setter)
 		fatal("t2010: bad 'trigger' setpoint 'low'\n");
-	setter(b->data, 100);
+	setter(b->data, "low", 100);
 
 	input = 50;
 	res[0] = 1;
@@ -119,9 +119,9 @@ int main(int argc, char **argv)
 	setter = pcs_lookup(bb->setpoints, "hysteresis");
 	if (!setter)
 		fatal("t2010: bad 'trigger' setpoint 'hysteresis'\n");
-	if (!setter(b->data, 200))
+	if (!setter(b->data, "hysteresis", 200))
 		fatal("t2010: 'trigger' accepts bad boolean");
-	setter(b->data, 1);
+	setter(b->data, "hysteresis", 1);
 
 	input = 150;
 	res[0] = 1;

@@ -63,7 +63,7 @@ i_8041_out_run(struct block *b, struct server_state *s)
 }
 
 static int
-set_out_slot(void *data, long value)
+set_out_slot(void *data, const char const *key, long value)
 {
 	struct i_8041_out_state *d = data;
 	d->slot = (unsigned) value;

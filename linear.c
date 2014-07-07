@@ -66,7 +66,7 @@ set_input(void *data, const char const *key, long *input)
 }
 
 static int
-set_in_high(void *data, long value)
+set_in_high(void *data, const char const *key, long value)
 {
 	struct linear_state *d = data;
 	d->in_high = value;
@@ -75,7 +75,7 @@ set_in_high(void *data, long value)
 }
 
 static int
-set_in_low(void *data, long value)
+set_in_low(void *data, const char const *key, long value)
 {
 	struct linear_state *d = data;
 	d->in_low = value;
@@ -84,7 +84,7 @@ set_in_low(void *data, long value)
 }
 
 static int
-set_out_high(void *data, long value)
+set_out_high(void *data, const char const *key, long value)
 {
 	struct linear_state *d = data;
 	d->out_high = value;
@@ -93,7 +93,7 @@ set_out_high(void *data, long value)
 }
 
 static int
-set_out_low(void *data, long value)
+set_out_low(void *data, const char const *key, long value)
 {
 	struct linear_state *d = data;
 	d->out_low = value;

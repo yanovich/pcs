@@ -97,7 +97,7 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 			struct block, block_entry);
 	const char *key = (const char *) &node[1];
 	long value;
-	int (*setter)(void *, long);
+	int (*setter)(void *, const char const *, long);
 
 	if (YAML_SCALAR_EVENT != event->type)
 		return pcs_parser_unexpected_event(node, event);
@@ -114,7 +114,7 @@ new_setpoint_event(struct pcs_parser_node *node, yaml_event_t *event)
 				node->state->filename,
 				event->start_mark.line,
 				event->start_mark.column);
-	if (setter(b->data, value))
+	if (setter(b->data, key, value))
 		fatal("setpoint '%s' error in %s line %zu column %zu\n",
 				key,
 				node->state->filename,

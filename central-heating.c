@@ -74,7 +74,7 @@ set_input_street(void *data, const char const *key, long *input_street)
 }
 
 static int
-set_feed(void *data, long value)
+set_feed(void *data, const char const *key, long value)
 {
 	struct central_heating_state *d = data;
 	d->feed = value;
@@ -83,7 +83,7 @@ set_feed(void *data, long value)
 }
 
 static int
-set_flowback(void *data, long value)
+set_flowback(void *data, const char const *key, long value)
 {
 	struct central_heating_state *d = data;
 	d->flowback = value;
@@ -92,7 +92,7 @@ set_flowback(void *data, long value)
 }
 
 static int
-set_inside(void *data, long value)
+set_inside(void *data, const char const *key, long value)
 {
 	struct central_heating_state *d = data;
 	d->inside = value;
@@ -101,7 +101,7 @@ set_inside(void *data, long value)
 }
 
 static int
-set_stop(void *data, long value)
+set_stop(void *data, const char const *key, long value)
 {
 	struct central_heating_state *d = data;
 	d->stop = value;
@@ -110,7 +110,7 @@ set_stop(void *data, long value)
 }
 
 static int
-set_street(void *data, long value)
+set_street(void *data, const char const *key, long value)
 {
 	struct central_heating_state *d = data;
 	d->street = value;

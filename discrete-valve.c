@@ -149,7 +149,7 @@ set_reset(void *data, const char const *key, long *input)
 }
 
 static int
-set_input_multiple(void *data, long value)
+set_input_multiple(void *data, const char const *key, long value)
 {
 	struct discrete_valve_state *d = data;
 	d->input_multiple = value;
@@ -158,7 +158,7 @@ set_input_multiple(void *data, long value)
 }
 
 static int
-set_span(void *data, long value)
+set_span(void *data, const char const *key, long value)
 {
 	struct discrete_valve_state *d = data;
 	d->span = value;

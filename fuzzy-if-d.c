@@ -58,7 +58,7 @@ set_input(void *data, const char const *key, long *input)
 }
 
 static int
-set_a(void *data, long value)
+set_a(void *data, const char const *key, long value)
 {
 	struct fuzzy_if_d_state *d = data;
 	d->a = value;
@@ -67,7 +67,7 @@ set_a(void *data, long value)
 }
 
 static int
-set_b(void *data, long value)
+set_b(void *data, const char const *key, long value)
 {
 	struct fuzzy_if_d_state *d = data;
 	d->b = value;
@@ -80,7 +80,7 @@ set_b(void *data, long value)
 }
 
 static int
-set_c(void *data, long value)
+set_c(void *data, const char const *key, long value)
 {
 	struct fuzzy_if_d_state *d = data;
 	d->c = value;

@@ -55,7 +55,7 @@ i_87040_run(struct block *b, struct server_state *s)
 }
 
 static int
-set_slot(void *data, long value)
+set_slot(void *data, const char const *key, long value)
 {
 	struct i_87040_state *d = data;
 	d->slot = (unsigned) value;
