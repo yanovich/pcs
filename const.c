@@ -25,15 +25,34 @@
 #include "state.h"
 
 struct const_state {
-	long			value;
+	long			count;
+	struct list_head	key_list;
+	int			first;
 };
+
+struct line_key {
+	struct list_head	key_entry;
+	const char		*key;
+	long			value;
+	int			i;
+};
+
+#define PCS_BLOCK	"const"
+#define PCS_C_MAX_INPUTS	256
 
 static void
 const_run(struct block *b, struct server_state *s)
 {
 	struct const_state *d = b->data;
-	*b->outputs = d->value;
-	debug3("%s: %li at %p\n", b->name, d->value, b->outputs);
+	struct line_key *c;
+	int i = 0;
+
+	if (!d->first)
+		return;
+	d->first = 0;
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		b->outputs[i++] = c->value;
+	}
 }
 
 static struct block_ops ops = {
@@ -43,6 +62,24 @@ static struct block_ops ops = {
 static struct block_ops *
 init(struct block *b)
 {
+	struct const_state *d = b->data;
+	struct line_key *c;
+	int i = 0;
+
+	if (0 == d->count) {
+		error("%s: no inputs\n", PCS_BLOCK);
+		return NULL;
+	}
+	if (d->count > PCS_C_MAX_INPUTS) {
+		error("%s: input count (%li) is over maximum (%i)\n",
+				PCS_BLOCK, d->count, PCS_C_MAX_INPUTS);
+		return NULL;
+	}
+	b->outputs_table = xzalloc(sizeof(*b->outputs_table) * (d->count + 1));
+	list_for_each_entry(c, &d->key_list, key_entry) {
+		b->outputs_table[i++] = c->key;
+		debug3(" %i %s\n", i - 1, b->outputs_table[i - 1]);
+	}
 	return &ops;
 }
 
@@ -50,36 +87,35 @@ static void *
 alloc(void)
 {
 	struct const_state *d = xzalloc(sizeof(*d));
+	INIT_LIST_HEAD(&d->key_list);
+	d->first = 1;
 	return d;
 }
 
 static int
-set_value(void *data, const char const *key, long value)
+set_key(void *data, const char const *key, long value)
 {
 	struct const_state *d = data;
-	d->value = value;
-	debug("value = %li\n", d->value);
+	struct line_key *c = xzalloc(sizeof(*c));
+	c->key = strdup(key);
+	c->value = value;
+	list_add_tail(&c->key_entry, &d->key_list);
+	debug("%s = %li\n", c->key, c->value);
+	d->count++;
 	return 0;
 }
 
 static struct pcs_map setpoints[] = {
 	{
 		.key			= NULL,
-		.value			= set_value,
+		.value			= set_key,
 	}
-	,{
-	}
-};
-
-static const char *outputs[] = {
-	NULL
 };
 
 static struct block_builder const_builder = {
 	.ops		= init,
 	.alloc		= alloc,
 	.setpoints	= setpoints,
-	.outputs	= outputs,
 };
 
 struct block_builder *
