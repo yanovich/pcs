@@ -154,7 +154,6 @@ file_input_run(struct block *b, struct server_state *s)
 {
 	struct file_input_state *d = b->data;
 	struct line_key *c;
-	int err = 1;
 
 	if (d->first) {
 		list_for_each_entry(c, &d->key_list, key_entry) {

@@ -22,11 +22,41 @@
 #include <curl/curl.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+struct network_config {
+	const char			*device;
+	const char			*host;
+	const char			*send_pipe;
+	const char			*receive_file;
+};
+
+struct network_state {
+	int			start;
+	int			sent;
+	int			paused;
+	int			ready;
+	struct network_config	*conf;
+};
+
+static int
+load_network_config(const char const *fn, struct network_config *c)
+{
+	return 0;
+}
+
+static int received_signal = 0;
+
+static void
+sigterm_handler(int sig)
+{
+	received_signal = sig;
+}
 
 static int start = 1;
 static int paused = 0;
@@ -92,14 +122,14 @@ writer(char *ptr, size_t size, size_t nmemb, void *userdata)
 	return res;
 }
 
-int main(int argc, char *argv[])
+static int
+run(struct network_state *s)
 {
   CURLcode ret;
   CURLMcode retm;
   CURL *hnd;
   CURLM *h;
   struct curl_slist *slist1;
-  char *b = xzalloc(16384);
   int fd = -1;
   int r = 0;
   fd_set rfds, wfds, efds;
@@ -180,7 +210,8 @@ int main(int argc, char *argv[])
 	  goto easy;
   }
   fd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
-  while (1) {
+  debug("init done\n");
+  while (!received_signal) {
 		  FD_ZERO(&rfds);
 		  FD_ZERO(&wfds);
 		  FD_ZERO(&efds);
@@ -215,7 +246,75 @@ multi:
 headers:
   curl_slist_free_all(slist1);
   slist1 = NULL;
-  xfree(b);
-  b = NULL;
   return (int)ret;
+}
+
+int main(int argc, char **argv)
+{
+	const char *config_file_name = SYSCONFDIR "/pcs-net.conf";
+	const char *pid_file = PKGRUNDIR "/pcs-net.pid";
+	int log_level = LOG_NOTICE;
+	int test_only = 0;
+	struct network_config c = {};
+	struct network_state s = {
+		.start = 1,
+		.conf = &c,
+	};
+	int opt;
+	int no_detach = 0;
+	FILE *f;
+
+	while ((opt = getopt(argc, argv, "Ddf:t")) != -1) {
+		switch (opt) {
+		case 'D':
+			no_detach = 1;
+			break;
+		case 'd':
+			if (log_level >= LOG_DEBUG)
+				log_level++;
+			else
+				log_level = LOG_DEBUG;
+			break;
+		case 'f':
+			config_file_name = optarg;
+			break;
+		case 't':
+			test_only = 1;
+			break;
+		default:
+			break;
+		}
+	}
+
+	log_init("pcs-net", log_level, LOG_DAEMON, 1);
+	if (load_network_config(config_file_name, &c))
+		fatal("Bad configuration\n");
+	if (test_only)
+		return 0;
+
+	if (!no_detach)
+		daemon(0, 0);
+
+	log_init("pcs-net", log_level, LOG_DAEMON, no_detach);
+
+        f = fopen(pid_file, "w");
+        if (f != NULL) {
+                fprintf(f, "%lu\n", (long unsigned) getpid());
+                fclose(f);
+        } else {
+		error(PACKAGE ": failed to create %s\n", pid_file);
+	}
+
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGQUIT, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
+
+	run(&s);
+
+	if (!no_detach)
+		closelog();
+
+	unlink(pid_file);
+
+	return 0;
 }
