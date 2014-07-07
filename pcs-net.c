@@ -112,9 +112,21 @@ reader(char *buffer, size_t size, size_t nitems, void *instream)
 static size_t
 writer(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-	FILE *f = fopen("/tmp/pcs.input", "w");
+	struct network_state *s = userdata;
+	FILE *f;
 	size_t res;
-	printf("%s", ptr);
+
+	debug("%s\n", ptr);
+
+	if (!s->ready) {
+		if ('o' == ptr[0] && 'k' == ptr[1]) {
+			s->ready = 1;
+			return size * nmemb;
+		}
+		return 0;
+	}
+
+	f = fopen("/tmp/pcs.input", "w");
 	if (!f)
 		return size * nmemb;
 	res = fwrite(ptr, size, nmemb, f);
@@ -198,7 +210,7 @@ run(struct network_state *s)
 	  ret = 1;
 	  goto easy;
   }
-  ret = curl_easy_setopt(hnd, CURLOPT_WRITEDATA, NULL);
+  ret = curl_easy_setopt(hnd, CURLOPT_WRITEDATA, s);
   if (CURLE_OK != ret) {
 	  ret = 1;
 	  goto easy;
