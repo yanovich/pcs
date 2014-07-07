@@ -35,6 +35,7 @@ struct file_input_state {
 	long			count;
 	const char		*path;
 	struct list_head	key_list;
+	long			*cache;
 };
 
 struct line_key {
@@ -72,7 +73,7 @@ parse_value(struct pcs_parser_node *node, yaml_event_t *event)
 		val = pcs_parser_long(node, event, &err);
 		if (err)
 			return 0;
-		b->outputs[k] = val;
+		d->cache[k] = val;
 		c->present = 1;
 		debug(" %s: %s\n", key, value);
 	}
@@ -113,6 +114,7 @@ load_file(struct block *b, const char const *filename)
 		if (1 != c->present)
 			return 1;
 	}
+	memcpy(b->outputs, d->cache, sizeof(*d->cache) * d->count);
 	return 0;
 }
 
@@ -200,6 +202,7 @@ init(void *data)
 		debug3(" %i %s\n", i - 1, builder.outputs[i - 1]);
 	}
 	builder.outputs[i++] = "error";
+	d->cache = xzalloc(sizeof(*d->cache) * d->count);
 	return &ops;
 }
 

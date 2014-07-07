@@ -137,12 +137,12 @@ int main(int argc, char **argv)
 		fatal("t1001: bad 'file-input' ops 3\n");
 
 	b->outputs = res;
-	res[0] = 1;
+	res[0] = 2;
 	res[1] = 0;
 	res[2] = 0;
 	b->ops->run(b, &s);
 
-	if (res[0] != 0)
+	if (res[0] != 2)
 		fatal("t1001: bad '%li' result 0 for %s\n",
 				res[0], bad);
 	if (res[1] != 0)
