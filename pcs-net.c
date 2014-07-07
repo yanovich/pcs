@@ -29,9 +29,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "pcs-parser.h"
+
 struct network_config {
 	const char			*device;
 	const char			*host;
+	unsigned int			port;
 	const char			*send_pipe;
 	const char			*receive_file;
 };
@@ -41,12 +44,129 @@ struct network_state {
 	int			sent;
 	int			paused;
 	int			ready;
+	int			fd;
 	struct network_config	*conf;
+};
+
+static int
+options_device_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	const char *from = (const char *) event->data.scalar.value;
+	struct network_config *conf = node->state->data;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	debug(" %s\n", from);
+	conf->device = strdup(from);
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static int
+options_host_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	const char *from = (const char *) event->data.scalar.value;
+	struct network_config *conf = node->state->data;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	debug(" %s\n", from);
+	conf->host = strdup(from);
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static int
+options_port_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	long l;
+	struct network_config *conf = node->state->data;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	l = pcs_parser_long(node, event, NULL);
+	debug(" %li\n", l);
+	conf->port = (unsigned) l;
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static int
+options_send_pipe_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	const char *from = (const char *) event->data.scalar.value;
+	struct network_config *conf = node->state->data;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	debug(" %s\n", from);
+	conf->send_pipe = strdup(from);
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static int
+options_receive_file_event(struct pcs_parser_node *node, yaml_event_t *event)
+{
+	const char *from = (const char *) event->data.scalar.value;
+	struct network_config *conf = node->state->data;
+
+	if (YAML_SCALAR_EVENT != event->type)
+		return pcs_parser_unexpected_event(node, event);
+
+	debug(" %s\n", from);
+	conf->receive_file = strdup(from);
+	pcs_parser_remove_node(node);
+	return 1;
+}
+
+static struct pcs_parser_map top_map[] = {
+	{
+		.key			= "device",
+		.handler		= options_device_event,
+	}
+	,{
+		.key			= "host",
+		.handler		= options_host_event,
+	}
+	,{
+		.key			= "port",
+		.handler		= options_port_event,
+	}
+	,{
+		.key			= "send pipe",
+		.handler		= options_send_pipe_event,
+	}
+	,{
+		.key			= "receive file",
+		.handler		= options_receive_file_event,
+	}
+	,{
+	}
+};
+
+static struct pcs_parser_map document_map = {
+	.handler		= pcs_parser_map,
+	.data			= &top_map,
+};
+
+static struct pcs_parser_map stream_map = {
+	.handler		= pcs_parser_one_document,
+	.data			= &document_map,
 };
 
 static int
 load_network_config(const char const *fn, struct network_config *c)
 {
+	int err = pcs_parse_yaml(fn, &stream_map, c);
+	if (err)
+		return 1;
+	if (!c->device || !c->host || !c->send_pipe || !c->receive_file)
+		return 1;
 	return 0;
 }
 
@@ -61,18 +181,27 @@ sigterm_handler(int sig)
 static int start = 1;
 static int paused = 0;
 
+#define PCS_MAX_DEVICE_HDR	1024
+char header[PCS_MAX_DEVICE_HDR] = "";
+
 static size_t
-reader(char *buffer, size_t size, size_t nitems, void *instream)
+reader(char *buffer, size_t size, size_t nitems, void *userdata)
 {
-	const char header[] = "{\"device\":\"53856461c015057143f63f25\"}";
+	struct network_state *s = userdata;
 	static size_t sent = 0;
 	size_t max = size * nitems;
 	size_t len;
-	int *pfd = instream;
+	int *pfd = &s->fd;
 	int res;
 	struct stat st;
 
 	//printf("sending start: %i, size: %li, nitems: %li\n", start, size, nitems);
+	if (!header[0]) {
+		res = snprintf(header, PCS_MAX_DEVICE_HDR, "{\"device\":\"%s\"}",
+				s->conf->device);
+		if (res < 0)
+			header[0] = 0;
+	}
 	if (start) {
 		len = strlen(&header[sent]);
 		if (len > max) {
@@ -86,19 +215,19 @@ reader(char *buffer, size_t size, size_t nitems, void *instream)
 		return len;
 	}
 
-	res = stat("/tmp/t0006.output", &st);
+	res = stat(s->conf->send_pipe, &st);
 	if (res < 0) {
-		mkfifo("/tmp/t0006.output", 0600);
+		mkfifo(s->conf->send_pipe, 0600);
 	}
 	if (*pfd < 0) {
-		*pfd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
+		*pfd = open(s->conf->send_pipe, O_RDONLY | O_NONBLOCK );
 		paused = 1;
 		return CURL_READFUNC_PAUSE;
 	}
 	len = read(*pfd, buffer, max);
 	if (0 == len) {
 		close(*pfd);
-		*pfd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
+		*pfd = open(s->conf->send_pipe, O_RDONLY | O_NONBLOCK );
 		paused = 1;
 		return CURL_READFUNC_PAUSE;
 	}
@@ -126,13 +255,15 @@ writer(char *ptr, size_t size, size_t nmemb, void *userdata)
 		return 0;
 	}
 
-	f = fopen("/tmp/pcs.input", "w");
+	f = fopen(s->conf->receive_file, "w");
 	if (!f)
 		return size * nmemb;
 	res = fwrite(ptr, size, nmemb, f);
 	fclose(f);
 	return res;
 }
+
+char url[PCS_MAX_DEVICE_HDR] = "";
 
 static int
 run(struct network_state *s)
@@ -142,12 +273,25 @@ run(struct network_state *s)
 	CURL *hnd;
 	CURLM *h;
 	struct curl_slist *slist1;
-	int fd = -1;
 	int r = 0;
+	int res;
 	fd_set rfds, wfds, efds;
 	struct timeval t;
 	struct CURLMsg *m;
 
+	if (!url[0]) {
+		if (s->conf->port)
+			res = snprintf(url, PCS_MAX_DEVICE_HDR,
+					"http://%s:%u/states",
+					s->conf->host,
+					s->conf->port);
+		else
+			res = snprintf(url, PCS_MAX_DEVICE_HDR,
+					"http://%s/states",
+					s->conf->host);
+		if (res < 0)
+			header[0] = 0;
+	}
 	slist1 = NULL;
 	slist1 = curl_slist_append(slist1, "Content-Type: application/x-device-data");
 
@@ -199,7 +343,7 @@ run(struct network_state *s)
 		ret = 1;
 		goto easy;
 	}
-	ret = curl_easy_setopt(hnd, CURLOPT_READDATA, &fd);
+	ret = curl_easy_setopt(hnd, CURLOPT_READDATA, s);
 	if (CURLE_OK != ret) {
 		ret = 1;
 		goto easy;
@@ -216,12 +360,12 @@ run(struct network_state *s)
 		goto easy;
 	}
 
-	ret = curl_multi_add_handle(h, hnd);
-	if (CURLE_OK != ret) {
+	retm = curl_multi_add_handle(h, hnd);
+	if (CURLM_OK != retm) {
 		ret = 1;
 		goto easy;
 	}
-	fd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
+	s->fd = open(s->conf->send_pipe, O_RDONLY | O_NONBLOCK );
 	debug("init done\n");
 	while (!received_signal) {
 		FD_ZERO(&rfds);
@@ -231,10 +375,14 @@ run(struct network_state *s)
 		t.tv_sec = 0;
 		t.tv_usec = 100000;
 		select(r, &rfds, &wfds, &efds, &t);
+		if (received_signal)
+			break;
 		curl_easy_pause(hnd, CURLPAUSE_CONT);
 		paused = 0;
 		while (CURLM_CALL_MULTI_PERFORM ==
 				(retm = curl_multi_perform(h, &r)));
+		if (received_signal)
+			break;
 		if (CURLM_OK != retm)
 			break;
 		while ((m = curl_multi_info_read(h, &r))) {
@@ -244,10 +392,19 @@ run(struct network_state *s)
 				continue;
 			curl_multi_remove_handle(h, hnd);
 			start = 1;
-			curl_multi_add_handle(h, hnd);
+			sleep(2);
+			retm = curl_multi_add_handle(h, hnd);
+			if (CURLM_OK != retm) {
+				ret = 1;
+				goto easy;
+			}
 		}
 	}
 
+	if (s->fd >= 0) {
+		close(s->fd);
+		s->fd = -1;
+	}
 	curl_multi_remove_handle(h, hnd);
 easy:
 	curl_easy_cleanup(hnd);
@@ -269,7 +426,6 @@ int main(int argc, char **argv)
 	int test_only = 0;
 	struct network_config c = {};
 	struct network_state s = {
-		.start = 1,
 		.conf = &c,
 	};
 	int opt;
@@ -321,7 +477,13 @@ int main(int argc, char **argv)
 	signal(SIGQUIT, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
 
-	run(&s);
+	while (!received_signal) {
+		s.start = 1;
+		s.paused = 0;
+		s.ready = 0;
+		s.sent = 0;
+		run(&s);
+	}
 
 	if (!no_detach)
 		closelog();

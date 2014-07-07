@@ -44,7 +44,6 @@ libpcs_a_SOURCES		 = \
 				   logical-or.c \
 				   logical-xor.c \
 				   ni1000tk5000.c \
-				   pcs-parser.c \
 				   pt1000.c \
 				   r404a.c \
 				   pd.c \
@@ -55,6 +54,7 @@ libpcs_a_SOURCES		 = \
 
 libtools_a_SOURCES		 = \
 				   log.c \
+				   pcs-parser.c \
 				   xmalloc.c
 
 LDADD				 = \
@@ -70,7 +70,7 @@ bin_PROGRAMS			 = \
 dcon_raw_LDADD			 = libicpdas.a libtools.a
 lsicpdas_LDADD			 = libicpdas.a libtools.a
 pcs_LDADD			 = libpcs.a libicpdas.a libtools.a $(YAML_LIBS)
-pcs_net_LDADD			 = libtools.a $(CURL_LIBS)
+pcs_net_LDADD			 = libtools.a $(CURL_LIBS) $(YAML_LIBS)
 
 noinst_PROGRAMS			 =
 EXTRA_DIST			 =
