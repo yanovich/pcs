@@ -137,128 +137,128 @@ writer(char *ptr, size_t size, size_t nmemb, void *userdata)
 static int
 run(struct network_state *s)
 {
-  CURLcode ret;
-  CURLMcode retm;
-  CURL *hnd;
-  CURLM *h;
-  struct curl_slist *slist1;
-  int fd = -1;
-  int r = 0;
-  fd_set rfds, wfds, efds;
-  struct timeval t;
-  struct CURLMsg *m;
+	CURLcode ret;
+	CURLMcode retm;
+	CURL *hnd;
+	CURLM *h;
+	struct curl_slist *slist1;
+	int fd = -1;
+	int r = 0;
+	fd_set rfds, wfds, efds;
+	struct timeval t;
+	struct CURLMsg *m;
 
-  slist1 = NULL;
-  slist1 = curl_slist_append(slist1, "Content-Type: application/x-device-data");
+	slist1 = NULL;
+	slist1 = curl_slist_append(slist1, "Content-Type: application/x-device-data");
 
-  h = curl_multi_init();
-  if (NULL == h) {
-	  ret = 1;
-	  goto headers;
-  }
+	h = curl_multi_init();
+	if (NULL == h) {
+		ret = 1;
+		goto headers;
+	}
 
-  hnd = curl_easy_init();
-  if (NULL == hnd) {
-	  ret = 1;
-	  goto multi;
-  }
+	hnd = curl_easy_init();
+	if (NULL == hnd) {
+		ret = 1;
+		goto multi;
+	}
 
-  ret = curl_easy_setopt(hnd, CURLOPT_URL, "http://localhost:3000/states");
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.37.0");
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
+	ret = curl_easy_setopt(hnd, CURLOPT_URL, "http://localhost:3000/states");
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.37.0");
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
 
-  ret = curl_easy_setopt(hnd, CURLOPT_READFUNCTION, reader);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_READDATA, &fd);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
+	ret = curl_easy_setopt(hnd, CURLOPT_READFUNCTION, reader);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_READDATA, &fd);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
 
-  ret = curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writer);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  ret = curl_easy_setopt(hnd, CURLOPT_WRITEDATA, s);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
+	ret = curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writer);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	ret = curl_easy_setopt(hnd, CURLOPT_WRITEDATA, s);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
 
-  ret = curl_multi_add_handle(h, hnd);
-  if (CURLE_OK != ret) {
-	  ret = 1;
-	  goto easy;
-  }
-  fd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
-  debug("init done\n");
-  while (!received_signal) {
-		  FD_ZERO(&rfds);
-		  FD_ZERO(&wfds);
-		  FD_ZERO(&efds);
-		  curl_multi_fdset(h, &rfds, &wfds, &efds, &r);
-		  t.tv_sec = 0;
-		  t.tv_usec = 100000;
-		  select(r, &rfds, &wfds, &efds, &t);
-		  curl_easy_pause(hnd, CURLPAUSE_CONT);
-		  paused = 0;
-		  while (CURLM_CALL_MULTI_PERFORM ==
-				  (retm = curl_multi_perform(h, &r)));
-		  if (CURLM_OK != retm)
-			  break;
-		  while ((m = curl_multi_info_read(h, &r))) {
-			  if (m->easy_handle != hnd)
-				  continue;
-			  if (m->msg != CURLMSG_DONE)
-				  continue;
-			  curl_multi_remove_handle(h, hnd);
-			  start = 1;
-			  curl_multi_add_handle(h, hnd);
-		  }
-  }
+	ret = curl_multi_add_handle(h, hnd);
+	if (CURLE_OK != ret) {
+		ret = 1;
+		goto easy;
+	}
+	fd = open("/tmp/t0006.output", O_RDONLY | O_NONBLOCK );
+	debug("init done\n");
+	while (!received_signal) {
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+		FD_ZERO(&efds);
+		curl_multi_fdset(h, &rfds, &wfds, &efds, &r);
+		t.tv_sec = 0;
+		t.tv_usec = 100000;
+		select(r, &rfds, &wfds, &efds, &t);
+		curl_easy_pause(hnd, CURLPAUSE_CONT);
+		paused = 0;
+		while (CURLM_CALL_MULTI_PERFORM ==
+				(retm = curl_multi_perform(h, &r)));
+		if (CURLM_OK != retm)
+			break;
+		while ((m = curl_multi_info_read(h, &r))) {
+			if (m->easy_handle != hnd)
+				continue;
+			if (m->msg != CURLMSG_DONE)
+				continue;
+			curl_multi_remove_handle(h, hnd);
+			start = 1;
+			curl_multi_add_handle(h, hnd);
+		}
+	}
 
-  curl_multi_remove_handle(h, hnd);
+	curl_multi_remove_handle(h, hnd);
 easy:
-  curl_easy_cleanup(hnd);
-  hnd = NULL;
+	curl_easy_cleanup(hnd);
+	hnd = NULL;
 multi:
-  curl_multi_cleanup(h);
-  h = NULL;
+	curl_multi_cleanup(h);
+	h = NULL;
 headers:
-  curl_slist_free_all(slist1);
-  slist1 = NULL;
-  return (int)ret;
+	curl_slist_free_all(slist1);
+	slist1 = NULL;
+	return (int)ret;
 }
 
 int main(int argc, char **argv)
@@ -309,11 +309,11 @@ int main(int argc, char **argv)
 
 	log_init("pcs-net", log_level, LOG_DAEMON, no_detach);
 
-        f = fopen(pid_file, "w");
-        if (f != NULL) {
-                fprintf(f, "%lu\n", (long unsigned) getpid());
-                fclose(f);
-        } else {
+	f = fopen(pid_file, "w");
+	if (f != NULL) {
+		fprintf(f, "%lu\n", (long unsigned) getpid());
+		fclose(f);
+	} else {
 		error(PACKAGE ": failed to create %s\n", pid_file);
 	}
 
