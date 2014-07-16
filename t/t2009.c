@@ -36,8 +36,9 @@ int main(int argc, char **argv)
 	struct block_builder *bb;
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
-	int (*setter)(void *, const char const *, long);
 	long flowback, street, res;
+	long feed_setpoint, flowback_setpoint, street_setpoint;
+	long inside_setpoint, stop_setpoint;
 
 	log_init("t2009", LOG_DEBUG + 2, LOG_DAEMON, 1);
 
@@ -60,7 +61,32 @@ int main(int argc, char **argv)
 		fatal("t2009: bad 'central heating.street' input\n");
 	set_input(b->data, "street", &street);
 
-	if (NULL != bb->inputs[2].key)
+	set_input = pcs_lookup(bb->inputs, "street setpoint");
+	if (NULL == set_input)
+		fatal("t2009: bad 'central heating.street setpoint' input\n");
+	set_input(b->data, "street setpoint", &street_setpoint);
+
+	set_input = pcs_lookup(bb->inputs, "feed setpoint");
+	if (NULL == set_input)
+		fatal("t2009: bad 'central heating.feed setpoint' input\n");
+	set_input(b->data, "feed setpoint", &feed_setpoint);
+
+	set_input = pcs_lookup(bb->inputs, "flowback setpoint");
+	if (NULL == set_input)
+		fatal("t2009: bad 'central heating.flowback setpoint' input\n");
+	set_input(b->data, "flowback setpoint", &flowback_setpoint);
+
+	set_input = pcs_lookup(bb->inputs, "inside setpoint");
+	if (NULL == set_input)
+		fatal("t2009: bad 'central heating.inside setpoint' input\n");
+	set_input(b->data, "inside setpoint", &inside_setpoint);
+
+	set_input = pcs_lookup(bb->inputs, "stop setpoint");
+	if (NULL == set_input)
+		fatal("t2009: bad 'central heating.stop setpoint' input\n");
+	set_input(b->data, "stop setpoint", &stop_setpoint);
+
+	if (NULL != bb->inputs[7].key)
 		fatal("t2009: bad 'central heating' input count\n");
 
 	if (NULL == bb->outputs)
@@ -69,33 +95,14 @@ int main(int argc, char **argv)
 		fatal("t2009: bad 'central heating' output count\n");
 	b->outputs = &res;
 
-	if (NULL == bb->setpoints)
+	if (NULL != bb->setpoints)
 		fatal("t2009: bad 'central heating' setpoints table\n");
 
-	setter = pcs_lookup(bb->setpoints, "feed");
-	if (!setter)
-		fatal("t2009: bad 'central heating' setpoint 'feed'\n");
-	setter(b->data, "feed", 950);
-
-	setter = pcs_lookup(bb->setpoints, "flowback");
-	if (!setter)
-		fatal("t2009: bad 'central heating' setpoint 'flowback'\n");
-	setter(b->data, "flowback", 700);
-
-	setter = pcs_lookup(bb->setpoints, "street");
-	if (!setter)
-		fatal("t2009: bad 'central heating' setpoint 'street'\n");
-	setter(b->data, "street", -280);
-
-	setter = pcs_lookup(bb->setpoints, "inside");
-	if (!setter)
-		fatal("t2009: bad 'central heating' setpoint 'inside'\n");
-	setter(b->data, "inside", 230);
-
-	setter = pcs_lookup(bb->setpoints, "stop");
-	if (!setter)
-		fatal("t2009: bad 'central heating' setpoint 'stop'\n");
-	setter(b->data, "stop", 120);
+	feed_setpoint = 950;
+	flowback_setpoint = 700;
+	street_setpoint = -280;
+	inside_setpoint = 230;
+	stop_setpoint = 120;
 
 	flowback = 700;
 	street = -280;

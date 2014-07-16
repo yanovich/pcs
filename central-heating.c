@@ -31,11 +31,11 @@
 struct central_heating_state {
 	long			*input_flowback;
 	long			*input_street;
-	long			feed;
-	long			flowback;
-	long			inside;
-	long			stop;
-	long			street;
+	long			*feed;
+	long			*flowback;
+	long			*inside;
+	long			*stop;
+	long			*street;
 };
 
 static void
@@ -45,14 +45,14 @@ central_heating_run(struct block *b, struct server_state *s)
 	long long t11;
 	long long t12_excess;
 
-	t11  = d->feed - d->inside;
-	t11 *= d->inside - *d->input_street;
-	t11 /= d->inside - d->street;
-	t11 += d->inside;
+	t11  = *d->feed - *d->inside;
+	t11 *= *d->inside - *d->input_street;
+	t11 /= *d->inside - *d->street;
+	t11 += *d->inside;
 
-	t12_excess  = d->feed - d->flowback;
-	t12_excess *= d->inside - *d->input_street;
-	t12_excess /= d->inside - d->street;
+	t12_excess  = *d->feed - *d->flowback;
+	t12_excess *= *d->inside - *d->input_street;
+	t12_excess /= *d->inside - *d->street;
 	t12_excess += *d->input_flowback - t11;
 
 	*b->outputs = (long) (t11 - t12_excess);
@@ -74,47 +74,42 @@ set_input_street(void *data, const char const *key, long *input_street)
 }
 
 static int
-set_feed(void *data, const char const *key, long value)
+set_feed(void *data, const char const *key, long *feed)
 {
 	struct central_heating_state *d = data;
-	d->feed = value;
-	debug("feed = %li\n", d->feed);
+	d->feed = feed;
 	return 0;
 }
 
 static int
-set_flowback(void *data, const char const *key, long value)
+set_flowback(void *data, const char const *key, long *flowback)
 {
 	struct central_heating_state *d = data;
-	d->flowback = value;
-	debug("flowback = %li\n", d->flowback);
+	d->flowback = flowback;
 	return 0;
 }
 
 static int
-set_inside(void *data, const char const *key, long value)
+set_inside(void *data, const char const *key, long *inside)
 {
 	struct central_heating_state *d = data;
-	d->inside = value;
-	debug("inside = %li\n", d->inside);
+	d->inside = inside;
 	return 0;
 }
 
 static int
-set_stop(void *data, const char const *key, long value)
+set_stop(void *data, const char const *key, long *stop)
 {
 	struct central_heating_state *d = data;
-	d->stop = value;
-	debug("stop = %li\n", d->stop);
+	d->stop = stop;
 	return 0;
 }
 
 static int
-set_street(void *data, const char const *key, long value)
+set_street(void *data, const char const *key, long *street)
 {
 	struct central_heating_state *d = data;
-	d->street = value;
-	debug("street = %li\n", d->street);
+	d->street = street;
 	return 0;
 }
 
@@ -132,28 +127,23 @@ static struct pcs_map inputs[] = {
 		.value			= set_input_street,
 	}
 	,{
-	}
-};
-
-static struct pcs_map setpoints[] = {
-	{
-		.key			= "feed",
+		.key			= "feed setpoint",
 		.value			= set_feed,
 	}
 	,{
-		.key			= "flowback",
+		.key			= "flowback setpoint",
 		.value			= set_flowback,
 	}
 	,{
-		.key			= "inside",
+		.key			= "inside setpoint",
 		.value			= set_inside,
 	}
 	,{
-		.key			= "stop",
+		.key			= "stop setpoint",
 		.value			= set_stop,
 	}
 	,{
-		.key			= "street",
+		.key			= "street setpoint",
 		.value			= set_street,
 	}
 	,{
@@ -182,7 +172,6 @@ static struct block_builder builder = {
 	.ops		= init,
 	.outputs	= outputs,
 	.inputs		= inputs,
-	.setpoints	= setpoints,
 };
 
 struct block_builder *
