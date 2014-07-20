@@ -307,7 +307,7 @@ run(struct network_state *s)
 		goto multi;
 	}
 
-	ret = curl_easy_setopt(hnd, CURLOPT_URL, "http://localhost:3000/states");
+	ret = curl_easy_setopt(hnd, CURLOPT_URL, url);
 	if (CURLE_OK != ret) {
 		ret = 1;
 		goto easy;
