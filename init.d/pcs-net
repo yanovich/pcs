@@ -52,7 +52,7 @@ case "$1" in
 	fi
 	;;
 
-  restart)
+  restart|force-reload)
 	check_config
 	log_daemon_msg "Restarting pcs networking" "pcs-net"
 	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PIDFILE --exec $SERVICE
@@ -68,7 +68,7 @@ case "$1" in
 	;;
 
   *)
-	log_action_msg "Usage: /etc/init.d/pcs {start|stop|restart|status}"
+	log_action_msg "Usage: /etc/init.d/pcs-net {start|stop|force-reload|restart|status}"
 	exit 1
 esac
 
