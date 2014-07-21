@@ -33,9 +33,12 @@ int main(int argc, char **argv)
 	struct server_state s;
 	struct block_builder *bb;
 	struct block *b;
+	void (*set_high)(void *, const char const *, long *);
 	void (*set_input)(void *, const char const *, long *);
+	void (*set_low)(void *, const char const *, long *);
 	int (*setter)(void *, const char const *, long);
-	long input, res[2];
+	long input, high = 200, low = 100;
+	long res[2];
 	int i = 0;
 
 	bb = load_trigger_builder();
@@ -47,12 +50,22 @@ int main(int argc, char **argv)
 
 	if (NULL == bb->inputs)
 		fatal("t2010: bad 'trigger' input table\n");
-	if (NULL != bb->inputs[0].key)
-		fatal("t2010: bad 'trigger' input key\n");
-	if (NULL == bb->inputs[0].value)
-		fatal("t2010: bad 'trigger' input value\n");
-	set_input = bb->inputs[0].value;
+	set_input = pcs_lookup(bb->inputs, "input");
+	if (NULL == set_input)
+		fatal("t2010: bad 'trigger' input\n");
 	set_input(b->data, "input", &input);
+
+	set_high = pcs_lookup(bb->inputs, "high");
+	if (NULL == set_high)
+		fatal("t2010: bad 'trigger.high' input\n");
+	set_high(b->data, "high", &high);
+
+	set_low = pcs_lookup(bb->inputs, "low");
+	if (NULL == set_low)
+		fatal("t2010: bad 'trigger.low' input\n");
+	set_low(b->data, "low", &low);
+	if (NULL != bb->inputs[3].key)
+		fatal("t2010: bad 'trigger' input count\n");
 
 	if (NULL == bb->outputs)
 		fatal("t2010: bad 'trigger' output table\n");
@@ -66,16 +79,6 @@ int main(int argc, char **argv)
 
 	if (NULL == bb->setpoints)
 		fatal("t2010: bad 'trigger' setpoints table\n");
-
-	setter = pcs_lookup(bb->setpoints, "high");
-	if (!setter)
-		fatal("t2010: bad 'trigger' setpoint 'high'\n");
-	setter(b->data, "high", 200);
-
-	setter = pcs_lookup(bb->setpoints, "low");
-	if (!setter)
-		fatal("t2010: bad 'trigger' setpoint 'low'\n");
-	setter(b->data, "low", 100);
 
 	input = 50;
 	res[0] = 1;

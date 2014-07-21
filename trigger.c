@@ -31,10 +31,10 @@
 #define PCS_T_LOW	1
 
 struct trigger_state {
+	long			*high;
 	long			*input;
-	long			high;
+	long			*low;
 	long			hysteresis;
-	long			low;
 };
 
 static void
@@ -42,11 +42,11 @@ trigger_run(struct block *b, struct server_state *s)
 {
 	struct trigger_state *d = b->data;
 
-	if (*d->input >= d->high) {
+	if (*d->input >= *d->high) {
 		b->outputs[PCS_T_HIGH] = 1;
 		b->outputs[PCS_T_LOW] = 0;
 		return;
-	} else if (*d->input <= d->low) {
+	} else if (*d->input <= *d->low) {
 		b->outputs[PCS_T_HIGH] = 0;
 		b->outputs[PCS_T_LOW] = 1;
 		return;
@@ -59,6 +59,14 @@ trigger_run(struct block *b, struct server_state *s)
 	}
 }
 
+static int
+set_high(void *data, const char const *key, long *high)
+{
+	struct trigger_state *d = data;
+	d->high = high;
+	return 0;
+}
+
 static void
 set_input(void *data, const char const *key, long *input)
 {
@@ -67,11 +75,10 @@ set_input(void *data, const char const *key, long *input)
 }
 
 static int
-set_high(void *data, const char const *key, long value)
+set_low(void *data, const char const *key, long *low)
 {
 	struct trigger_state *d = data;
-	d->high = value;
-	debug("high = %li\n", d->high);
+	d->low = low;
 	return 0;
 }
 
@@ -88,19 +95,6 @@ set_hysteresis(void *data, const char const *key, long value)
 	return 0;
 }
 
-static int
-set_low(void *data, const char const *key, long value)
-{
-	struct trigger_state *d = data;
-	d->low = value;
-	if (d->low > d->high) {
-		error(PCS_BLOCK ": low bigger than high, set high first\n");
-		return 1;
-	}
-	debug("low = %li\n", d->low);
-	return 0;
-}
-
 static const char *outputs[] = {
 	"high",
 	"low",
@@ -109,23 +103,25 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
-		.key			= NULL,
+		.key			= "high",
+		.value			= set_high,
+	}
+	,{
+		.key			= "input",
 		.value			= set_input,
+	}
+	,{
+		.key			= "low",
+		.value			= set_low,
+	}
+	,{
 	}
 };
 
 static struct pcs_map setpoints[] = {
 	{
-		.key			= "high",
-		.value			= set_high,
-	}
-	,{
 		.key			= "hysteresis",
 		.value			= set_hysteresis,
-	}
-	,{
-		.key			= "low",
-		.value			= set_low,
 	}
 	,{
 	}
