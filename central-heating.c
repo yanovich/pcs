@@ -44,14 +44,17 @@ central_heating_run(struct block *b, struct server_state *s)
 	struct central_heating_state *d = b->data;
 	long long t11;
 	long long t12_excess;
+	long street = *d->input_street;
 
+	if (street > *d->stop)
+		street = *d->stop;
 	t11  = *d->feed - *d->inside;
-	t11 *= *d->inside - *d->input_street;
+	t11 *= *d->inside - street;
 	t11 /= *d->inside - *d->street;
 	t11 += *d->inside;
 
 	t12_excess  = *d->feed - *d->flowback;
-	t12_excess *= *d->inside - *d->input_street;
+	t12_excess *= *d->inside - street;
 	t12_excess /= *d->inside - *d->street;
 	t12_excess += *d->input_flowback - t11;
 
