@@ -54,7 +54,7 @@ i_8042_run(struct block *b, struct server_state *s)
 		do16 >>= 1;
 	}
 
-	for (; i < 16; i++) {
+	for (; i < 32; i++) {
 		b->outputs[i] = di16 & 1;
 		di16 >>= 1;
 	}
@@ -88,7 +88,7 @@ static const char *outputs[] = {
 	"do6",
 	"do7",
 	"do8",
-	"do0",
+	"do9",
 	"do10",
 	"do11",
 	"do12",
@@ -104,7 +104,7 @@ static const char *outputs[] = {
 	"di6",
 	"di7",
 	"di8",
-	"di0",
+	"di9",
 	"di10",
 	"di11",
 	"di12",
