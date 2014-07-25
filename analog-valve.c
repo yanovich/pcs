@@ -28,6 +28,7 @@
 #define PCS_BLOCK	"analog-valve"
 
 struct analog_valve_state {
+	long			*feedback;
 	long			*input;
 	long			high;
 	long			low;
@@ -38,11 +39,21 @@ analog_valve_run(struct block *b, struct server_state *s)
 {
 	struct analog_valve_state *d = b->data;
 
+	if (d->feedback)
+		*b->outputs = *d->feedback;
+
 	*b->outputs += *d->input;
 	if (*b->outputs > d->high)
 		*b->outputs = d->high;
 	else if (*b->outputs < d->low)
 		*b->outputs = d->low;
+}
+
+static void
+set_feedback(void *data, const char const *key, long *feedback)
+{
+	struct analog_valve_state *d = data;
+	d->feedback = feedback;
 }
 
 static void
@@ -76,6 +87,10 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
+		.key			= "feedback",
+		.value			= set_feedback,
+	}
+	,{
 		.key			= "input",
 		.value			= set_input,
 	}
