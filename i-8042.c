@@ -233,6 +233,9 @@ static struct block_ops i_8042_out_ops = {
 static struct block_ops *
 i_8042_out_init(struct block *b)
 {
+	struct i_8042_out_state *d = b->data;
+	if (!d->status)
+		fatal("'i-8042 out' needs status input\n");
 	return &i_8042_out_ops;
 }
 
