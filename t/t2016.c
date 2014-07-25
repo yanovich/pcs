@@ -37,6 +37,7 @@ int main(int argc, char **argv)
 	int (*setter)(void *, const char const *, long);
 	long input, res;
 
+	log_init("t2016", LOG_DEBUG + 2, LOG_DAEMON, 1);
 	bb = load_linear_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
@@ -46,11 +47,9 @@ int main(int argc, char **argv)
 
 	if (NULL == bb->inputs)
 		fatal("t2016: bad 'linear' input table\n");
-	if (NULL != bb->inputs[0].key)
+	set_input = pcs_lookup(bb->inputs, "input");
+	if (NULL == set_input)
 		fatal("t2016: bad 'linear' input key\n");
-	if (NULL == bb->inputs[0].value)
-		fatal("t2016: bad 'linear' input value\n");
-	set_input = bb->inputs[0].value;
 	set_input(b->data, "input", &input);
 
 	if (NULL == bb->outputs)

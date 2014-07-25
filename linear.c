@@ -30,6 +30,10 @@
 
 struct linear_state {
 	long			*input;
+	long			*i_in_high;
+	long			*i_in_low;
+	long			*i_out_high;
+	long			*i_out_low;
 	long			in_high;
 	long			in_low;
 	long			out_high;
@@ -42,17 +46,17 @@ linear_run(struct block *b, struct server_state *s)
 	struct linear_state *d = b->data;
 	long long res;
 
-	if (*d->input < d->in_low) {
-		*b->outputs = d->out_low;
+	if (*d->input < *d->i_in_low) {
+		*b->outputs = *d->i_out_low;
 		return;
-	} else if (*d->input > d->in_high) {
-		*b->outputs = d->out_high;
+	} else if (*d->input > *d->i_in_high) {
+		*b->outputs = *d->i_out_high;
 		return;
 	}
-	res  = *d->input - d->in_low;
-	res *= (d->out_high - d->out_low);
-	res /= d->in_high - d->in_low;
-	res += d->out_low;
+	res  = *d->input - *d->i_in_low;
+	res *= (*d->i_out_high - *d->i_out_low);
+	res /= *d->i_in_high - *d->i_in_low;
+	res += *d->i_out_low;
 
 	*b->outputs = (long) res;
 	debug3("%s: %lli\n", PCS_BLOCK, res);
@@ -63,6 +67,38 @@ set_input(void *data, const char const *key, long *input)
 {
 	struct linear_state *d = data;
 	d->input = input;
+}
+
+static int
+set_i_in_high(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_in_high = value;
+	return 0;
+}
+
+static int
+set_i_in_low(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_in_low = value;
+	return 0;
+}
+
+static int
+set_i_out_high(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_out_high = value;
+	return 0;
+}
+
+static int
+set_i_out_low(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_out_low = value;
+	return 0;
 }
 
 static int
@@ -107,8 +143,26 @@ static const char *outputs[] = {
 
 static struct pcs_map inputs[] = {
 	{
-		.key			= NULL,
+		.key			= "input",
 		.value			= set_input,
+	}
+	,{
+		.key			= "in high",
+		.value			= set_i_in_high,
+	}
+	,{
+		.key			= "in low",
+		.value			= set_i_in_low,
+	}
+	,{
+		.key			= "out high",
+		.value			= set_i_out_high,
+	}
+	,{
+		.key			= "out low",
+		.value			= set_i_out_low,
+	}
+	,{
 	}
 };
 
@@ -137,6 +191,10 @@ static void *
 alloc(void)
 {
 	struct linear_state *d = xzalloc(sizeof(*d));
+	d->i_in_high = &d->in_high;
+	d->i_in_low = &d->in_low;
+	d->i_out_high = &d->out_high;
+	d->i_out_low = &d->out_low;
 	return d;
 }
 
