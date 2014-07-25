@@ -50,7 +50,7 @@ linear_run(struct block *b, struct server_state *s)
 		return;
 	}
 	res  = *d->input - d->in_low;
-	res *= d->out_high;
+	res *= (d->out_high - d->out_low);
 	res /= d->in_high - d->in_low;
 	res += d->out_low;
 
