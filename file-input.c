@@ -137,8 +137,10 @@ load_file(struct block *b, const char const *filename)
 	if (err)
 		return 1;
 	list_for_each_entry(c, &d->key_list, key_entry) {
-		if (1 != c->present)
+		if (1 != c->present) {
+			error(PCS_BLOCK ": missing key '%s'\n", c->key);
 			return 1;
+		}
 		if (c->update)
 			update = 1;
 	}
