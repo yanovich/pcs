@@ -46,6 +46,10 @@ linear_run(struct block *b, struct server_state *s)
 	struct linear_state *d = b->data;
 	long long res;
 
+	if (*d->i_in_high == *d->i_in_low) {
+		*b->outputs = *d->i_out_low;
+		return;
+	}
 	if (*d->input < *d->i_in_low) {
 		*b->outputs = *d->i_out_low;
 		return;
@@ -59,7 +63,7 @@ linear_run(struct block *b, struct server_state *s)
 	res += *d->i_out_low;
 
 	*b->outputs = (long) res;
-	debug3("%s: %lli\n", PCS_BLOCK, res);
+	debug3("%s: %li -> %lli\n", PCS_BLOCK, *d->input, res);
 }
 
 static void
@@ -206,10 +210,6 @@ static struct block_ops *
 init(struct block *b)
 {
 	struct linear_state *d = b->data;
-	if (d->in_high == d->in_low) {
-		error("%s: zero input region\n", PCS_BLOCK);
-		return NULL;
-	}
 	return &ops;
 }
 

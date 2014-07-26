@@ -41,9 +41,6 @@ int main(int argc, char **argv)
 	bb = load_linear_builder();
 	b = xzalloc(sizeof(*b));
 	b->data = bb->alloc();
-	b->ops = bb->ops(b);
-	if (b->ops)
-		fatal("t2016: bad 'linear' ops\n");
 
 	if (NULL == bb->inputs)
 		fatal("t2016: bad 'linear' input table\n");
