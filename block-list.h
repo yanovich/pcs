@@ -42,6 +42,7 @@
 #include "linear.h"
 #include "logger.h"
 #include "logical-and.h"
+#include "logical-if.h"
 #include "logical-not.h"
 #include "logical-or.h"
 #include "logical-xor.h"
@@ -146,6 +147,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "logical AND",
 		.value		= load_logical_and_builder,
+	}
+	,{
+		.key		= "logical if",
+		.value		= load_logical_if_builder,
 	}
 	,{
 		.key		= "logical NOT",

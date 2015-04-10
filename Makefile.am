@@ -40,6 +40,7 @@ libpcs_a_SOURCES		 = \
 				   linear.c \
 				   logger.c \
 				   logical-and.c \
+				   logical-if.c \
 				   logical-not.c \
 				   logical-or.c \
 				   logical-xor.c \
