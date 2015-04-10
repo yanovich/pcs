@@ -1,5 +1,5 @@
 /* timer.c -- operate a timer
- * Copyright (C) 2014 Sergei Ianovich <ynvich@gmail.com>
+ * Copyright (C) 2014,2015 Sergei Ianovich <s@asutp.io>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -45,6 +45,7 @@ timer_run(struct block *b, struct server_state *s)
 	}
 	if (d->mark) {
 		d->mark--;
+		*b->outputs = 0;
 		return;
 	}
 	*b->outputs = 1;
@@ -101,6 +102,9 @@ static struct block_ops ops = {
 static struct block_ops *
 init(struct block *b)
 {
+	struct timer_state *d = b->data;
+	d->mark = d->delay;
+
 	return &ops;
 }
 

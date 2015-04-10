@@ -5,6 +5,7 @@ TESTS				 = \
 				   t/t3022.sh \
 				   t/t3019.sh \
 				   t/t3007.sh \
+				   t/t2019 \
 				   t/t2018 \
 				   t/t2017 \
 				   t/t2016 \
@@ -32,6 +33,7 @@ TESTS				 = \
 				   t/t0001.sh
 
 noinst_PROGRAMS			 += \
+				   t/t2019 \
 				   t/t2018 \
 				   t/t2017 \
 				   t/t2016 \

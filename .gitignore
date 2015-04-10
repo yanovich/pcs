@@ -38,6 +38,7 @@ t/t2015
 t/t2016
 t/t2017
 t/t2018
+t/t2019
 t/t*.log
 t/t*.trs
 test-driver
