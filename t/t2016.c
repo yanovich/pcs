@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	struct block *b;
 	void (*set_input)(void *, const char const *, long *);
 	int (*setter)(void *, const char const *, long);
-	long input, res;
+	long input, res, too_low = -10, too_high = 1700;
 
 	log_init("t2016", LOG_DEBUG + 2, LOG_DAEMON, 1);
 	bb = load_linear_builder();
@@ -105,5 +105,44 @@ int main(int argc, char **argv)
 	if (res != 800)
 		fatal("t2016: bad 'linear' result 3 for %li (%li)\n",
 				input, res);
+
+	input = 2000;
+	res = 1;
+	b->ops->run(b, &s);
+
+	if (res != 0)
+		fatal("t2016: bad 'linear' result 4 for %li (%li)\n",
+				input, res);
+
+	set_input = pcs_lookup(bb->inputs, "out too low");
+	if (NULL == set_input)
+		fatal("t2016: bad 'linear' input key\n");
+	set_input(b->data, "out too low", &too_low);
+
+	b->ops->run(b, &s);
+
+	if (res != too_low)
+		fatal("t2016: bad 'linear' result 5 for %li (%li)\n",
+				input, res);
+
+	input = 24000;
+	res = 1;
+	b->ops->run(b, &s);
+
+	if (res != 1600)
+		fatal("t2016: bad 'linear' result 6 for %li (%li)\n",
+				input, res);
+
+	set_input = pcs_lookup(bb->inputs, "out too high");
+	if (NULL == set_input)
+		fatal("t2016: bad 'linear' input key\n");
+	set_input(b->data, "out too high", &too_high);
+
+	b->ops->run(b, &s);
+
+	if (res != too_high)
+		fatal("t2016: bad 'linear' result 7 for %li (%li)\n",
+				input, res);
+
 	return 0;
 }

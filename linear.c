@@ -34,6 +34,8 @@ struct linear_state {
 	long			*i_in_low;
 	long			*i_out_high;
 	long			*i_out_low;
+	long			*i_out_too_high;
+	long			*i_out_too_low;
 	long			in_high;
 	long			in_low;
 	long			out_high;
@@ -48,13 +50,16 @@ linear_run(struct block *b, struct server_state *s)
 
 	if (*d->i_in_high == *d->i_in_low) {
 		*b->outputs = *d->i_out_low;
+		warn("%s:%s: zero range\n", PCS_BLOCK, b->name);
 		return;
 	}
 	if (*d->input < *d->i_in_low) {
-		*b->outputs = *d->i_out_low;
+		*b->outputs = *d->i_out_too_low;
+		debug3("%s: %li -> %li\n", PCS_BLOCK, *d->input, *b->outputs);
 		return;
 	} else if (*d->input > *d->i_in_high) {
-		*b->outputs = *d->i_out_high;
+		*b->outputs = *d->i_out_too_high;
+		debug3("%s: %li -> %li\n", PCS_BLOCK, *d->input, *b->outputs);
 		return;
 	}
 	res  = *d->input - *d->i_in_low;
@@ -66,11 +71,12 @@ linear_run(struct block *b, struct server_state *s)
 	debug3("%s: %li -> %lli\n", PCS_BLOCK, *d->input, res);
 }
 
-static void
+static int
 set_input(void *data, const char const *key, long *input)
 {
 	struct linear_state *d = data;
 	d->input = input;
+	return 0;
 }
 
 static int
@@ -102,6 +108,22 @@ set_i_out_low(void *data, const char const *key, long *value)
 {
 	struct linear_state *d = data;
 	d->i_out_low = value;
+	return 0;
+}
+
+static int
+set_i_out_too_high(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_out_too_high = value;
+	return 0;
+}
+
+static int
+set_i_out_too_low(void *data, const char const *key, long *value)
+{
+	struct linear_state *d = data;
+	d->i_out_too_low = value;
 	return 0;
 }
 
@@ -167,6 +189,14 @@ static struct pcs_map inputs[] = {
 		.value			= set_i_out_low,
 	}
 	,{
+		.key			= "out too high",
+		.value			= set_i_out_too_high,
+	}
+	,{
+		.key			= "out too low",
+		.value			= set_i_out_too_low,
+	}
+	,{
 	}
 };
 
@@ -199,6 +229,8 @@ alloc(void)
 	d->i_in_low = &d->in_low;
 	d->i_out_high = &d->out_high;
 	d->i_out_low = &d->out_low;
+	d->i_out_too_high = d->i_out_high;
+	d->i_out_too_low = d->i_out_low;
 	return d;
 }
 
@@ -209,7 +241,6 @@ static struct block_ops ops = {
 static struct block_ops *
 init(struct block *b)
 {
-	struct linear_state *d = b->data;
 	return &ops;
 }
 
