@@ -33,6 +33,9 @@ int
 icpdas_set_parallel_output(unsigned int slot, unsigned long out);
 
 int
+icpdas_reset_parallel_analog_output(unsigned int slot);
+
+int
 icpdas_set_parallel_analog_output(unsigned int slot, unsigned int port,
 		long value);
 int

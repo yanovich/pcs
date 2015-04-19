@@ -234,6 +234,43 @@ close_fd:
 }
 
 int
+icpdas_reset_parallel_analog_output(unsigned int slot)
+{
+	int fd, err;
+	char buff[256];
+
+	if (slot == 0 || slot > 8) {
+		error("%s %u: bad slot (%u)\n", __FILE__, __LINE__, slot);
+		return -1;
+	}
+	err = snprintf(&buff[0], sizeof(buff) - 1,
+			"/sys/bus/icpdas/devices/slot%02u/reset", slot);
+	if (err >= sizeof(buff)) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+	fd = open(buff, O_WRONLY);
+	if (-1 == fd) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__, strerror(errno),
+				errno);
+		return -1;
+	}
+
+	err = write(fd, "1", 1);
+	if(0 > err) {
+		error("%s %u: %s (%i)\n", __FILE__, __LINE__,
+				strerror(errno), errno);
+		goto close_fd;
+	}
+
+	err = 0;
+close_fd:
+	close(fd);
+	return err;
+}
+
+int
 icpdas_set_parallel_analog_output(unsigned int slot, unsigned int port,
 		long value)
 {

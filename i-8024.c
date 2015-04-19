@@ -29,6 +29,8 @@
 
 struct i_8024_out_state {
 	unsigned		slot;
+	unsigned		reset;
+	unsigned		reset_counter;
 	long			*AO[4];
 };
 
@@ -37,6 +39,17 @@ i_8024_out_run(struct block *b, struct server_state *s)
 {
 	struct i_8024_out_state *d = b->data;
 	int err, i;
+
+	if (d->reset) {
+		if (0 == d->reset_counter) {
+			d->reset_counter = d->reset;
+			err = icpdas_reset_parallel_analog_output(d->slot);
+			if (0 > err)
+				error("%s: i-8024 output error %i\n", b->name, err);
+		} else {
+			d->reset_counter--;
+		}
+	}
 
 	for (i = 0; i < 4; i++) {
 		if (NULL == d->AO[i])
@@ -56,6 +69,15 @@ set_out_slot(void *data, const char const *key, long value)
 	return 0;
 }
 
+static int
+set_reset(void *data, const char const *key, long value)
+{
+	struct i_8024_out_state *d = data;
+	d->reset = (unsigned) value;
+	debug("reset = %u\n", d->reset);
+	return 0;
+}
+
 static void
 set_input(void *data, const char const *key, long *input)
 {
@@ -71,6 +93,10 @@ static struct pcs_map out_setpoints[] = {
 	{
 		.key			= "slot",
 		.value			= set_out_slot,
+	}
+	,{
+		.key			= "reset",
+		.value			= set_reset,
 	}
 	,{
 	}
