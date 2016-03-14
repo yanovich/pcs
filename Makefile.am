@@ -23,6 +23,7 @@ libpcs_a_SOURCES		 = \
 				   central-heating.c \
 				   const.c \
 				   copy.c \
+				   counter.c \
 				   discrete-valve.c \
 				   fuzzy-if-d.c \
 				   fuzzy-if-s.c \
