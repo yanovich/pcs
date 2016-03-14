@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 		b->ops->run(b, &s);
 
 		if (res != 0)
-			fatal(__FILE__ ": bad 'timer' result 1.%i for %li (%li)\n",
+			fatal(__FILE__ ": bad 'timer' result 1.%li for %li (%li)\n",
 					i, input, res);
 	}
 
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		b->ops->run(b, &s);
 
 		if (res != 1)
-			fatal(__FILE__ ": bad 'timer' result 2.%i for %li (%li)\n",
+			fatal(__FILE__ ": bad 'timer' result 2.%li for %li (%li)\n",
 					i, input, res);
 	}
 
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 		b->ops->run(b, &s);
 
 		if (res != 0)
-			fatal(__FILE__ ": bad 'timer' result 3.%i for %li (%li)\n",
+			fatal(__FILE__ ": bad 'timer' result 3.%li for %li (%li)\n",
 					i, input, res);
 	}
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 		b->ops->run(b, &s);
 
 		if (res != 0)
-			fatal(__FILE__ ": bad 'timer' result 4.%i for %li (%li)\n",
+			fatal(__FILE__ ": bad 'timer' result 4.%li for %li (%li)\n",
 					i, input, res);
 	}
 
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 		b->ops->run(b, &s);
 
 		if (res != 1)
-			fatal(__FILE__ ": bad 'timer' result 5.%i for %li (%li)\n",
+			fatal(__FILE__ ": bad 'timer' result 5.%li for %li (%li)\n",
 					i, input, res);
 	}
 
