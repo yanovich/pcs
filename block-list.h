@@ -39,6 +39,7 @@
 #include "fuzzy-if-s.h"
 #include "fuzzy-if-z.h"
 #include "fuzzy-then-d.h"
+#include "heat-counter.h"
 #include "last-state.h"
 #include "linear.h"
 #include "logger.h"
@@ -108,6 +109,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "fuzzy then d",
 		.value		= load_fuzzy_then_d_builder,
+	}
+	,{
+		.key		= "heat counter",
+		.value		= load_heat_counter_builder,
 	}
 	,{
 		.key		= "i-8024",

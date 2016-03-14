@@ -31,6 +31,7 @@ libpcs_a_SOURCES		 = \
 				   fuzzy-then-d.c \
 				   file-input.c \
 				   file-output.c \
+				   heat-counter.c \
 				   i-8024.c \
 				   i-8041.c \
 				   i-8042.c \
