@@ -24,6 +24,7 @@ libpcs_a_SOURCES		 = \
 				   const.c \
 				   copy.c \
 				   counter.c \
+				   cylinder.c \
 				   discrete-valve.c \
 				   fuzzy-if-d.c \
 				   fuzzy-if-s.c \

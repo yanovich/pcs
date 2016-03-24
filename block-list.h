@@ -26,6 +26,7 @@
 #include "const.h"
 #include "copy.h"
 #include "counter.h"
+#include "cylinder.h"
 #include "discrete-valve.h"
 #include "i-8024.h"
 #include "i-8041.h"
@@ -81,6 +82,10 @@ static struct pcs_map loaders[] = {
 	,{
 		.key		= "counter",
 		.value		= load_counter_builder,
+	}
+	,{
+		.key		= "cylinder",
+		.value		= load_cylinder_builder,
 	}
 	,{
 		.key		= "discrete valve",
